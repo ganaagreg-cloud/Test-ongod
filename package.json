@@ -7,5 +7,10 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mysql2": "^3.24.5",
+    "pg": "^8.23.1"
   }
 }
