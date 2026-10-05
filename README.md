@@ -17,4 +17,4 @@ Environment variables only. See `.env.example` for placeholders.
 3. Click **Restart App**.
 
 ## Deploy test
-Auto-deploy marker: 2026-10-06 test 1. If this line shows up in README.md on the server, Git auto-deploy works.
+Auto-deploy marker: test 2 (second push, 2026-10-06). If this line shows up in README.md on the server, Git auto-deploy works.
