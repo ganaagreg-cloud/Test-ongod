@@ -1,14 +1,25 @@
+---
+type: spec
+tags: [spec]
+---
+
 # Product
+
+Decisions: [[ADR-0011-audio-first-media-asset|ADR-0011]] · Home: [[00-Index]]
 
 Paid yearly access to a library of episodes (now: audio over a cover image, 20–40 min; later: video, max 720p). The catalog is visible to logged-in users; playback requires active access.
 
 # Surfaces
+
+Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fastify-prisma-mysql-single-process|ADR-0002]] · [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]] · [[ADR-0014-admin-light-theme|ADR-0014]]
 
 - Mobile app (iOS + Android): sign up, log in, browse, play, save, profile, settings, delete account. No payment UI.
 - Portal (web, mobile-first): sign up, log in, plans, bank transfer instructions, "Төлсөн" form, subscription status, privacy policy, terms, account deletion page.
 - Admin (web): payments queue, users, episodes, categories, uploads, dashboard, audit log. Roles OWNER and ADMIN. TOTP 2FA required.
 
 # Workflows
+
+Decisions: auth [[ADR-0008-auth-primitives-two-devices|ADR-0008]] · social login [[ADR-0009-social-login-feature-flag|ADR-0009]] · payments [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[ADR-0007-access-model-reference-codes|ADR-0007]] · jobs and cron [[ADR-0010-reliability-jobs-cron-idempotency|ADR-0010]] · media [[ADR-0004-media-bunny-token-auth|ADR-0004]]
 
 A. Register (app or portal): last name, first name, phone (not verified), email, username (optional; default = email; unique, case-insensitive, 3–30 chars [a-z0-9._] or an email), password (min 8). A 6-digit code is emailed (10 min expiry, 5 attempts, 60 s resend cooldown). Unverified users can log in but cannot apply for a subscription.
 
@@ -30,6 +41,8 @@ I. App update: the app checks /v1/app-config on start; below the minimum version
 
 # Data model (Prisma)
 
+Decisions: [[ADR-0007-access-model-reference-codes|ADR-0007]] · [[ADR-0011-audio-first-media-asset|ADR-0011]] · [[ADR-0002-api-fastify-prisma-mysql-single-process|ADR-0002]]
+
 User(id, username uniq lowercase, email uniq lowercase, emailVerifiedAt?, passwordHash?, firstName, lastName, phone, status PENDING_PROFILE|ACTIVE|DISABLED|DELETED, role USER|ADMIN|OWNER, accessUntil?, totpSecret?, createdAt, deletedAt?)
 AuthIdentity(id, userId, provider GOOGLE|APPLE, providerSubject, email; uniq(provider, providerSubject))
 Session(id, userId, deviceId, refreshTokenHash, familyId, expiresAt, revokedAt?, createdAt)
@@ -50,9 +63,13 @@ AppConfig(key, value)
 
 # Out of scope (paid add-ons)
 
+Requests: [[changes]]
+
 QPay, offline downloads, comments/social feed, free episodes, quizzes, live, multiple creators, bank CSV matching (unless agreed).
 
 # Acceptance tests (must pass before launch)
+
+Tracked in: [[LAUNCH_CHECKLIST]]
 
 - A new episode is playable within minutes and never blocks others.
 - Playback starts in < 3 s on mobile data.

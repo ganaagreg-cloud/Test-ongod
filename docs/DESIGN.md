@@ -1,8 +1,17 @@
+---
+type: design
+tags: [design]
+---
+
 # Principles
+
+Decisions: [[ADR-0012-design-dark-theme-inspiration-only|ADR-0012]] · Home: [[00-Index]]
 
 Audio-first, calm, premium, Mongolian heritage without kitsch. One dark theme only. Cover art is the hero; the UI stays quiet. At most one gold element per screen region. Generous spacing, large readable text.
 
 # Tokens (packages/tokens)
+
+Decisions: [[ADR-0013-fonts-lora-inter|ADR-0013]] · Facts: [[R-fonts-mongolian-cyrillic]]
 
 Colors: bg #0A0E0C; surface #121815; surfaceRaised #1A221E; hairline rgba(243,239,230,0.08); textPrimary #F3EFE6; textSecondary #A7AFA9; textTertiary #6E7771; accent #D4AF6A; accentPressed #B8934F; onAccent #14110A; heritage #1F3B2E (selected chips, active-access badge); success #46A758; danger #E5484D; overlay rgba(10,14,12,0.72).
 
@@ -31,6 +40,8 @@ Motif: a single thin mountain-line SVG, used only on empty states, auth screens 
 
 # App screens
 
+Decisions: [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]] (no payment UI) · [[ADR-0011-audio-first-media-asset|ADR-0011]]
+
 Auth: Welcome (motif, app name in the display font, "Нэвтрэх" primary, "Бүртгүүлэх" secondary), Login, Register, Email code (6 boxes), Complete profile, Forgot password, Device limit (list + remove).
 
 Tabs: Нүүр / Сан / Хадгалсан / Профайл.
@@ -50,6 +61,8 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login, Email code, Plans, Pay (bank details + copy buttons + large referenceCode + steps), Submitted (status timeline: Хүлээгдэж байна → Шалгаж байна → Идэвхжсэн), My account (status, end date, renew), Privacy, Terms, Delete account.
 
 # Admin screens
+
+Decisions: [[ADR-0014-admin-light-theme|ADR-0014]] · Facts: [[R-admin-light-contrast]]
 
 Light, dense, functional. Dashboard counters, Payments queue (table + side panel with receipt image), Users, Episodes, Categories, Upload, Audit log.
 

@@ -41,3 +41,8 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# obsidian per-user state
+docs/.obsidian/workspace*.json
+docs/.obsidian/cache
+docs/.trash/
