@@ -29,7 +29,7 @@ tags: [index]
 | ADR-0006 | [[ADR-0006-manual-bank-transfer-web-only-payments]]  | accepted |
 | ADR-0007 | [[ADR-0007-access-model-reference-codes]]            | accepted |
 | ADR-0008 | [[ADR-0008-auth-primitives-two-devices]]             | accepted |
-| ADR-0009 | [[ADR-0009-social-login-feature-flag]]               | proposed |
+| ADR-0009 | [[ADR-0009-social-login-feature-flag]]               | accepted |
 | ADR-0010 | [[ADR-0010-reliability-jobs-cron-idempotency]]       | accepted |
 | ADR-0011 | [[ADR-0011-audio-first-media-asset]]                 | accepted |
 | ADR-0012 | [[ADR-0012-design-dark-theme-inspiration-only]]      | accepted |
@@ -38,6 +38,8 @@ tags: [index]
 | ADR-0015 | [[ADR-0015-local-first-android-smoke-test]]          | accepted |
 | ADR-0016 | [[ADR-0016-monitoring-logs-alert-emails]]            | accepted |
 | ADR-0017 | [[ADR-0017-toolchain-version-pins]]                  | accepted |
+| ADR-0018 | [[ADR-0018-auth-implementation-details]]             | accepted |
+| ADR-0019 | [[ADR-0019-social-login-implementation]]             | accepted |
 
 ## Research
 
@@ -46,6 +48,7 @@ tags: [index]
 | [[R-account-deletion-stores]]      | TO-VERIFY  | —             |
 | [[R-admin-light-contrast]]         | VERIFIED   | —             |
 | [[R-apple-login-services-4-8]]     | VERIFIED   | 2027-01-06    |
+| [[R-apple-id-token-verification]]  | VERIFIED   | 2027-01-06    |
 | [[R-apple-no-payment-ui]]          | ASSUMPTION | —             |
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
@@ -55,6 +58,7 @@ tags: [index]
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |
+| [[R-google-id-token-verification]] | TO-VERIFY  | 2026-12-07    |
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
 | [[R-hosting-limits]]               | TO-VERIFY  | —             |

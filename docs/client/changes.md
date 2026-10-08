@@ -10,10 +10,10 @@ Every client request that changes scope is recorded here before any code. Templa
 ### 2026-10-08: Google / Apple login
 
 - **Client asked:** sign in with Google (and Apple on iOS).
-- **In scope:** no; optional add-on ([[SPEC#Workflows]] C, [[ADR-0009-social-login-feature-flag|ADR-0009]])
-- **Price:** ~500,000 ₮ as an add-on, or deferred to phase 2
-- **Status:** proposed
-- **Notes:** if Google is offered on iOS, Sign in with Apple is mandatory ([[R-apple-login-services-4-8]]). [[open-questions]] #10.
+- **In scope:** no; paid add-on ([[SPEC#Workflows]] C, [[ADR-0009-social-login-feature-flag|ADR-0009]])
+- **Price:** ~500,000 ₮ as an add-on
+- **Status:** accepted as a paid add-on (decision relayed by Ganaa on 2026-10-08; phase 2 not chosen). Written confirmation and the final price are still to be added to [[approvals]].
+- **Notes:** if Google is offered on iOS, Sign in with Apple is mandatory ([[R-apple-login-services-4-8]]). [[open-questions]] #10. API built behind `SOCIAL_LOGIN` ([[ADR-0019-social-login-implementation|ADR-0019]]).
 
 ### 2026-10-08: Offline downloads
 
