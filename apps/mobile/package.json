@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/lora": "^0.4.2",
     "@ongod/shared": "workspace:*",
     "@ongod/tokens": "workspace:*",
     "expo": "~57.0.27",

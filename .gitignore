@@ -5,6 +5,8 @@ node_modules/
 dist/
 build/
 coverage/
+playwright-report/
+test-results/
 *.tsbuildinfo
 
 # env: never commit secrets, keep the example

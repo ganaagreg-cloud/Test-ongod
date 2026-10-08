@@ -49,7 +49,10 @@ pnpm --filter @ongod/mobile ios     # macOS only
 pnpm typecheck
 pnpm lint
 pnpm format:check   # pnpm format to fix
+pnpm test:e2e       # Playwright (first time: pnpm --filter @ongod/portal test:e2e:install)
 ```
+
+`pnpm test:e2e` opens the dev-only page `/dev/ui` in the portal, checks that Lora and Inter render Mongolian Ө/Ү, and saves `docs/screens/font-check-web.png`.
 
 ## Build and start (production)
 
@@ -60,4 +63,6 @@ pnpm start   # node apps/api/dist/server.js
 
 ## Design tokens
 
-Edit `packages/tokens/src/index.ts`, then run `pnpm --filter @ongod/tokens build` to regenerate `packages/tokens/css/tokens.css`.
+Edit `packages/tokens/src/index.ts`, then run `pnpm --filter @ongod/tokens build` to regenerate `packages/tokens/css/tokens.css` and `packages/tokens/css/fonts.css`.
+
+Fonts: mobile loads Lora/Inter from `@expo-google-fonts` (one family name per weight, see `nativeFontFamily`). Web self-hosts them from Fontsource via the generated `fonts.css` (latin, cyrillic and cyrillic-ext subsets; Mongolian Ө/Ү are only in cyrillic-ext).

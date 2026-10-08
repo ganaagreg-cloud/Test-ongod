@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, layout, typeScale } from '@ongod/tokens';
+import { colors, layout, nativeTextStyle } from '@ongod/tokens';
 import { mn } from '../src/i18n/mn';
 
 export default function Index() {
@@ -20,6 +20,6 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
-    ...typeScale.display,
+    ...nativeTextStyle('display'),
   },
 });

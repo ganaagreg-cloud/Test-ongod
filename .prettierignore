@@ -3,4 +3,6 @@ dist
 build
 .expo
 pnpm-lock.yaml
-packages/tokens/css/tokens.css
+packages/tokens/css/
+playwright-report
+test-results

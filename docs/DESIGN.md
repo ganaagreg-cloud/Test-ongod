@@ -6,7 +6,7 @@ Audio-first, calm, premium, Mongolian heritage without kitsch. One dark theme on
 
 Colors: bg #0A0E0C; surface #121815; surfaceRaised #1A221E; hairline rgba(243,239,230,0.08); textPrimary #F3EFE6; textSecondary #A7AFA9; textTertiary #6E7771; accent #D4AF6A; accentPressed #B8934F; onAccent #14110A; heritage #1F3B2E (selected chips, active-access badge); success #46A758; danger #E5484D; overlay rgba(10,14,12,0.72).
 
-Typography: display = Lora (serif), only for screen titles and for episode titles on the player; UI = Inter. Scale: display 32/38, h1 24/30, h2 20/26, body 16/24, small 14/20, caption 12/16. Never below 12. VERIFY that both fonts render Mongolian Cyrillic: render the test string "Өвөг Үүл өөрөө үүрд ӨҮ" and take a screenshot; if a glyph falls back, pick another font and tell me.
+Typography: display = Lora (serif), only for screen titles and for episode titles on the player; UI = Inter. Scale: display 32/38, h1 24/30, h2 20/26, body 16/24, small 14/20, caption 12/16. Never below 12. VERIFY that both fonts render Mongolian Cyrillic: render the test string "Өвөг Үүл өөрөө үүрд ӨҮ" and take a screenshot; if a glyph falls back, pick another font and tell me. Web must load the cyrillic-ext subset; Mongolian Ө/Ү are not in the cyrillic subset.
 
 Spacing (4 pt grid): 4, 8, 12, 16, 20, 24, 32, 40, 56. Screen side padding 20.
 

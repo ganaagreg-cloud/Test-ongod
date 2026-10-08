@@ -18,20 +18,53 @@ export const colors = {
   overlay: 'rgba(10,14,12,0.72)',
 } as const;
 
+/** Web family names (Fontsource @font-face). */
 export const fontFamily = {
   display: 'Lora',
   ui: 'Inter',
 } as const;
 
+export type FontRole = keyof typeof fontFamily;
+
+/** Weights loaded per family. Web loads the same weights via Fontsource. */
+export const fontWeights = {
+  display: [400, 600],
+  ui: [400, 500, 600],
+} as const;
+
+export type FontWeight<R extends FontRole = FontRole> = (typeof fontWeights)[R][number];
+
+/**
+ * Native family names, one per weight: Android does not synthesize weights from one family,
+ * so React Native styles set fontFamily per weight and never set fontWeight.
+ * Names match the keys loaded with expo-font from @expo-google-fonts.
+ */
+export const nativeFontFamily = {
+  display: { 400: 'Lora_400Regular', 600: 'Lora_600SemiBold' },
+  ui: { 400: 'Inter_400Regular', 500: 'Inter_500Medium', 600: 'Inter_600SemiBold' },
+} as const satisfies { [R in FontRole]: Record<FontWeight<R>, string> };
+
 /** fontSize / lineHeight in pt (px on web). Never go below caption. */
 export const typeScale = {
-  display: { fontSize: 32, lineHeight: 38 },
-  h1: { fontSize: 24, lineHeight: 30 },
-  h2: { fontSize: 20, lineHeight: 26 },
-  body: { fontSize: 16, lineHeight: 24 },
-  small: { fontSize: 14, lineHeight: 20 },
-  caption: { fontSize: 12, lineHeight: 16 },
-} as const;
+  display: { font: 'display', weight: 600, fontSize: 32, lineHeight: 38 },
+  h1: { font: 'ui', weight: 600, fontSize: 24, lineHeight: 30 },
+  h2: { font: 'ui', weight: 600, fontSize: 20, lineHeight: 26 },
+  body: { font: 'ui', weight: 400, fontSize: 16, lineHeight: 24 },
+  small: { font: 'ui', weight: 400, fontSize: 14, lineHeight: 20 },
+  caption: { font: 'ui', weight: 500, fontSize: 12, lineHeight: 16 },
+} as const satisfies Record<
+  string,
+  { font: FontRole; weight: number; fontSize: number; lineHeight: number }
+>;
+
+export type TextStyleName = keyof typeof typeScale;
+
+/** React Native text style for a type-scale entry (fontFamily per weight, no fontWeight). */
+export function nativeTextStyle(name: TextStyleName) {
+  const { font, weight, fontSize, lineHeight } = typeScale[name];
+  const families: Record<number, string> = nativeFontFamily[font];
+  return { fontFamily: families[weight]!, fontSize, lineHeight };
+}
 
 /** 4 pt grid. */
 export const spacing = {
@@ -75,5 +108,15 @@ export const layout = {
   coverRadius: 12,
 } as const;
 
-export const tokens = { colors, fontFamily, typeScale, spacing, radius, motion, layout } as const;
+export const tokens = {
+  colors,
+  fontFamily,
+  fontWeights,
+  nativeFontFamily,
+  typeScale,
+  spacing,
+  radius,
+  motion,
+  layout,
+} as const;
 export type Tokens = typeof tokens;
