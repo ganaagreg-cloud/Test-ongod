@@ -1,35 +1,85 @@
-import Fastify, { type FastifyError } from 'fastify';
-import type { ErrorResponse } from '@ongod/shared';
+import { randomUUID } from 'node:crypto';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import Fastify, { type FastifyBaseLogger, type FastifyError } from 'fastify';
+import { cronTasks, type CronTask } from './cron/tasks';
+import type { Db } from './db';
+import type { Env } from './env';
+import { errorBody, toErrorReply } from './errors';
+import { mn } from './i18n/mn';
+import type { JobWorker } from './jobs/worker';
+import { createLogger, type Logger } from './logger';
+import { cronRoutes } from './routes/cron';
+import { appConfigRoutes, healthRoutes } from './routes/system';
+import type { Reporter } from './sentry';
+import { defaultStaticDirs, registerStatic } from './static';
 
-export function buildApp() {
-  const app = Fastify({ logger: true });
+export interface AppDeps {
+  env: Env;
+  db: Db;
+  logger?: Logger;
+  worker?: JobWorker;
+  report?: Reporter;
+  cronTasks?: CronTask[];
+  staticDirs?: { portal: string; admin: string };
+}
 
-  // Every error leaves the API as { error: { code, message } }.
-  app.setNotFoundHandler(async (_req, reply) => {
-    const body: ErrorResponse = { error: { code: 'NOT_FOUND', message: 'Not found' } };
-    return reply.code(404).send(body);
+const REQUEST_ID = /^[\w-]{1,64}$/;
+
+export async function buildApp(deps: AppDeps) {
+  const { env, db } = deps;
+
+  const app = Fastify({
+    loggerInstance: (deps.logger ?? createLogger(env)) as FastifyBaseLogger,
+    trustProxy: env.TRUST_PROXY,
+    // Reuse a sane incoming X-Request-Id (from a proxy), otherwise generate one.
+    genReqId: (req) => {
+      const incoming = req.headers['x-request-id'];
+      return typeof incoming === 'string' && REQUEST_ID.test(incoming) ? incoming : randomUUID();
+    },
   });
 
-  app.setErrorHandler<FastifyError>(async (err, req, reply) => {
-    const status = err.statusCode && err.statusCode >= 400 ? err.statusCode : 500;
-    if (status >= 500) req.log.error(err);
-    const body: ErrorResponse = {
-      error: {
-        code: status >= 500 ? 'INTERNAL' : (err.code ?? 'BAD_REQUEST'),
-        message: status >= 500 ? 'Internal server error' : err.message,
-      },
-    };
-    return reply.code(status).send(body);
+  app.addHook('onSend', async (req, reply) => {
+    reply.header('x-request-id', req.id);
   });
 
-  app.register(
+  await app.register(helmet);
+  await app.register(cors, {
+    origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  });
+  await app.register(rateLimit, {
+    max: env.RATE_LIMIT_MAX,
+    timeWindow: env.RATE_LIMIT_WINDOW,
+  });
+
+  app.setErrorHandler<FastifyError>((err, req, reply) =>
+    toErrorReply(err, req, reply, deps.report),
+  );
+
+  const spaFallback = env.SERVE_STATIC
+    ? await registerStatic(app, deps.staticDirs ?? defaultStaticDirs)
+    : undefined;
+
+  app.setNotFoundHandler((req, reply) => {
+    if (spaFallback?.(req, reply)) return;
+    return reply.code(404).send(errorBody('NOT_FOUND', mn.errors.NOT_FOUND));
+  });
+
+  await app.register(healthRoutes, { db });
+  await app.register(
     async (v1) => {
-      v1.get('/health', async () => ({ ok: true }));
+      await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
+      await v1.register(cronRoutes, {
+        db,
+        secret: env.CRON_SECRET,
+        tasks: deps.cronTasks ?? cronTasks,
+        worker: deps.worker,
+      });
     },
     { prefix: '/v1' },
   );
-
-  // Later: portal static build at /, admin static build at /admin (one process, shared hosting).
 
   return app;
 }

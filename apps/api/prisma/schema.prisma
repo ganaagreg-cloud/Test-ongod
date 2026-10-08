@@ -1,0 +1,355 @@
+// Data model: docs/SPEC.md "Data model". Keep this file in sync with it.
+// Portable: only Prisma scalar types; @db.Text is used for long strings (MySQL and PostgreSQL both have TEXT).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserStatus {
+  PENDING_PROFILE
+  ACTIVE
+  DISABLED
+  DELETED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  OWNER
+}
+
+enum AuthProvider {
+  GOOGLE
+  APPLE
+}
+
+enum EmailCodePurpose {
+  VERIFY
+  RESET
+  CHANGE_EMAIL
+}
+
+enum SubscriptionStatus {
+  PENDING_PAYMENT
+  PAYMENT_SUBMITTED
+  ACTIVE
+  EXPIRED
+  REJECTED
+  CANCELLED
+  REVOKED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  QPAY
+  MANUAL_GRANT
+}
+
+// SPEC lists Payment.status without values.
+enum PaymentStatus {
+  COMPLETED
+  REFUNDED
+}
+
+enum EpisodeStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaKind {
+  AUDIO
+  VIDEO
+}
+
+enum MediaProvider {
+  BUNNY_STORAGE
+  BUNNY_STREAM
+}
+
+enum MediaStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+model User {
+  id              String     @id @default(cuid())
+  /// Stored lowercase.
+  username        String     @unique
+  /// Stored lowercase.
+  email           String     @unique
+  emailVerifiedAt DateTime?
+  passwordHash    String?
+  firstName       String
+  lastName        String
+  phone           String
+  status          UserStatus @default(ACTIVE)
+  role            UserRole   @default(USER)
+  /// Cache of the end of the latest ACTIVE subscription period.
+  accessUntil     DateTime?
+  totpSecret      String?
+  createdAt       DateTime   @default(now())
+  deletedAt       DateTime?
+
+  identities       AuthIdentity[]
+  sessions         Session[]
+  devices          Device[]
+  emailCodes       EmailCode[]
+  subscriptions    Subscription[]     @relation("SubscriptionUser")
+  decisions        Subscription[]     @relation("SubscriptionDecidedBy")
+  playbackProgress PlaybackProgress[]
+  savedEpisodes    SavedEpisode[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+}
+
+model AuthIdentity {
+  id              String       @id @default(cuid())
+  userId          String
+  provider        AuthProvider
+  providerSubject String
+  email           String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userId])
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  deviceId         String
+  /// SHA-256 of the opaque refresh token.
+  refreshTokenHash String    @unique
+  familyId         String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deviceId])
+  @@index([familyId])
+}
+
+model Device {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceId   String
+  platform   String
+  model      String?
+  pushToken  String?
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+}
+
+model EmailCode {
+  id        String           @id @default(cuid())
+  userId    String
+  purpose   EmailCodePurpose
+  codeHash  String
+  newEmail  String?
+  expiresAt DateTime
+  attempts  Int              @default(0)
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+model Plan {
+  id           String  @id @default(cuid())
+  name         String
+  durationDays Int
+  priceMnt     Int
+  active       Boolean @default(true)
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  userId         String
+  planId         String
+  status         SubscriptionStatus @default(PENDING_PAYMENT)
+  /// ONG-XXXXX
+  referenceCode  String             @unique
+  amountMnt      Int
+  payerNote      String?            @db.Text
+  transferAt     DateTime?
+  proofImagePath String?
+  submittedAt    DateTime?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  decidedById    String?
+  decidedAt      DateTime?
+  rejectReason   String?            @db.Text
+  createdAt      DateTime           @default(now())
+
+  user      User      @relation("SubscriptionUser", fields: [userId], references: [id])
+  plan      Plan      @relation(fields: [planId], references: [id])
+  decidedBy User?     @relation("SubscriptionDecidedBy", fields: [decidedById], references: [id])
+  payments  Payment[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  subscriptionId String
+  method         PaymentMethod
+  amountMnt      Int
+  providerRef    String?
+  status         PaymentStatus @default(COMPLETED)
+  createdAt      DateTime      @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId])
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  name      String
+  slug      String  @unique
+  sortOrder Int     @default(0)
+  coverPath String?
+
+  episodes Episode[]
+}
+
+model Episode {
+  id           String        @id @default(cuid())
+  categoryId   String
+  title        String
+  description  String        @db.Text
+  coverPath    String
+  status       EpisodeStatus @default(DRAFT)
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+  createdAt    DateTime      @default(now())
+
+  category         Category           @relation(fields: [categoryId], references: [id])
+  mediaAssets      MediaAsset[]
+  playbackProgress PlaybackProgress[]
+  savedBy          SavedEpisode[]
+
+  @@index([status, publishedAt])
+  @@index([status, scheduledFor])
+  @@index([categoryId])
+}
+
+model MediaAsset {
+  id          String        @id @default(cuid())
+  episodeId   String
+  kind        MediaKind
+  provider    MediaProvider
+  path        String
+  status      MediaStatus   @default(UPLOADING)
+  failReason  String?       @db.Text
+  sizeBytes   BigInt?
+  durationSec Int?
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([episodeId])
+}
+
+model PlaybackProgress {
+  userId      String
+  episodeId   String
+  positionSec Int
+  completed   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, episodeId])
+  @@index([episodeId])
+}
+
+model SavedEpisode {
+  userId    String
+  episodeId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, episodeId])
+  @@index([episodeId])
+}
+
+/// userId null = broadcast.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  title     String
+  body      String    @db.Text
+  data      Json?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String
+  /// JSON-encoded payload, validated by the job handler's zod schema.
+  payload     String    @db.Text
+  status      JobStatus @default(QUEUED)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  lastError   String?   @db.Text
+
+  @@index([status, runAt])
+  @@index([status, lockedAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  targetType String
+  targetId   String
+  data       Json
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([actorId, createdAt])
+}
+
+model AppConfig {
+  key   String @id
+  value String @db.Text
+}

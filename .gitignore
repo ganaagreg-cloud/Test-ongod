@@ -24,6 +24,9 @@ apps/mobile/expo-env.d.ts
 *.key
 *.mobileprovision
 
+# generated prisma client (pnpm install / db:generate)
+apps/api/src/generated/
+
 # uploads / local data
 uploads/
 
