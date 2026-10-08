@@ -3,6 +3,11 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyBaseLogger, type FastifyError } from 'fastify';
+import { createAuthGuard } from './auth/guard';
+import { AuthLimiter } from './auth/rate-limit';
+import { createAuthService } from './auth/service';
+import { createSocialVerifiers, type SocialVerifiers } from './auth/social';
+import { createSocialService } from './auth/social-service';
 import { cronTasks, type CronTask } from './cron/tasks';
 import type { Db } from './db';
 import type { Env } from './env';
@@ -10,7 +15,10 @@ import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
 import { mn } from './i18n/mn';
 import type { JobWorker } from './jobs/worker';
 import { createLogger, type Logger } from './logger';
+import { authRoutes } from './routes/auth';
 import { cronRoutes } from './routes/cron';
+import { meRoutes } from './routes/me';
+import { socialRoutes } from './routes/social';
 import { appConfigRoutes, healthRoutes } from './routes/system';
 import { defaultStaticDirs, registerStatic } from './static';
 
@@ -23,6 +31,8 @@ export interface AppDeps {
   report?: HttpErrorReporter;
   cronTasks?: CronTask[];
   staticDirs?: { portal: string; admin: string };
+  /** Google/Apple ID-token verifiers; tests pass fakes. Only used when SOCIAL_LOGIN is on. */
+  socialVerifiers?: SocialVerifiers;
 }
 
 const REQUEST_ID = /^[\w-]{1,64}$/;
@@ -70,6 +80,23 @@ export async function buildApp(deps: AppDeps) {
   await app.register(healthRoutes, { db });
   await app.register(
     async (v1) => {
+      const auth = createAuthService({ db, env });
+      const limiter = new AuthLimiter({
+        ipMax: env.AUTH_RATE_LIMIT_IP_MAX,
+        identifierMax: env.AUTH_RATE_LIMIT_IDENTIFIER_MAX,
+        windowSeconds: env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+      });
+      await v1.register(authRoutes, { auth, limiter });
+      const requireAuth = createAuthGuard({ db, env });
+      await v1.register(meRoutes, { auth, limiter, requireAuth });
+      if (env.SOCIAL_LOGIN) {
+        await v1.register(socialRoutes, {
+          social: createSocialService({ db, auth }),
+          verifiers: deps.socialVerifiers ?? createSocialVerifiers(env),
+          limiter,
+          requireAuth,
+        });
+      }
       await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
       await v1.register(cronRoutes, {
         db,

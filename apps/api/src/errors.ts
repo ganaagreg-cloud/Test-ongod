@@ -13,13 +13,14 @@ export class AppError extends Error {
     readonly statusCode: number,
     readonly code: ErrorCode | (string & {}),
     message?: string,
+    readonly details?: unknown,
   ) {
     super(message ?? (mn.errors as Record<string, string>)[code] ?? code);
   }
 }
 
-export const errorBody = (code: string, message: string): ErrorResponse => ({
-  error: { code, message },
+export const errorBody = (code: string, message: string, details?: unknown): ErrorResponse => ({
+  error: details === undefined ? { code, message } : { code, message, details },
 });
 
 const codeForStatus = (status: number): ErrorCode => {
@@ -43,7 +44,7 @@ export function toErrorReply(
   report?: HttpErrorReporter,
 ) {
   if (err instanceof AppError) {
-    return reply.code(err.statusCode).send(errorBody(err.code, err.message));
+    return reply.code(err.statusCode).send(errorBody(err.code, err.message, err.details));
   }
   if (err instanceof ZodError) {
     req.log.info({ issues: err.issues }, 'validation failed');

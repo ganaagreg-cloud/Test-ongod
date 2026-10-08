@@ -15,6 +15,7 @@ export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     PUBLIC_BASE_URL: 'http://localhost:3000',
     DATABASE_URL: url,
     CRON_SECRET,
+    JWT_ACCESS_SECRET: 'test-jwt-secret-0123456789abcdef012345',
     SMTP_HOST: 'localhost',
     SMTP_PORT: '1025',
     MAIL_FROM: 'Онгод <no-reply@example.com>',
