@@ -9,6 +9,14 @@ export const testDb = createDb(url);
 
 export const CRON_SECRET = 'test-cron-secret-0123456789abcdef0123';
 
+/** Fake Bunny settings: URLs are signed for real, nothing talks to Bunny. */
+export const BUNNY_TEST = {
+  BUNNY_STORAGE_ZONE: 'test-zone',
+  BUNNY_STORAGE_API_KEY: 'test-storage-password',
+  BUNNY_PULL_ZONE_HOST: 'test-zone.b-cdn.net',
+  BUNNY_CDN_TOKEN_KEY: 'test-token-key-0123456789abcdef',
+};
+
 export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env {
   return parseEnv({
     NODE_ENV: 'test',
@@ -20,6 +28,7 @@ export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     SMTP_PORT: '1025',
     MAIL_FROM: 'Онгод <no-reply@example.com>',
     CORS_ORIGINS: 'http://localhost:5173',
+    ...BUNNY_TEST,
     ...overrides,
   });
 }

@@ -41,6 +41,7 @@ tags: [index]
 | ADR-0018 | [[ADR-0018-auth-implementation-details]]             | accepted |
 | ADR-0019 | [[ADR-0019-social-login-implementation]]             | accepted |
 | ADR-0020 | [[ADR-0020-bunny-signed-urls-hs256-no-ip]]           | accepted |
+| ADR-0021 | [[ADR-0021-catalog-and-playback-rules]]              | accepted |
 
 ## Research
 

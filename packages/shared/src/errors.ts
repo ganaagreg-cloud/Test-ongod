@@ -27,6 +27,10 @@ export const errorCodes = [
   'SOCIAL_EMAIL_REQUIRED',
   'IDENTITY_TAKEN',
   'LAST_LOGIN_METHOD',
+  // Playback (SPEC G)
+  'NO_ACCESS',
+  'DEVICE_NOT_REGISTERED',
+  'MEDIA_NOT_READY',
 ] as const;
 
 export const errorCodeSchema = z.enum(errorCodes);

@@ -8,14 +8,18 @@ import { AuthLimiter } from './auth/rate-limit';
 import { createAuthService } from './auth/service';
 import { createSocialVerifiers, type SocialVerifiers } from './auth/social';
 import { createSocialService } from './auth/social-service';
+import { createMediaUrls, type MediaUrls } from './catalog/media';
+import { createCatalogService } from './catalog/service';
 import { cronTasks, type CronTask } from './cron/tasks';
 import type { Db } from './db';
-import type { Env } from './env';
+import { missingBunnyKeys, requireBunny, type Env } from './env';
 import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
 import { mn } from './i18n/mn';
 import type { JobWorker } from './jobs/worker';
+import { createBunnySigner } from './lib/bunnyToken';
 import { createLogger, type Logger } from './logger';
 import { authRoutes } from './routes/auth';
+import { catalogRoutes } from './routes/catalog';
 import { cronRoutes } from './routes/cron';
 import { meRoutes } from './routes/me';
 import { socialRoutes } from './routes/social';
@@ -33,9 +37,20 @@ export interface AppDeps {
   staticDirs?: { portal: string; admin: string };
   /** Google/Apple ID-token verifiers; tests pass fakes. Only used when SOCIAL_LOGIN is on. */
   socialVerifiers?: SocialVerifiers;
+  /** Signed Bunny URLs; built from env by default. Tests can pass a stub. */
+  media?: MediaUrls;
+  /** Clock for the catalog (visibility, "this week", play expiry); tests pass a fixed one. */
+  now?: () => Date;
 }
 
 const REQUEST_ID = /^[\w-]{1,64}$/;
+
+/** Signed-URL maker from the BUNNY_* env; without them covers are null and playback is a 503. */
+function mediaFromEnv(env: Env): MediaUrls {
+  if (missingBunnyKeys(env).length > 0) return createMediaUrls(undefined);
+  const bunny = requireBunny(env);
+  return createMediaUrls(createBunnySigner({ host: bunny.pullZoneHost, tokenKey: bunny.tokenKey }));
+}
 
 export async function buildApp(deps: AppDeps) {
   const { env, db } = deps;
@@ -97,6 +112,14 @@ export async function buildApp(deps: AppDeps) {
           requireAuth,
         });
       }
+      await v1.register(catalogRoutes, {
+        catalog: createCatalogService({
+          db,
+          media: deps.media ?? mediaFromEnv(env),
+          now: deps.now,
+        }),
+        requireAuth,
+      });
       await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
       await v1.register(cronRoutes, {
         db,

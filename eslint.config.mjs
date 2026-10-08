@@ -16,6 +16,8 @@ export default tseslint.config(
       '**/android/**',
       '**/coverage/**',
       'apps/api/src/generated/**',
+      // Bunny's reference signer, downloaded by a script (not our code, not committed).
+      'apps/api/test/fixtures/bunny-reference/**',
       'apps/mobile/expo-env.d.ts',
     ],
   },

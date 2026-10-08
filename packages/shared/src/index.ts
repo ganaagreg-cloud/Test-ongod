@@ -2,3 +2,4 @@
 export * from './errors';
 export * from './app-config';
 export * from './auth';
+export * from './catalog';

@@ -14,6 +14,17 @@ const csv = z
 
 const emptyToUndefined = (v: unknown) => (v === '' ? undefined : v);
 
+/** Settings that media features (covers, playback, uploads) cannot work without. */
+const BUNNY_KEYS = [
+  'BUNNY_STORAGE_ZONE',
+  'BUNNY_STORAGE_API_KEY',
+  'BUNNY_PULL_ZONE_HOST',
+  'BUNNY_CDN_TOKEN_KEY',
+] as const;
+
+export const missingBunnyKeys = (env: Partial<Record<(typeof BUNNY_KEYS)[number], unknown>>) =>
+  BUNNY_KEYS.filter((k) => !env[k]);
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -84,6 +95,12 @@ export const envSchema = z
     SENTRY_ENVIRONMENT: z.preprocess(emptyToUndefined, z.string().optional()),
   })
   .superRefine((env, ctx) => {
+    // Without Bunny there are no covers and no playback: refuse to start in production.
+    if (env.NODE_ENV === 'production') {
+      for (const key of missingBunnyKeys(env)) {
+        ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
+      }
+    }
     // Apple 4.8: Google on iOS needs Sign in with Apple, so the flag needs both (ADR-0009).
     if (!env.SOCIAL_LOGIN) return;
     for (const key of ['GOOGLE_CLIENT_IDS', 'APPLE_CLIENT_IDS'] as const) {
@@ -99,16 +116,9 @@ export const envSchema = z
 
 export type Env = z.infer<typeof envSchema>;
 
-const BUNNY_KEYS = [
-  'BUNNY_STORAGE_ZONE',
-  'BUNNY_STORAGE_API_KEY',
-  'BUNNY_PULL_ZONE_HOST',
-  'BUNNY_CDN_TOKEN_KEY',
-] as const;
-
 /** The Bunny settings every media feature needs; throws naming the missing keys (never values). */
 export function requireBunny(env: Env) {
-  const missing = BUNNY_KEYS.filter((k) => !env[k]);
+  const missing = missingBunnyKeys(env);
   if (missing.length > 0) throw new Error(`Missing Bunny env: ${missing.join(', ')}`);
   return {
     storageZone: env.BUNNY_STORAGE_ZONE!,

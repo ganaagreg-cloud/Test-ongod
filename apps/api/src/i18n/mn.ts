@@ -30,6 +30,10 @@ export const mn = {
     SOCIAL_EMAIL_REQUIRED: 'Google/Apple-ээс имэйл хаяг ирсэнгүй.',
     IDENTITY_TAKEN: 'Энэ Google/Apple бүртгэл өөр эсвэл ижил хэрэглэгчид холбогдсон байна.',
     LAST_LOGIN_METHOD: 'Нууц үггүй бол сүүлчийн нэвтрэх аргыг салгах боломжгүй.',
+    // No price, plan or payment hint: the apps must not show any (SPEC, DESIGN "No-access state").
+    NO_ACCESS: 'Таны эрх идэвхгүй байна.',
+    DEVICE_NOT_REGISTERED: 'Энэ төхөөрөмж бүртгэлгүй байна. Дахин нэвтэрнэ үү.',
+    MEDIA_NOT_READY: 'Аудио бэлэн болоогүй байна.',
   },
 
   email: {
