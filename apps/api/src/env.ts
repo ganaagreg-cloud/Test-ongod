@@ -25,6 +25,12 @@ export const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_WINDOW: z.string().default('1 minute'),
   SERVE_STATIC: bool.default(false),
+  LOG_FILE: z.preprocess(emptyToUndefined, z.string().optional()),
+  LOG_FILE_MAX_SIZE: z.string().default('20m'),
+  LOG_FILE_COUNT: z.coerce.number().int().positive().default(14),
+
+  ALERT_EMAILS: csv.pipe(z.array(z.email())),
+  ALERT_THROTTLE_MINUTES: z.coerce.number().int().positive().default(60),
 
   DATABASE_URL: z.string().regex(/^mysql:\/\//, 'must be a mysql:// URL'),
 

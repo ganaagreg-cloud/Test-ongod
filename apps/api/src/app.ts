@@ -6,13 +6,12 @@ import Fastify, { type FastifyBaseLogger, type FastifyError } from 'fastify';
 import { cronTasks, type CronTask } from './cron/tasks';
 import type { Db } from './db';
 import type { Env } from './env';
-import { errorBody, toErrorReply } from './errors';
+import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
 import { mn } from './i18n/mn';
 import type { JobWorker } from './jobs/worker';
 import { createLogger, type Logger } from './logger';
 import { cronRoutes } from './routes/cron';
 import { appConfigRoutes, healthRoutes } from './routes/system';
-import type { Reporter } from './sentry';
 import { defaultStaticDirs, registerStatic } from './static';
 
 export interface AppDeps {
@@ -20,7 +19,8 @@ export interface AppDeps {
   db: Db;
   logger?: Logger;
   worker?: JobWorker;
-  report?: Reporter;
+  /** Unexpected (5xx) request errors. */
+  report?: HttpErrorReporter;
   cronTasks?: CronTask[];
   staticDirs?: { portal: string; admin: string };
 }

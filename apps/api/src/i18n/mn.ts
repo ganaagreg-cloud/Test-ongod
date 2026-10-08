@@ -1,5 +1,9 @@
 // All user-facing API text (error messages, emails) in Mongolian.
 
+/** "2026-10-08 14:05:09" in Ulaanbaatar time. */
+const ulaanbaatarTime = (iso: string) =>
+  new Date(iso).toLocaleString('sv-SE', { timeZone: 'Asia/Ulaanbaatar' });
+
 export const mn = {
   errors: {
     NOT_FOUND: 'Хайсан зүйл олдсонгүй.',
@@ -43,6 +47,25 @@ export const mn = {
       subject: 'Онгод: эрх дуусах гэж байна',
       body: (p: { firstName: string; endsAt: string }) =>
         `Сайн байна уу, ${p.firstName}.\n\nТаны эрх ${p.endsAt}-нд дуусна.`,
+    },
+    errorAlert: {
+      subject: 'Онгод: серверт алдаа гарлаа',
+      body: (p: {
+        kind: 'http' | 'job';
+        summary: string;
+        requestId?: string;
+        occurredAt: string;
+        throttleMinutes: number;
+      }) =>
+        [
+          p.kind === 'http' ? 'Хүсэлт боловсруулахад алдаа гарлаа.' : 'Ажил (job) бүтэлгүйтлээ.',
+          `Хэзээ: ${ulaanbaatarTime(p.occurredAt)} (Улаанбаатар)`,
+          `Дэлгэрэнгүй:\n${p.summary}`,
+          p.requestId
+            ? `Request ID: ${p.requestId}\nЛог файлаас энэ ID-гаар хайж дэлгэрэнгүйг харна уу.`
+            : 'Лог файлаас дэлгэрэнгүйг харна уу.',
+          `Ижил алдааны дараагийн мэдэгдэл хамгийн багадаа ${p.throttleMinutes} минутын дараа ирнэ.`,
+        ].join('\n\n'),
     },
   },
 } as const;

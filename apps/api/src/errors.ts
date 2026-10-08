@@ -2,6 +2,10 @@ import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import type { ErrorCode, ErrorResponse } from '@ongod/shared';
 import { mn } from './i18n/mn';
+import type { HttpErrorInfo } from './monitoring/alerts';
+
+/** Called for unexpected (5xx) request errors: Sentry and/or alert emails. */
+export type HttpErrorReporter = (err: unknown, info: HttpErrorInfo) => void;
 
 /** Throw this from handlers for expected failures; the error handler renders it. */
 export class AppError extends Error {
@@ -36,7 +40,7 @@ export function toErrorReply(
   err: FastifyError | Error,
   req: FastifyRequest,
   reply: FastifyReply,
-  report?: (err: unknown) => void,
+  report?: HttpErrorReporter,
 ) {
   if (err instanceof AppError) {
     return reply.code(err.statusCode).send(errorBody(err.code, err.message));
@@ -50,7 +54,11 @@ export function toErrorReply(
     'statusCode' in err && err.statusCode && err.statusCode >= 400 ? err.statusCode : 500;
   if (status >= 500) {
     req.log.error({ err }, 'request failed');
-    report?.(err);
+    report?.(err, {
+      requestId: req.id,
+      method: req.method,
+      route: req.routeOptions.url ?? '(no route)',
+    });
   }
   const code = codeForStatus(status);
   return reply.code(status).send(errorBody(code, mn.errors[code]));

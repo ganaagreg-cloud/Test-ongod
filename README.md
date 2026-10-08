@@ -84,6 +84,13 @@ curl -fsS -X POST -H "X-Cron-Secret: $CRON_SECRET" https://<domain>/v1/cron/tick
 
 It runs the scheduled tasks (all idempotent) and also drains due jobs, so jobs still run if the host idles the Node process.
 
+## Monitoring
+
+- **Logs:** JSON lines on stdout (shown by Plesk). Set `LOG_FILE` (e.g. `/var/www/vhosts/<domain>/logs/ongod/api.log`) to also write `api.YYYY-MM-DD.N.log`, rotated daily or at `LOG_FILE_MAX_SIZE`, keeping the newest `LOG_FILE_COUNT`. Each request line has a `reqId`, also returned to clients as `X-Request-Id`.
+- **Alert emails:** set `ALERT_EMAILS` and the owner/admins get an email for every unexpected server error (5xx) and every job that fails permanently. Each email includes the request ID to search the log file with. The same error is sent at most once per `ALERT_THROTTLE_MINUTES`. Alerts go through the job queue; a failed alert never triggers another alert.
+- **Uptime:** point a free uptime checker (UptimeRobot, Plesk monitoring) at `https://<domain>/health`; it returns 503 when the database is unreachable. This also covers "database down", when alert emails cannot be queued.
+- **Sentry (optional):** set `SENTRY_DSN` to also send errors to Sentry.
+
 ## Build and start (production)
 
 ```sh

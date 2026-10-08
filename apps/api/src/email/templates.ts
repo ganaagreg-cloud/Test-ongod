@@ -13,6 +13,14 @@ export const emailTemplateSchemas = {
   paymentApproved: z.object({ firstName: name, endsAt: z.string().min(1) }),
   paymentRejected: z.object({ firstName: name, reason: z.string().min(1).max(1000) }),
   accessEnding: z.object({ firstName: name, endsAt: z.string().min(1) }),
+  /** To ALERT_EMAILS (owner/admins), see monitoring/alerts.ts. */
+  errorAlert: z.object({
+    kind: z.enum(['http', 'job']),
+    summary: z.string().max(1000),
+    requestId: z.string().optional(),
+    occurredAt: z.iso.datetime(),
+    throttleMinutes: z.number().int().positive(),
+  }),
 } as const;
 
 export type EmailTemplate = keyof typeof emailTemplateSchemas;
