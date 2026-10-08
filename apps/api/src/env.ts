@@ -55,6 +55,24 @@ export const envSchema = z
     AUTH_RATE_LIMIT_IDENTIFIER_MAX: z.coerce.number().int().positive().default(10),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(900),
 
+    // Bunny (ADR-0004/0005). Optional here; code that needs them calls requireBunny().
+    BUNNY_STORAGE_ZONE: z.preprocess(emptyToUndefined, z.string().optional()),
+    BUNNY_STORAGE_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    /** Storage region prefix: empty or "de" = Frankfurt, else uk, ny, la, sg, se, br, jh, syd. */
+    BUNNY_STORAGE_REGION: z.preprocess(
+      emptyToUndefined,
+      z.enum(['de', 'uk', 'ny', 'la', 'sg', 'se', 'br', 'jh', 'syd']).optional(),
+    ),
+    /** Pull zone hostname without scheme, e.g. ongod-dev.b-cdn.net. */
+    BUNNY_PULL_ZONE_HOST: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, 'hostname only, no scheme or path')
+        .optional(),
+    ),
+    BUNNY_CDN_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+
     SMTP_HOST: z.string().min(1),
     SMTP_PORT: z.coerce.number().int().positive(),
     SMTP_SECURE: bool.default(false),
@@ -80,6 +98,26 @@ export const envSchema = z
   });
 
 export type Env = z.infer<typeof envSchema>;
+
+const BUNNY_KEYS = [
+  'BUNNY_STORAGE_ZONE',
+  'BUNNY_STORAGE_API_KEY',
+  'BUNNY_PULL_ZONE_HOST',
+  'BUNNY_CDN_TOKEN_KEY',
+] as const;
+
+/** The Bunny settings every media feature needs; throws naming the missing keys (never values). */
+export function requireBunny(env: Env) {
+  const missing = BUNNY_KEYS.filter((k) => !env[k]);
+  if (missing.length > 0) throw new Error(`Missing Bunny env: ${missing.join(', ')}`);
+  return {
+    storageZone: env.BUNNY_STORAGE_ZONE!,
+    storageApiKey: env.BUNNY_STORAGE_API_KEY!,
+    storageRegion: env.BUNNY_STORAGE_REGION ?? 'de',
+    pullZoneHost: env.BUNNY_PULL_ZONE_HOST!,
+    tokenKey: env.BUNNY_CDN_TOKEN_KEY!,
+  };
+}
 
 /**
  * Parses env and throws with the names of invalid keys (never their values).

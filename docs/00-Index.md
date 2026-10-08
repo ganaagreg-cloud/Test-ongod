@@ -40,6 +40,7 @@ tags: [index]
 | ADR-0017 | [[ADR-0017-toolchain-version-pins]]                  | accepted |
 | ADR-0018 | [[ADR-0018-auth-implementation-details]]             | accepted |
 | ADR-0019 | [[ADR-0019-social-login-implementation]]             | accepted |
+| ADR-0020 | [[ADR-0020-bunny-signed-urls-hs256-no-ip]]           | accepted |
 
 ## Research
 
@@ -52,7 +53,7 @@ tags: [index]
 | [[R-apple-no-payment-ui]]          | ASSUMPTION | —             |
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
-| [[R-bunny-token-auth]]             | TO-VERIFY  | —             |
+| [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
 | [[R-claude-code-commands]]         | VERIFIED   | 2026-12-07    |
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
