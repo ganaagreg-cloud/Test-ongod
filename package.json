@@ -13,6 +13,7 @@
     "build": "pnpm -r --filter=!@ongod/mobile build",
     "start": "pnpm --filter @ongod/api start",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

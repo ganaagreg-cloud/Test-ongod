@@ -1,22 +1,77 @@
 // Single source of truth for design tokens (docs/DESIGN.md).
 // React Native imports these values directly; web uses the generated css/tokens.css.
 
-export const colors = {
+/** Status badge background: the status hue at 12% opacity (text uses the solid color). */
+const badgeBg = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},0.12)`;
+};
+
+const dark = {
   bg: '#0A0E0C',
   surface: '#121815',
   surfaceRaised: '#1A221E',
+  surfaceSunken: '#0A0E0C',
   hairline: 'rgba(243,239,230,0.08)',
   textPrimary: '#F3EFE6',
   textSecondary: '#A7AFA9',
   textTertiary: '#6E7771',
   accent: '#D4AF6A',
   accentPressed: '#B8934F',
+  accentText: '#D4AF6A',
   onAccent: '#14110A',
+  primary: '#D4AF6A',
+  onPrimary: '#14110A',
   heritage: '#1F3B2E',
   success: '#46A758',
   danger: '#E5484D',
+  warning: '#E0A43B',
+  info: '#6EA8FE',
+  successBg: badgeBg('#46A758'),
+  dangerBg: badgeBg('#E5484D'),
+  warningBg: badgeBg('#E0A43B'),
+  infoBg: badgeBg('#6EA8FE'),
+  focusRing: '#D4AF6A',
   overlay: 'rgba(10,14,12,0.72)',
-} as const;
+};
+
+export type ThemeColors = Record<keyof typeof dark, string>;
+export type ThemeName = 'dark' | 'light';
+
+/** Light theme: admin only. Contrast ratios are against white unless noted. */
+const light: ThemeColors = {
+  bg: '#F6F4EF',
+  surface: '#FFFFFF',
+  surfaceRaised: '#FFFFFF',
+  surfaceSunken: '#EEEBE4', // table header, input bg
+  hairline: 'rgba(20,26,23,0.10)',
+  textPrimary: '#141A17', // 17.6:1
+  textSecondary: '#4F5A54', // 7.2:1
+  textTertiary: '#5F6862', // 5.2:1 on bg, 4.8:1 on surfaceSunken
+  accent: '#D4AF6A', // backgrounds/highlights only, never text on white
+  accentPressed: '#B8934F',
+  accentText: '#8A6A2B', // links/gold text, 5.0:1
+  onAccent: '#14110A',
+  primary: '#1F3B2E', // admin primary button bg = heritage
+  onPrimary: '#FFFFFF', // 12.2:1
+  heritage: '#1F3B2E',
+  success: '#2E7D43', // 5.1:1
+  danger: '#C42B31', // 5.6:1
+  warning: '#8F5B00', // 5.7:1
+  info: '#2B5FA8', // 6.4:1
+  successBg: badgeBg('#2E7D43'),
+  dangerBg: badgeBg('#C42B31'),
+  warningBg: badgeBg('#8F5B00'),
+  infoBg: badgeBg('#2B5FA8'),
+  focusRing: '#2B5FA8',
+  overlay: 'rgba(20,26,23,0.40)',
+};
+
+/** Same keys in both themes, so components work in either. Dark is the default. */
+export const themes: Record<ThemeName, ThemeColors> = { dark, light };
+
+/** Dark theme colors (mobile and portal). */
+export const colors = dark;
 
 /** Web family names (Fontsource @font-face). */
 export const fontFamily = {
@@ -106,9 +161,11 @@ export const layout = {
   miniPlayerCover: 40,
   episodeRowCover: 64,
   coverRadius: 12,
+  focusRingWidth: 2,
 } as const;
 
 export const tokens = {
+  themes,
   colors,
   fontFamily,
   fontWeights,

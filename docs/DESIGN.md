@@ -53,6 +53,29 @@ Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login
 
 Light, dense, functional. Dashboard counters, Payments queue (table + side panel with receipt image), Users, Episodes, Categories, Upload, Audit log.
 
+Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme="light">`). It has the same token keys as the dark theme, so components work in both. Mobile and portal stay dark.
+
+Light theme colors (contrast ratios against white unless noted):
+
+- bg #F6F4EF
+- surface #FFFFFF
+- surfaceRaised #FFFFFF
+- surfaceSunken #EEEBE4 (table header, input bg)
+- hairline rgba(20,26,23,0.10)
+- textPrimary #141A17 (17.6:1)
+- textSecondary #4F5A54 (7.2:1)
+- textTertiary #5F6862 (5.2:1 on bg, 4.8:1 on surfaceSunken)
+- accent #D4AF6A (backgrounds/highlights only, never text on white)
+- accentText #8A6A2B (links/gold text, 5.0:1)
+- onAccent #14110A
+- primary #1F3B2E (admin primary button bg = heritage)
+- onPrimary #FFFFFF (12.2:1)
+- success #2E7D43 (5.1:1), danger #C42B31 (5.6:1), warning #8F5B00 (5.7:1), info #2B5FA8 (6.4:1)
+- Status badges: background = the same hue at 12% opacity (successBg, dangerBg, warningBg, infoBg), text in the solid color.
+- Focus ring: 2px #2B5FA8.
+
+Dark-theme values for the shared keys: primary = accent, onPrimary = onAccent, accentText = accent, warning #E0A43B, info #6EA8FE.
+
 # Do not
 
 - Copy any other app's logo, colors or layout.

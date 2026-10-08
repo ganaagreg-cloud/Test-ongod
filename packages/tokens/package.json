@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "tsx scripts/build-css.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/themes.test.ts"
   },
   "devDependencies": {
     "@fontsource/inter": "^5.3.0",
