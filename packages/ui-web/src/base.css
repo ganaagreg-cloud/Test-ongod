@@ -1,0 +1,104 @@
+/* Base layer for portal and admin: a reset and page primitives on the token variables
+   (packages/tokens/css/tokens.css must be loaded first). No raw colors, sizes or fonts here. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font: var(--text-body-weight) var(--text-body-size) / var(--text-body-line) var(--text-body-font);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font: var(--text-h1-weight) var(--text-h1-size) / var(--text-h1-line) var(--text-h1-font);
+}
+
+h2 {
+  font: var(--text-h2-weight) var(--text-h2-size) / var(--text-h2-line) var(--text-h2-font);
+}
+
+a {
+  color: var(--color-accent-text);
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: var(--layout-focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--layout-focus-ring-width);
+}
+
+/* Page primitives */
+.ui-page {
+  width: 100%;
+  max-width: calc(var(--layout-overlay-max-width) * 2);
+  margin-inline: auto;
+  padding: var(--space-xl) var(--layout-screen-padding);
+}
+
+.ui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ui-stack--lg {
+  gap: var(--space-xl);
+}
+
+.ui-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ui-visually-hidden {
+  position: absolute;
+  width: var(--layout-border-width);
+  height: var(--layout-border-width);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ui-skip-link {
+  position: absolute;
+  inset-inline-start: var(--space-xs);
+  inset-block-start: calc(var(--space-xxxl) * -2);
+  z-index: 1;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-small);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.ui-skip-link:focus {
+  inset-block-start: var(--space-xs);
+}

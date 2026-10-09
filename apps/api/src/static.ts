@@ -39,6 +39,8 @@ export async function registerStatic(
     root: dirs.portal,
     prefix: '/',
     index: ['index.html'],
+    // The portal build ships .br and .gz copies of its text files (see apps/portal/vite.config.ts).
+    preCompressed: true,
     setHeaders: setCacheHeaders,
   });
   await app.register(fastifyStatic, {
@@ -47,6 +49,7 @@ export async function registerStatic(
     index: ['index.html'],
     redirect: true,
     decorateReply: false,
+    preCompressed: true,
     setHeaders: setCacheHeaders,
   });
 

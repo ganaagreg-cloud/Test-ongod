@@ -11,6 +11,7 @@ import type {
 import type { Db, Prisma } from '../db';
 import { AppError } from '../errors';
 import type { Session, User } from '../generated/prisma/client';
+import { escapeLike } from '../lib/like';
 import { decodeCursor, pageAfter, type Direction, type Entry } from './cursor';
 import { PLAY_URL_TTL_MS, type MediaUrls } from './media';
 
@@ -39,12 +40,6 @@ type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof itemInclude }>;
  */
 const publishedWhere = (now: Date) =>
   ({ status: 'PUBLISHED', publishedAt: { lte: now } }) satisfies Prisma.EpisodeWhereInput;
-
-/**
- * Prisma's `contains` does not escape LIKE wildcards, so a search for "%" would match everything.
- * Backslash is the default LIKE escape character in MySQL and PostgreSQL.
- */
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, '\\$&');
 
 const SORTS: Record<ListEpisodesQuery['sort'], Direction> = {
   newest: 'desc',

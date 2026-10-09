@@ -34,6 +34,60 @@ export const mn = {
     NO_ACCESS: 'Таны эрх идэвхгүй байна.',
     DEVICE_NOT_REGISTERED: 'Энэ төхөөрөмж бүртгэлгүй байна. Дахин нэвтэрнэ үү.',
     MEDIA_NOT_READY: 'Аудио бэлэн болоогүй байна.',
+    EMAIL_NOT_VERIFIED: 'Эхлээд имэйл хаягаа баталгаажуулна уу.',
+    OPEN_SUBSCRIPTION_EXISTS: 'Таны хүлээгдэж буй хүсэлт байна.',
+    SUBSCRIPTION_STATE: 'Энэ хүсэлтийн төлөв өөрчлөгдсөн байна.',
+    SUBSCRIPTION_EXPIRED: 'Хүсэлтийн хугацаа дууссан байна. Шинээр үүсгэнэ үү.',
+    RECEIPT_TOO_LARGE: 'Зураг 5 MB-аас том байна.',
+    RECEIPT_INVALID: 'Зөвхөн JPEG, PNG эсвэл WebP зураг оруулна уу.',
+    TOTP_SETUP_REQUIRED: 'Хоёр шатлалт баталгаажуулалтыг эхлээд тохируулна уу.',
+    TOTP_REQUIRED: 'Хоёр шатлалт баталгаажуулалтын кодыг оруулна уу.',
+    TOTP_ALREADY_ENABLED: 'Хоёр шатлалт баталгаажуулалт аль хэдийн тохируулагдсан байна.',
+    TOTP_INVALID: 'Баталгаажуулах код буруу байна.',
+    SLUG_TAKEN: 'Энэ слаг өөр ангилалд ашиглагдаж байна.',
+    CATEGORY_NOT_EMPTY: 'Ангилалд анги байгаа тул устгах боломжгүй.',
+    NOT_READY_TO_PUBLISH: 'Нийтлэхийн өмнө нүүр зураг болон аудио бэлэн байх ёстой.',
+    EPISODE_STATE: 'Ангийн төлөв өөрчлөгдсөн байна. Хуудсаа шинэчилнэ үү.',
+    COVER_INVALID: 'Зөвхөн JPEG, PNG эсвэл WebP зураг оруулна уу.',
+    COVER_TOO_LARGE: 'Зураг 10 MB-аас том байна.',
+    UPLOAD_REJECTED: 'Файлыг хүлээн авсангүй.',
+  },
+
+  /** Why a media file failed (shown to admins next to the Retry button). */
+  media: {
+    failUnreadable: 'Аудио файлыг уншиж чадсангүй. MP3, M4A, AAC эсвэл WAV файл оруулна уу.',
+    failStorage: 'Хадгалах сервертэй холбогдож чадсангүй. Дахин оролдоно уу.',
+    failMissingFile: 'Эх файл олдсонгүй. Дахин байршуулна уу.',
+  },
+
+  push: {
+    paymentApproved: {
+      title: 'Эрх идэвхжлээ',
+      body: (p: { endsAt: string }) => `Таны эрх ${p.endsAt} хүртэл хүчинтэй.`,
+    },
+    accessEnding: {
+      title: 'Эрх дуусах гэж байна',
+      body: (p: { endsAt: string }) => `Таны эрх ${p.endsAt}-нд дуусна.`,
+    },
+  },
+
+  /** Admin CSV export column titles. */
+  csv: {
+    columns: [
+      'Огноо',
+      'Лавлах код',
+      'Нэвтрэх нэр',
+      'Овог',
+      'Нэр',
+      'Имэйл',
+      'Утас',
+      'Багц',
+      'Арга',
+      'Дүн (₮)',
+      'Төлөв',
+      'Эрхийн эхлэл',
+      'Эрхийн төгсгөл',
+    ],
   },
 
   email: {

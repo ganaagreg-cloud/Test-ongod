@@ -1,16 +1,23 @@
 import { randomUUID } from 'node:crypto';
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import Fastify, { type FastifyBaseLogger, type FastifyError } from 'fastify';
+import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstance } from 'fastify';
+import { createDecisionService } from './admin/decisions';
+import { createAdminGuards } from './admin/guard';
+import { createContentService } from './admin/content';
+import { createAdminQueries } from './admin/queries';
+import { createTotpService } from './admin/totp';
 import { createAuthGuard } from './auth/guard';
 import { AuthLimiter } from './auth/rate-limit';
 import { createAuthService } from './auth/service';
+import { createWebSession } from './auth/web-session';
 import { createSocialVerifiers, type SocialVerifiers } from './auth/social';
 import { createSocialService } from './auth/social-service';
 import { createMediaUrls, type MediaUrls } from './catalog/media';
 import { createCatalogService } from './catalog/service';
-import { cronTasks, type CronTask } from './cron/tasks';
+import { cleanupAbandonedUploads, cronTasks, type CronTask } from './cron/tasks';
 import type { Db } from './db';
 import { missingBunnyKeys, requireBunny, type Env } from './env';
 import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
@@ -18,11 +25,18 @@ import { mn } from './i18n/mn';
 import type { JobWorker } from './jobs/worker';
 import { createBunnySigner } from './lib/bunnyToken';
 import { createLogger, type Logger } from './logger';
+import { createMediaRuntime, type MediaRuntime } from './media/storage';
+import { createTusServer } from './media/tus';
+import { createReceiptStore, type ReceiptStore } from './subscriptions/receipts';
+import { createSubscriptionService } from './subscriptions/service';
+import { adminRoutes } from './routes/admin';
+import { adminContentRoutes } from './routes/admin-content';
 import { authRoutes } from './routes/auth';
 import { catalogRoutes } from './routes/catalog';
 import { cronRoutes } from './routes/cron';
 import { meRoutes } from './routes/me';
 import { socialRoutes } from './routes/social';
+import { subscriptionRoutes } from './routes/subscriptions';
 import { appConfigRoutes, healthRoutes } from './routes/system';
 import { defaultStaticDirs, registerStatic } from './static';
 
@@ -39,7 +53,16 @@ export interface AppDeps {
   socialVerifiers?: SocialVerifiers;
   /** Signed Bunny URLs; built from env by default. Tests can pass a stub. */
   media?: MediaUrls;
-  /** Clock for the catalog (visibility, "this week", play expiry); tests pass a fixed one. */
+  /**
+   * Dev only: registers the API docs. Called before any route is added, because swagger
+   * collects routes as they are registered. Production never passes it (see dev/docs.ts).
+   */
+  registerDocs?: (app: FastifyInstance) => Promise<void>;
+  /** Storage and working folders for media (covers, audio); built from env by default. Tests pass a local one. */
+  mediaRuntime?: MediaRuntime;
+  /** Private store for payment receipt images; defaults to RECEIPTS_DIR on disk. */
+  receipts?: ReceiptStore;
+  /** Clock for the catalog and subscriptions (visibility, play expiry, periods); tests pass a fixed one. */
   now?: () => Date;
 }
 
@@ -70,6 +93,7 @@ export async function buildApp(deps: AppDeps) {
   });
 
   await app.register(helmet);
+  await app.register(cookie);
   await app.register(cors, {
     origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -82,6 +106,8 @@ export async function buildApp(deps: AppDeps) {
   app.setErrorHandler<FastifyError>((err, req, reply) =>
     toErrorReply(err, req, reply, deps.report),
   );
+
+  await deps.registerDocs?.(app);
 
   const spaFallback = env.SERVE_STATIC
     ? await registerStatic(app, deps.staticDirs ?? defaultStaticDirs)
@@ -101,7 +127,7 @@ export async function buildApp(deps: AppDeps) {
         identifierMax: env.AUTH_RATE_LIMIT_IDENTIFIER_MAX,
         windowSeconds: env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
       });
-      await v1.register(authRoutes, { auth, limiter });
+      await v1.register(authRoutes, { auth, limiter, webSession: createWebSession(env) });
       const requireAuth = createAuthGuard({ db, env });
       await v1.register(meRoutes, { auth, limiter, requireAuth });
       if (env.SOCIAL_LOGIN) {
@@ -112,19 +138,43 @@ export async function buildApp(deps: AppDeps) {
           requireAuth,
         });
       }
+      const mediaUrls = deps.media ?? mediaFromEnv(env);
       await v1.register(catalogRoutes, {
-        catalog: createCatalogService({
+        catalog: createCatalogService({ db, media: mediaUrls, now: deps.now }),
+        requireAuth,
+      });
+      const receipts = deps.receipts ?? createReceiptStore(env.RECEIPTS_DIR);
+      const mediaRuntime = deps.mediaRuntime ?? createMediaRuntime(env);
+      const tus = createTusServer({ db, dirs: mediaRuntime.dirs, env });
+      await v1.register(subscriptionRoutes, {
+        subscriptions: createSubscriptionService({ db, env, receipts, now: deps.now }),
+        requireAuth,
+      });
+      await v1.register(adminRoutes, {
+        guards: createAdminGuards(requireAuth),
+        totp: createTotpService({ db, env, now: deps.now }),
+        decisions: createDecisionService({ db, now: deps.now }),
+        queries: createAdminQueries({ db, receipts, now: deps.now }),
+        limiter,
+      });
+      await v1.register(adminContentRoutes, {
+        guards: createAdminGuards(requireAuth),
+        content: createContentService({
           db,
-          media: deps.media ?? mediaFromEnv(env),
+          media: mediaUrls,
+          dirs: mediaRuntime.dirs,
           now: deps.now,
         }),
-        requireAuth,
+        tus,
       });
       await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
       await v1.register(cronRoutes, {
         db,
         secret: env.CRON_SECRET,
-        tasks: deps.cronTasks ?? cronTasks,
+        tasks: deps.cronTasks ?? [
+          ...cronTasks,
+          cleanupAbandonedUploads(() => tus.cleanUpExpired()),
+        ],
         worker: deps.worker,
       });
     },

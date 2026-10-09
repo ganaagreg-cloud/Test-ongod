@@ -29,6 +29,9 @@ apps/api/src/generated/
 
 # uploads / local data
 uploads/
+# private receipt images (RECEIPTS_DIR default)
+**/data/receipts/
+**/data/uploads/
 
 # Bunny's reference token.js: no upstream license, so fetched by a script, never committed
 apps/api/test/fixtures/bunny-reference/

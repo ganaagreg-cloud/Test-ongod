@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5174,
+    // A busy port is an error, not a silent move: the printed URLs must stay true.
+    strictPort: true,
     proxy: { '/v1': 'http://localhost:3000' },
   },
 });

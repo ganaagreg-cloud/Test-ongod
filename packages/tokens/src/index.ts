@@ -1,5 +1,6 @@
 // Single source of truth for design tokens (docs/DESIGN.md).
 // React Native imports these values directly; web uses the generated css/tokens.css.
+export * from './assets';
 
 /** Status badge background: the status hue at 12% opacity (text uses the solid color). */
 const badgeBg = (hex: string) => {
@@ -162,6 +163,19 @@ export const layout = {
   episodeRowCover: 64,
   coverRadius: 12,
   focusRingWidth: 2,
+  /** Hairline borders (surfaceRaised + hairline replaces shadows on dark). */
+  borderWidth: 1,
+  iconSize: 24,
+  iconSizeSmall: 16,
+  badgeHeight: 24,
+  progressBarHeight: 3,
+  sheetHandleWidth: 40,
+  sheetHandleHeight: 4,
+  /** Mountain-line motif (empty states, auth screens, portal header). */
+  motifWidth: 160,
+  motifHeight: 48,
+  /** Widest a toast or sheet grows on large screens. */
+  overlayMaxWidth: 480,
 } as const;
 
 export const tokens = {

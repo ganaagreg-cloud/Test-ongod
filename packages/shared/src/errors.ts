@@ -31,6 +31,26 @@ export const errorCodes = [
   'NO_ACCESS',
   'DEVICE_NOT_REGISTERED',
   'MEDIA_NOT_READY',
+  // Subscriptions (SPEC D)
+  'EMAIL_NOT_VERIFIED',
+  'OPEN_SUBSCRIPTION_EXISTS',
+  'SUBSCRIPTION_STATE',
+  'SUBSCRIPTION_EXPIRED',
+  'RECEIPT_TOO_LARGE',
+  'RECEIPT_INVALID',
+  // Admin (SPEC E, TOTP)
+  'TOTP_SETUP_REQUIRED',
+  'TOTP_REQUIRED',
+  'TOTP_ALREADY_ENABLED',
+  'TOTP_INVALID',
+  // Content (SPEC G)
+  'SLUG_TAKEN',
+  'CATEGORY_NOT_EMPTY',
+  'NOT_READY_TO_PUBLISH',
+  'EPISODE_STATE',
+  'COVER_INVALID',
+  'COVER_TOO_LARGE',
+  'UPLOAD_REJECTED',
 ] as const;
 
 export const errorCodeSchema = z.enum(errorCodes);

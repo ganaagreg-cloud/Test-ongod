@@ -104,6 +104,10 @@ model User {
   /// Cache of the end of the latest ACTIVE subscription period.
   accessUntil     DateTime?
   totpSecret      String?
+  /// Set when the first TOTP code was verified; until then the secret is only a pending setup.
+  totpEnabledAt   DateTime?
+  /// Last accepted TOTP time step; codes at or before it are rejected (replay protection).
+  totpLastStep    Int?
   createdAt       DateTime   @default(now())
   deletedAt       DateTime?
 
@@ -141,6 +145,8 @@ model Session {
   familyId         String
   expiresAt        DateTime
   revokedAt        DateTime?
+  /// Admin sessions: when this session passed the TOTP check. Carried over on refresh.
+  totpVerifiedAt   DateTime?
   createdAt        DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -205,6 +211,8 @@ model Subscription {
   decidedById    String?
   decidedAt      DateTime?
   rejectReason   String?            @db.Text
+  /// Set once the "access ends in 14 days" reminder was queued (SPEC F).
+  reminderSentAt DateTime?
   createdAt      DateTime           @default(now())
 
   user      User      @relation("SubscriptionUser", fields: [userId], references: [id])
@@ -214,6 +222,7 @@ model Subscription {
 
   @@index([userId, status])
   @@index([status, createdAt])
+  @@index([status, endsAt])
 }
 
 model Payment {
@@ -347,6 +356,7 @@ model AuditLog {
 
   @@index([targetType, targetId])
   @@index([actorId, createdAt])
+  @@index([createdAt])
 }
 
 model AppConfig {

@@ -1,3 +1,7 @@
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { Readable } from 'node:stream';
+
 /**
  * Bunny Storage HTTP API.
  * Docs: https://bunny.net/docs/storage/http  (facts: docs/research/R-bunny-token-auth.md)
@@ -56,4 +60,30 @@ export async function bunnyDeleteFile(cfg: BunnyStorageConfig, path: string): Pr
     signal: AbortSignal.timeout(30_000),
   });
   if (res.status !== 200 && res.status !== 404) throw new BunnyStorageError(res.status, 'delete');
+}
+
+/**
+ * Uploads a file from disk without loading it into memory (audio files are tens of MB). The
+ * timeout is long on purpose: a 100 MB file on a slow uplink takes minutes.
+ */
+export async function bunnyPutLocalFile(
+  cfg: BunnyStorageConfig,
+  path: string,
+  localFile: string,
+  contentType = 'application/octet-stream',
+): Promise<void> {
+  const { size } = await stat(localFile);
+  const res = await fetch(fileUrl(cfg, path), {
+    method: 'PUT',
+    headers: {
+      AccessKey: cfg.apiKey,
+      'Content-Type': contentType,
+      'Content-Length': String(size),
+    },
+    body: Readable.toWeb(createReadStream(localFile)) as unknown as ReadableStream,
+    // Node needs this to stream a request body.
+    duplex: 'half',
+    signal: AbortSignal.timeout(30 * 60_000),
+  } as RequestInit);
+  if (res.status !== 201) throw new BunnyStorageError(res.status, 'upload');
 }

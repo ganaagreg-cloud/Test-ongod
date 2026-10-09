@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { brotliCompressSync, brotliDecompressSync, gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { appConfigKeys } from '@ongod/shared';
 import { parseEnv } from '../src/env';
@@ -115,6 +116,14 @@ describe('static hosting', () => {
       mkdirSync(join(root, app, 'assets'), { recursive: true });
       writeFileSync(join(root, app, 'index.html'), `<html>${app}</html>`);
       writeFileSync(join(root, app, 'assets', 'app-abc123.js'), `/* ${app} */`);
+      // The portal build ships .br and .gz copies (apps/portal/vite.config.ts).
+      if (app === 'portal') {
+        for (const file of ['index.html', join('assets', 'app-abc123.js')]) {
+          const data = readFileSync(join(root, app, file));
+          writeFileSync(join(root, app, `${file}.br`), brotliCompressSync(data));
+          writeFileSync(join(root, app, `${file}.gz`), gzipSync(data));
+        }
+      }
     }
     return { portal: join(root, 'portal'), admin: join(root, 'admin') };
   }
@@ -143,6 +152,37 @@ describe('static hosting', () => {
     expect(asset.headers['cache-control']).toContain('immutable');
     const page = await app.inject({ url: '/some/page', headers: html });
     expect(page.headers['cache-control']).toBe('no-cache');
+  });
+
+  it('serves the pre-compressed copy to browsers that accept it, and the plain file to others', async () => {
+    const app = await staticApp();
+    const url = '/assets/app-abc123.js';
+
+    const br = await app.inject({ url, headers: { 'accept-encoding': 'gzip, br' } });
+    expect(br.headers['content-encoding']).toBe('br');
+    expect(brotliDecompressSync(br.rawPayload).toString()).toBe('/* portal */');
+    expect(br.headers['content-type']).toMatch(/javascript/);
+    expect(String(br.headers.vary)).toMatch(/accept-encoding/i);
+
+    const gz = await app.inject({ url, headers: { 'accept-encoding': 'gzip' } });
+    expect(gz.headers['content-encoding']).toBe('gzip');
+    expect(gunzipSync(gz.rawPayload).toString()).toBe('/* portal */');
+
+    const plain = await app.inject({ url });
+    expect(plain.headers['content-encoding']).toBeUndefined();
+    expect(plain.body).toBe('/* portal */');
+  });
+
+  it('compresses the SPA fallback page too', async () => {
+    const app = await staticApp();
+    const res = await app.inject({
+      url: '/plans',
+      headers: { accept: 'text/html', 'accept-encoding': 'br' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-encoding']).toBe('br');
+    expect(brotliDecompressSync(res.rawPayload).toString()).toBe('<html>portal</html>');
+    expect(res.headers['cache-control']).toBe('no-cache');
   });
 
   it('keeps API 404s as JSON, never index.html', async () => {

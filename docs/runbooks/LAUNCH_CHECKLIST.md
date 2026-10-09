@@ -26,3 +26,6 @@ From [[SPEC#Acceptance tests (must pass before launch)]]. Tick each item with th
 - [ ] `ALERT_EMAILS`, `LOG_FILE` and an uptime monitor configured ([[ADR-0016-monitoring-logs-alert-emails|ADR-0016]])
 - [ ] Google Play closed test finished ([[R-google-play-closed-test]])
 - [ ] All TO-VERIFY research notes resolved (`/recheck`)
+- [ ] Owner approves or replaces every `TODO(owner)` text in the portal: landing copy, the 3 sample covers, privacy policy, terms, contact address on the delete-account page (`apps/portal/src/i18n/mn.ts`, `public/` images)
+- [ ] Portal build made with the real `VITE_PUBLIC_URL`; `og.png` and `favicon.svg` regenerated if the brand changes (`pnpm --filter @ongod/portal assets`); Lighthouse re-run on the live site ([[lighthouse-portal]])
+- [ ] The privacy and delete-account page addresses are entered in the Play and App Store listings ([[STORE]])

@@ -42,6 +42,11 @@ tags: [index]
 | ADR-0019 | [[ADR-0019-social-login-implementation]]             | accepted |
 | ADR-0020 | [[ADR-0020-bunny-signed-urls-hs256-no-ip]]           | accepted |
 | ADR-0021 | [[ADR-0021-catalog-and-playback-rules]]              | accepted |
+| ADR-0022 | [[ADR-0022-admin-totp-session-proof]]                | accepted |
+| ADR-0023 | [[ADR-0023-subscription-workflows-implementation]]   | accepted |
+| ADR-0024 | [[ADR-0024-dev-preview-tooling]]                     | accepted |
+| ADR-0025 | [[ADR-0025-ui-component-set]]                        | accepted |
+| ADR-0026 | [[ADR-0026-web-session-cookie-and-portal]]           | accepted |
 
 ## Research
 
@@ -57,6 +62,7 @@ tags: [index]
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
 | [[R-claude-code-commands]]         | VERIFIED   | 2026-12-07    |
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |
+| [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |
@@ -65,6 +71,7 @@ tags: [index]
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
 | [[R-hosting-limits]]               | TO-VERIFY  | —             |
 | [[R-mysql-skip-locked-claim]]      | VERIFIED   | —             |
+| [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
 | [[R-prisma-7-agent-guard]]         | VERIFIED   | 2026-12-07    |
 | [[R-typescript-eslint-ts-support]] | VERIFIED   | 2026-12-07    |
 
@@ -75,4 +82,4 @@ tags: [index]
 
 ## Runbooks
 
-- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)
+- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)

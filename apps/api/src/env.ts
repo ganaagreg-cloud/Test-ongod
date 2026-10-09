@@ -84,6 +84,24 @@ export const envSchema = z
     ),
     BUNNY_CDN_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
+    // Bank transfer details shown in the portal (SPEC D). Required in production.
+    BANK_NAME: z.preprocess(emptyToUndefined, z.string().optional()),
+    BANK_ACCOUNT: z.preprocess(emptyToUndefined, z.string().optional()),
+    BANK_ACCOUNT_HOLDER: z.preprocess(emptyToUndefined, z.string().optional()),
+
+    /** Private folder for payment receipt images. Never inside the static (public) folders. */
+    RECEIPTS_DIR: z.string().min(1).default('./data/receipts'),
+    /**
+     * Private working folder for uploads: tus chunks, finished audio waiting for Bunny, covers
+     * waiting for Bunny. Never inside a static folder. Without Bunny settings (development only)
+     * the "stored" files are kept under <UPLOADS_DIR>/published instead.
+     */
+    UPLOADS_DIR: z.string().min(1).default('./data/uploads'),
+    /** Name shown in the authenticator app for admin TOTP. */
+    TOTP_ISSUER: z.string().min(1).max(50).default('Ongod Admin'),
+    /** Expo push access token; only needed if "enhanced push security" is on in the Expo project. */
+    EXPO_ACCESS_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
+
     SMTP_HOST: z.string().min(1),
     SMTP_PORT: z.coerce.number().int().positive(),
     SMTP_SECURE: bool.default(false),
@@ -99,6 +117,11 @@ export const envSchema = z
     if (env.NODE_ENV === 'production') {
       for (const key of missingBunnyKeys(env)) {
         ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
+      }
+      for (const key of ['BANK_NAME', 'BANK_ACCOUNT', 'BANK_ACCOUNT_HOLDER'] as const) {
+        if (!env[key]) {
+          ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
+        }
       }
     }
     // Apple 4.8: Google on iOS needs Sign in with Apple, so the flag needs both (ADR-0009).

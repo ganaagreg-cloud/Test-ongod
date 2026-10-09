@@ -7,11 +7,14 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/ui-tokens-only.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
+    "@expo/metro-runtime": "~57.0.16",
     "@ongod/shared": "workspace:*",
     "@ongod/tokens": "workspace:*",
     "expo": "~57.0.27",
@@ -20,16 +23,22 @@
     "expo-font": "~57.0.4",
     "expo-linking": "~57.0.12",
     "expo-router": "~57.0.25",
+    "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-track-player": "^4.1.2"
+    "react-native-svg": "15.15.4",
+    "react-native-track-player": "^4.1.2",
+    "react-native-web": "^0.21.3"
   },
   "devDependencies": {
-    "@types/react": "~19.2.0"
+    "@types/node": "^20.19.0",
+    "@types/react": "~19.2.0",
+    "tsx": "^4.23.15"
   }
 }

@@ -1,8 +1,0 @@
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text-primary);
-  font-family: var(--font-ui);
-  font-size: var(--text-body-size);
-  line-height: var(--text-body-line);
-}

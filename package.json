@@ -6,10 +6,16 @@
     "node": ">=20.19.0"
   },
   "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:down": "docker compose down",
+    "dev:totp": "pnpm --filter @ongod/api dev:totp",
+    "dev:approve": "pnpm --filter @ongod/api dev:approve",
+    "db:studio": "pnpm --filter @ongod/api db:studio",
     "dev:api": "pnpm --filter @ongod/api dev",
     "dev:admin": "pnpm --filter @ongod/admin dev",
     "dev:portal": "pnpm --filter @ongod/portal dev",
     "dev:mobile": "pnpm --filter @ongod/mobile start",
+    "dev:mobile:web": "pnpm --filter @ongod/mobile web",
     "build": "pnpm -r --filter=!@ongod/mobile build",
     "start": "pnpm --filter @ongod/api start",
     "typecheck": "pnpm -r typecheck",

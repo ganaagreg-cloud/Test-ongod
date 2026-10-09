@@ -78,6 +78,16 @@
   --layout-episode-row-cover: 64px;
   --layout-cover-radius: 12px;
   --layout-focus-ring-width: 2px;
+  --layout-border-width: 1px;
+  --layout-icon-size: 24px;
+  --layout-icon-size-small: 16px;
+  --layout-badge-height: 24px;
+  --layout-progress-bar-height: 3px;
+  --layout-sheet-handle-width: 40px;
+  --layout-sheet-handle-height: 4px;
+  --layout-motif-width: 160px;
+  --layout-motif-height: 48px;
+  --layout-overlay-max-width: 480px;
   --motion-duration: 200ms;
   --motion-easing: ease-out;
 }

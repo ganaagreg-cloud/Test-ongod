@@ -6,6 +6,8 @@ import { createJobRegistry } from './jobs';
 import { JobWorker } from './jobs/worker';
 import { createLogger } from './logger';
 import { createAlerts } from './monitoring/alerts';
+import { createMediaRuntime } from './media/storage';
+import { createExpoPushSender } from './push';
 import { flushSentry, initSentry } from './sentry';
 
 const env = loadEnvOrExit();
@@ -19,10 +21,12 @@ const alerts = createAlerts({
   throttleMinutes: env.ALERT_THROTTLE_MINUTES,
 });
 
+const media = createMediaRuntime(env);
+
 // Created even when the loop is disabled, so /v1/cron/tick can still drain jobs.
 const worker = new JobWorker(
   db,
-  createJobRegistry({ mailer: createSmtpMailer(env) }),
+  createJobRegistry({ db, mailer: createSmtpMailer(env), push: createExpoPushSender(env), media }),
   logger.child({ component: 'jobs' }),
   {
     pollIntervalMs: env.JOB_POLL_INTERVAL_MS,
@@ -33,11 +37,20 @@ const worker = new JobWorker(
   },
 );
 
+// API docs at /docs, development only. `process.env.NODE_ENV` is replaced at build time
+// (tsup.config.ts), so this import is removed from production bundles.
+const registerDocs =
+  process.env.NODE_ENV === 'development'
+    ? (await import('./dev/docs')).createDocs().register
+    : undefined;
+
 const app = await buildApp({
   env,
   db,
   logger,
   worker,
+  mediaRuntime: media,
+  registerDocs,
   report: (err, info) => {
     sentry?.(err);
     void alerts.httpError(err, info);

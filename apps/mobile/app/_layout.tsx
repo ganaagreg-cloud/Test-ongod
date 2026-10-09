@@ -6,6 +6,8 @@ import { useFonts } from 'expo-font';
 import { Lora_400Regular, Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { colors, nativeFontFamily } from '@ongod/tokens';
+import { mn } from '../src/i18n/mn';
+import { ToastProvider } from '../src/ui';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,7 +34,11 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+      <ToastProvider closeLabel={mn.close}>
+        <Stack
+          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}
+        />
+      </ToastProvider>
     </>
   );
 }

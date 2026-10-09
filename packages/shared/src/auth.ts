@@ -31,7 +31,7 @@ export const phoneSchema = z
   .trim()
   .regex(/^\+?[0-9\s-]{6,20}$/);
 
-export const platformSchema = z.enum(['ios', 'android', 'web']);
+export const platformSchema = z.enum(['ios', 'android', 'web', 'admin']);
 export const deviceIdSchema = z.string().trim().min(8).max(128);
 
 const deviceInfo = {
@@ -67,7 +67,11 @@ export type DeviceDto = z.infer<typeof deviceSchema>;
 
 export const tokenPairSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string(),
+  /**
+   * Opaque refresh token for the native apps. Absent for web (`platform: "web"`): the portal's
+   * refresh token travels only in an httpOnly cookie that scripts cannot read (ADR-0026).
+   */
+  refreshToken: z.string().optional(),
   /** Access token lifetime in seconds. */
   expiresIn: z.number().int().positive(),
 });
@@ -101,11 +105,17 @@ export const loginRequestSchema = z.object({
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export const loginResponseSchema = tokenPairSchema.extend({ user: userSchema });
 
+/** `refreshToken` is omitted by the web portal: the httpOnly cookie carries it. */
 export const refreshRequestSchema = z.object({
-  refreshToken: z.string().min(20).max(200),
+  refreshToken: z.string().min(20).max(200).optional(),
   deviceId: deviceIdSchema,
+  /** Which web app's cookie to use: the portal ("web", default) or the admin ("admin"). */
+  platform: z.enum(['web', 'admin']).optional(),
 });
-export const logoutRequestSchema = z.object({ refreshToken: z.string().min(20).max(200) });
+export const logoutRequestSchema = z.object({
+  refreshToken: z.string().min(20).max(200).optional(),
+  platform: z.enum(['web', 'admin']).optional(),
+});
 
 export const forgotPasswordRequestSchema = z.object({ email: emailSchema });
 export const resetPasswordRequestSchema = z.object({

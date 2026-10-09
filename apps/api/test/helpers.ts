@@ -1,6 +1,10 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildApp, type AppDeps } from '../src/app';
 import { createDb } from '../src/db';
 import { parseEnv, type Env } from '../src/env';
+import { createLocalMediaStorage, uploadDirs, type MediaRuntime } from '../src/media/storage';
 import { useTestDatabase } from './test-env';
 
 const url = useTestDatabase();
@@ -17,6 +21,14 @@ export const BUNNY_TEST = {
   BUNNY_CDN_TOKEN_KEY: 'test-token-key-0123456789abcdef',
 };
 
+/** Fake bank account and a throw-away receipts folder (never the real ./data/receipts). */
+export const PAYMENT_TEST = {
+  BANK_NAME: 'Хаан банк',
+  BANK_ACCOUNT: '5000123456',
+  BANK_ACCOUNT_HOLDER: 'Бат Болд',
+  RECEIPTS_DIR: join(tmpdir(), 'ongod-test-receipts'),
+};
+
 export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env {
   return parseEnv({
     NODE_ENV: 'test',
@@ -29,12 +41,19 @@ export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     MAIL_FROM: 'Онгод <no-reply@example.com>',
     CORS_ORIGINS: 'http://localhost:5173',
     ...BUNNY_TEST,
+    ...PAYMENT_TEST,
     ...overrides,
   });
 }
 
+/** A media runtime in a throw-away folder: "storage" is a local directory, never Bunny. */
+export function testMediaRuntime(): MediaRuntime {
+  const dirs = uploadDirs(mkdtempSync(join(tmpdir(), 'ongod-media-')));
+  return { dirs, storage: createLocalMediaStorage(dirs.published) };
+}
+
 export function testApp(deps: Partial<AppDeps> = {}) {
-  return buildApp({ env: testEnv(), db: testDb, ...deps });
+  return buildApp({ env: testEnv(), db: testDb, mediaRuntime: testMediaRuntime(), ...deps });
 }
 
 /**

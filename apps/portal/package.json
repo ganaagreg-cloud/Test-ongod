@@ -9,21 +9,30 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
+    "assets": "tsx scripts/make-assets.ts",
+    "test": "tsx --test test/portal-css.test.ts test/no-dev-in-build.test.ts",
+    "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
     "@fontsource/lora": "^5.3.0",
     "@ongod/shared": "workspace:*",
     "@ongod/tokens": "workspace:*",
+    "@ongod/ui-web": "workspace:*",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
+    "@types/node": "^20.19.0",
     "@types/react": "~19.2.0",
     "@types/react-dom": "~19.2.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "chrome-launcher": "^1.2.2",
+    "lighthouse": "^13.5.0",
+    "tsx": "^4.23.15",
     "vite": "^8.3.3"
   }
 }
