@@ -105,6 +105,9 @@ test('motion tokens match DESIGN.md "Motion"', () => {
   assert.equal(motion.enter.staggerMs, 60);
   assert.equal(motion.enter.maxStagger, 8);
   assert.deepEqual([motion.pressScale, motion.pressScaleRound, motion.iconBounce], [0.96, 0.92, 1.12]);
+  assert.deepEqual([motion.toastMax, motion.toastOlderScale, motion.toastOlderOpacity], [2, 0.96, 0.7]);
+  assert.match(design, /at most 2 at once, 8 pt apart.*96% scale and 70% opacity/);
+  assert.equal(spacing.xs, 8);
   assert.equal(motion.shimmerMs, 1200);
   assert.equal(motion.carouselAutoMs, 4800);
   for (const ms of motion.ambientMs) assert.ok(ms >= 12000 && ms <= 19000);

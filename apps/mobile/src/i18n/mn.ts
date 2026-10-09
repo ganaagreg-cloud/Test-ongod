@@ -42,6 +42,15 @@ export const mn = {
     open: 'Дэлгүүр нээх',
   },
 
+  /** Legal pages on the portal; shown only when EXPO_PUBLIC_PORTAL_URL is set. */
+  legal: {
+    terms: 'Үйлчилгээний нөхцөл',
+    privacy: 'Нууцлалын бодлого',
+    /** "Үргэлжлүүлснээр Үйлчилгээний нөхцөл-ийг зөвшөөрнө." (the middle part is the link) */
+    agreeBefore: 'Үргэлжлүүлснээр ',
+    agreeAfter: '-ийг зөвшөөрнө.',
+  },
+
   welcome: {
     subtitle: 'Гишүүдэд зориулсан хаалттай аудио сан. Сонсож, өсөж, өөрийгөө нээ.',
     login: 'Нэвтрэх',

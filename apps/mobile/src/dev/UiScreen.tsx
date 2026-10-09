@@ -48,6 +48,7 @@ import {
   Skeleton,
   SurfaceProvider,
   TabBar,
+  TextLink,
   useSurface,
   useThemedStyles,
   useToast,
@@ -190,6 +191,7 @@ function Showcase({ only }: { only: string | undefined }) {
           fullWidth
         />
         <Button label="Идэвхгүй" disabled fullWidth />
+        <TextLink label="Нууц үгээ мартсан уу?" onPress={() => undefined} />
       </Section>
 
       <Section id="inputs" only={only} title="Input">

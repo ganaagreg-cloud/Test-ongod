@@ -9,6 +9,8 @@ const clean = (value: string | undefined): string | undefined => {
 export const env = {
   /** e.g. http://10.0.2.2:3000 (no trailing slash, no /v1). */
   apiUrl: clean(process.env.EXPO_PUBLIC_API_URL)?.replace(/\/+$/, ''),
+  /** Portal base address (terms and privacy pages), e.g. https://<final domain>. Empty = no legal links. */
+  portalUrl: clean(process.env.EXPO_PUBLIC_PORTAL_URL),
   sentryDsn: clean(process.env.EXPO_PUBLIC_SENTRY_DSN),
   sentryEnvironment: clean(process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT) ?? 'development',
   iosStoreUrl: clean(process.env.EXPO_PUBLIC_IOS_STORE_URL),

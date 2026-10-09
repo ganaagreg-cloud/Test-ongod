@@ -8,7 +8,7 @@ import { AuthHeader } from '../../src/components/AuthHeader';
 import { SocialButtons } from '../../src/components/SocialButtons';
 import { mn } from '../../src/i18n/mn';
 import { useSubmit } from '../../src/lib/useSubmit';
-import { Button, Input, Screen, useToast } from '../../src/ui';
+import { Button, Input, Screen, TextLink, useToast } from '../../src/ui';
 
 /**
  * After the email code or a password reset the flow comes back to this screen with the email
@@ -67,30 +67,28 @@ function LoginForm({ email, notice }: { email: string | undefined; notice: strin
         textContentType="username"
         returnKeyType="next"
       />
-      <Input
-        label={mn.login.password}
-        value={password}
-        onChangeText={setPassword}
-        error={errors.password}
-        secureTextEntry
-        autoCapitalize="none"
-        autoComplete="current-password"
-        textContentType="password"
-        returnKeyType="go"
-        onSubmitEditing={() => void submit()}
-      />
-      <Button
-        label={mn.login.forgot}
-        variant="ghost"
-        onPress={() => router.push('/forgot-password')}
-      />
+      <View>
+        <Input
+          label={mn.login.password}
+          value={password}
+          onChangeText={setPassword}
+          error={errors.password}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={() => void submit()}
+        />
+        <TextLink label={mn.login.forgot} onPress={() => router.push('/forgot-password')} />
+      </View>
       <Button label={mn.login.submit} fullWidth loading={pending} onPress={() => void submit()} />
       <SocialButtons />
       <View style={styles.footer}>
         <Text style={styles.footerText}>{mn.login.noAccount}</Text>
-        <Button
+        <TextLink
           label={mn.login.register}
-          variant="ghost"
+          align="start"
           onPress={() => router.replace('/register')}
         />
       </View>

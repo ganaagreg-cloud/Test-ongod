@@ -288,8 +288,11 @@ export const motion = {
   /** Sheet: dismiss when dragged past this share of its height, or flung faster than flingVelocity. */
   sheetDismissShare: 0.3,
   flingVelocity: 800,
-  /** Toast stays this long. */
+  /** Toast stays this long; at most `toastMax` show at once, the older one is scaled and dimmed. */
   toastMs: 4000,
+  toastMax: 2,
+  toastOlderScale: 0.96,
+  toastOlderOpacity: 0.7,
   /** Skeleton shown after a filter change. */
   skeletonHoldMs: 650,
   /** Equalizer bars: loop length per bar, start delay per bar, lowest scaleY. */

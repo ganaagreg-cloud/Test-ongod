@@ -36,6 +36,12 @@ a{color:#F3EFE6;text-decoration:none}a:hover{color:#F3EFE6}
 @keyframes prog{from{width:34%}to{width:36%}}
 .hdr{transition:opacity .25s,transform .35s cubic-bezier(.22,1,.36,1)}
 .tab{transition:color .25s}
+.catcard{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+.catcard .catimg{transition:transform .9s cubic-bezier(.22,1,.36,1)}
+.catcard .chev{transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.catcard:hover .catimg,.catcard:active .catimg{transform:scale(1.08)}
+.catcard:hover .chev,.catcard:active .chev{transform:translateX(4px)}
+.catcard:active{transform:scale(.97)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </helmet>
@@ -129,14 +135,24 @@ a{color:#F3EFE6;text-decoration:none}a:hover{color:#F3EFE6}
         </div>
       </section>
 
-      <section class="in d5" aria-label="Ангилал">
-        <h2 style="margin: 0 0 12px; font-size: 20px; line-height: 26px; font-weight: 600;">Ангилал</h2>
-        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+      <section class="in d5" aria-label="Сэдвээр сонсох">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+          <h2 style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 600;">Сэдвээр сонсох</h2>
+          <a href="Library.dc.html" style="font-size: 14px; color: #D4AF6A; font-weight: 500; min-height: 44px; display: flex; align-items: center; margin: -12px 0;">Бүгд ›</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
           <sc-for list="{{cats}}" as="c" hint-placeholder-count="4">
-            <a href="Library.dc.html" class="press" style="position: relative; height: 92px; border-radius: 18px; overflow: hidden; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: {{c.bg}}; box-shadow: inset 0 0 0 1px rgba(243,239,230,.07);">
-              <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="rgba(243,239,230,.10)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: -10px; bottom: -12px;"><path d="{{c.icon}}"></path></svg>
-              <span style="font-size: 16px; line-height: 22px; font-weight: 600;">{{c.name}}</span>
-              <span style="font-size: 12px; line-height: 16px; color: #C9D3CF;">{{c.count}}</span>
+            <a href="Library.dc.html" class="catcard" style="position: relative; height: 104px; border-radius: 20px; overflow: hidden; display: flex; align-items: center; background: #041F1A; box-shadow: inset 0 0 0 1px rgba(243,239,230,.08);">
+              <img src="{{c.img}}" alt="" class="catimg" style="position: absolute; left: 0; top: 0; width: {{c.imgW}}; height: 100%; object-fit: cover; object-position: {{c.pos}};">
+              <span style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4,31,26,0) 18%, rgba(4,31,26,.78) 46%, #041F1A 64%);"></span>
+              <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: {{c.tint}};"></span>
+              <span style="position: relative; margin-left: 46%; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span class="serif" style="font-size: 19px; line-height: 24px; font-weight: 600;">{{c.name}}</span>
+                <span style="font-size: 12px; line-height: 16px; color: #C9D3CF;">{{c.sub}}</span>
+              </span>
+              <span class="chev" style="position: relative; flex: none; width: 44px; height: 44px; margin-right: 8px; display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+              </span>
             </a>
           </sc-for>
         </div>
@@ -242,12 +258,14 @@ class Component extends DCLogic {
       ['№ 059', 'Анхаарал', 'Анхаарал төвлөрлийг сэргээх', '25 мин', G.t],
       ['№ 058', 'Утга учир', 'Ажлын утга учрыг олох', '31 мин', G.m]
     ].map(([n, t, full, d, bg], k) => ({ n, t, full, d, bg, delay: (0.3 + k * 0.06) + 's' }));
+    const ELDER = '/_blob/7e505eac9fd24b851203576d27700232';
+    const YURT = '/_blob/335c29b78659a83d96c0d22f8845b191';
     const cats = [
-      { name: 'Сэтгэл зүй', count: '24 дугаар', bg: 'linear-gradient(135deg,#0B4A3F,#04231D)', icon: 'M12 3a7 7 0 0 0-4 12.7V20h8v-4.3A7 7 0 0 0 12 3z' },
-      { name: 'Хувь хүний хөгжил', count: '18 дугаар', bg: 'linear-gradient(135deg,#3B2C14,#160F06)', icon: 'M4 20l5-9 4 6 3-4 4 7z' },
-      { name: 'Харилцаа', count: '12 дугаар', bg: 'linear-gradient(135deg,#123F4A,#061C22)', icon: 'M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm8 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
-      { name: 'Санхүү', count: '9 дугаар', bg: 'linear-gradient(135deg,#2C3D1A,#0F1A08)', icon: 'M4 18h16M6 14l4-4 3 3 5-6' }
-    ];
+      { name: 'Сэтгэл зүй', sub: '24 дугаар · Ухаан', img: ELDER, imgW: '62%', pos: '30% 30%', tint: '#2FA88A' },
+      { name: 'Хувь хүний хөгжил', sub: '18 дугаар', img: RIDERS, imgW: '70%', pos: '60% 60%', tint: '#D4AF6A' },
+      { name: 'Харилцаа', sub: '12 дугаар · Гэр бүл', img: YURT, imgW: '62%', pos: '40% 60%', tint: '#1C6E7F' },
+      { name: 'Санхүү', sub: '9 дугаар · Мөнгө', img: MOUNT, imgW: '70%', pos: '30% 50%', tint: '#B8934F' }
+    ].map((c, k) => ({ ...c, delay: (0.35 + k * 0.07) + 's' }));
     const L = this.state.left;
     const d = Math.floor(L / 86400), h = Math.floor((L % 86400) / 3600), m = Math.floor((L % 3600) / 60), s = L % 60;
     const pad = (x) => (x < 10 ? '0' + x : String(x));

@@ -53,11 +53,14 @@ const OFFSCREEN = 2;
 
 function ToastView({
   item,
+  older,
   closeLabel,
   durationMs,
   onDismiss,
 }: {
   item: ToastItem;
+  /** Not the newest: shown smaller and dimmer. */
+  older: boolean;
   closeLabel: string;
   durationMs: number;
   onDismiss: (id: number) => void;
@@ -100,7 +103,19 @@ function ToastView({
       }
     });
 
-  const animated = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  // 0 = newest, 1 = older (scale .96, opacity 70%).
+  const dim = useSharedValue(0);
+  useEffect(() => {
+    dim.value = withSpring(older ? 1 : 0, springs.smooth);
+  }, [older, dim]);
+
+  const animated = useAnimatedStyle(() => ({
+    opacity: 1 - dim.value * (1 - motion.toastOlderOpacity),
+    transform: [
+      { translateY: y.value },
+      { scale: 1 - dim.value * (1 - motion.toastOlderScale) },
+    ],
+  }));
 
   return (
     <GestureDetector gesture={swipe}>
@@ -151,7 +166,11 @@ export function ToastProvider({
   );
   const show = useCallback<ToastApi['show']>((message, options) => {
     const id = nextId.current++;
-    setItems((all) => [...all.slice(-2), { id, message, tone: options?.tone ?? 'info' }]);
+    // At most `toastMax` at once: the oldest makes room for the new one.
+    setItems((all) => [
+      ...all.slice(-(motion.toastMax - 1)),
+      { id, message, tone: options?.tone ?? 'info' },
+    ]);
   }, []);
   const api = useMemo(() => ({ show }), [show]);
 
@@ -162,10 +181,12 @@ export function ToastProvider({
         pointerEvents="box-none"
         style={[hostStyles.host, { top: layout.screenPadding + insets.top }]}
       >
-        {items.map((item) => (
+        {/* Newest on top; the one below it is the older one. */}
+        {[...items].reverse().map((item, index) => (
           <ToastView
             key={item.id}
             item={item}
+            older={index > 0}
             closeLabel={closeLabel}
             durationMs={durationMs}
             onDismiss={dismiss}

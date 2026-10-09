@@ -15,7 +15,7 @@ Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-
   - Real phone on the same Wi-Fi: `http://<LAN IP of the computer>:3000`
   - iOS simulator or the browser preview: `http://localhost:3000`
 - `EXPO_PUBLIC_*` values end up inside the app: no secrets. `SENTRY_AUTH_TOKEN` is the only secret and goes into EAS secrets, never a file in the repo ([[SECRETS]]).
-- Preview and production builds read the same names from **EAS environment variables** (`environment` in `eas.json`). Create them once per environment (check `eas env:create --help` for the current flags): `EXPO_PUBLIC_API_URL` (the real https address), `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_IOS_STORE_URL`, `EXPO_PUBLIC_ANDROID_STORE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and the build-time `GOOGLE_IOS_URL_SCHEME`, `SENTRY_ORG`, `SENTRY_PROJECT`.
+- Preview and production builds read the same names from **EAS environment variables** (`environment` in `eas.json`). Create them once per environment (check `eas env:create --help` for the current flags): `EXPO_PUBLIC_API_URL` (the real https address), `EXPO_PUBLIC_PORTAL_URL` (the portal's https address: terms and privacy links; empty hides them), `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_IOS_STORE_URL`, `EXPO_PUBLIC_ANDROID_STORE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and the build-time `GOOGLE_IOS_URL_SCHEME`, `SENTRY_ORG`, `SENTRY_PROJECT`.
 
 ## Run
 

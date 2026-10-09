@@ -25,6 +25,7 @@ export { Sheet, type SheetProps } from './Sheet';
 export { EpisodeRowSkeleton, Skeleton } from './Skeleton';
 export { SurfaceProvider, useSurface, useThemedStyles } from './surface';
 export { TabBar, type TabItem } from './TabBar';
+export { TextLink } from './TextLink';
 export { ToastProvider, useToast, type ToastTone } from './Toast';
 export { haptic } from './haptics';
 export { PressableScale, usePressScale, type PressableScaleProps } from './usePressScale';

@@ -1,4 +1,4 @@
----
+﻿---
 type: index
 updated: 2026-10-09
 tags: [index]
@@ -83,6 +83,7 @@ tags: [index]
 | [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
 | [[R-prisma-7-agent-guard]]         | VERIFIED   | 2026-12-07    |
 | [[R-sentry-react-native-expo]]     | VERIFIED   | 2026-12-08    |
+| [[R-track-player-new-arch]]        | TO-VERIFY  | 2026-11-09    |
 | [[R-tanstack-table-v9]]            | VERIFIED   | 2026-12-08    |
 | [[R-tus-js-client-4]]              | VERIFIED   | 2026-12-08    |
 | [[R-typescript-eslint-ts-support]] | VERIFIED   | 2026-12-07    |
@@ -95,4 +96,4 @@ tags: [index]
 
 ## Runbooks
 
-- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[MOBILE_BUILD]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)
+- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[MOBILE_BUILD]] · [[DEVICE_SMOKE]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)

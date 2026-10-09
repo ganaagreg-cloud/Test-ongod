@@ -1,11 +1,20 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { layout, nativeTextStyle, spacing, themes, withAlpha } from '@ongod/tokens';
 import { CoverMarquee } from '../../src/components/CoverMarquee';
+import { env } from '../../src/config/env';
 import { mn } from '../../src/i18n/mn';
-import { AuroraBackground, Button, Enter, MountainLine, SurfaceProvider } from '../../src/ui';
+import { portalLink } from '../../src/lib/portalLink';
+import {
+  AuroraBackground,
+  Button,
+  Enter,
+  MountainLine,
+  PressableScale,
+  SurfaceProvider,
+} from '../../src/ui';
 
 const dark = themes.dark;
 
@@ -17,6 +26,8 @@ const dark = themes.dark;
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Hidden until the portal address is set (EXPO_PUBLIC_PORTAL_URL).
+  const termsUrl = portalLink(env.portalUrl, '/terms');
   return (
     <SurfaceProvider surface="dark">
       <View style={styles.root}>
@@ -48,6 +59,23 @@ export default function Welcome() {
               onPress={() => router.push('/register')}
             />
           </Enter>
+          {termsUrl ? (
+            <Enter index={4}>
+              <PressableScale
+                accessibilityRole="link"
+                accessibilityLabel={`${mn.legal.agreeBefore}${mn.legal.terms}${mn.legal.agreeAfter}`}
+                onPress={() => void Linking.openURL(termsUrl)}
+                haptics={false}
+                style={styles.terms}
+              >
+                <Text style={styles.termsText}>
+                  {mn.legal.agreeBefore}
+                  <Text style={styles.termsLink}>{mn.legal.terms}</Text>
+                  {mn.legal.agreeAfter}
+                </Text>
+              </PressableScale>
+            </Enter>
+          ) : null}
         </View>
       </View>
     </SurfaceProvider>
@@ -79,4 +107,7 @@ const styles = StyleSheet.create({
     ...nativeTextStyle('body'),
   },
   actions: { alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.lg },
+  terms: { minHeight: layout.touchTarget, justifyContent: 'center' },
+  termsText: { color: dark.textTertiary, textAlign: 'center', ...nativeTextStyle('caption') },
+  termsLink: { textDecorationLine: 'underline' },
 });
