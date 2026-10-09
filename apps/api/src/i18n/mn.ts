@@ -65,6 +65,10 @@ export const mn = {
       title: 'Эрх идэвхжлээ',
       body: (p: { endsAt: string }) => `Таны эрх ${p.endsAt} хүртэл хүчинтэй.`,
     },
+    newEpisode: {
+      title: 'Шинэ дугаар гарлаа',
+      body: (p: { title: string }) => p.title,
+    },
     accessEnding: {
       title: 'Эрх дуусах гэж байна',
       body: (p: { endsAt: string }) => `Таны эрх ${p.endsAt}-нд дуусна.`,

@@ -59,4 +59,14 @@ export class AuthLimiter {
     const idOk = this.byIdentifier.hit(`${scope}:${identifier.toLowerCase()}`);
     if (!ipOk || !idOk) throw new AppError(429, 'RATE_LIMITED');
   }
+
+  /**
+   * Per identifier only, for calls whose credential is unguessable (refresh tokens). A per-IP
+   * limit here locks out everyone behind one carrier IP (audit C-01).
+   */
+  checkIdentifier(scope: string, identifier: string): void {
+    if (!this.byIdentifier.hit(`${scope}:${identifier.toLowerCase()}`)) {
+      throw new AppError(429, 'RATE_LIMITED');
+    }
+  }
 }

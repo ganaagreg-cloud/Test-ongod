@@ -18,17 +18,27 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+// A line comment starts at the start of a line or after whitespace, so "https://" inside a
+// string is not cut off (a cut string would hide what follows it, audit D-04).
 const stripComments = (code: string) =>
-  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 
-const files = [...sourceFiles(join(root, 'src')), ...sourceFiles(join(root, 'app'))];
+// app.config.ts holds the store-facing name and permissions: scanned too.
+const files = [
+  ...sourceFiles(join(root, 'src')),
+  ...sourceFiles(join(root, 'app')),
+  join(root, 'app.config.ts'),
+];
 
 /** Mongolian and English payment vocabulary. Matched case-insensitively. */
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['төлбөр (payment)', /төлбөр/i],
-  ['төлөх / төлсөн (pay / paid)', /төл(?:өх|сөн|ж)/i],
+  ['төлөх / төлсөн / төлнө (pay / paid)', /төл(?:өх|сөн|ж|нө)/i],
   ['үнэ (price)', /үнэ(?!н)|үнийн/i],
-  ['эрх авах (get access)', /эрх\s+ав/i],
+  ['эрх авах / сунгах (get / extend access)', /эрх\S*\s+(?:ав|сун)/i],
+  ['худалдан авах (buy)', /худалд/i],
+  ['гишүүн болох (become a member)', /гишүүн\s+бол/i],
+  ['QPay / MNT', /qpay|\bmnt\b/i],
   ['багц (plan)', /багц/i],
   ['банк (bank)', /банк/i],
   ['данс (account number)', /данс/i],
@@ -37,7 +47,7 @@ const FORBIDDEN: Array<[string, RegExp]> = [
   ['төгрөг / ₮ (currency)', /төгрөг|₮/i],
   [
     'English payment words',
-    /\b(?:price|pricing|payment|pay now|subscribe|subscription|checkout|purchase|billing|invoice|bank|plans?)\b/i,
+    /\b(?:price|pricing|payment|pay|pay now|buy|subscribe|subscription|checkout|purchase|purchases|billing|invoice|bank|plans?|premium|upgrade|unlock)\b/i,
   ],
 ];
 
@@ -67,6 +77,17 @@ test('the check does catch payment text', () => {
     'Банкны данс',
     'Choose a plan',
     'Subscribe',
+    // Found missing by the audit of 2026-10-09:
+    'Эрхээ авах',
+    'Эрх сунгах',
+    'Худалдан авах',
+    'Төлнө үү',
+    'Buy now',
+    'Pay',
+    'QPay',
+    'Гишүүн болох',
+    'Upgrade to premium',
+    '100000 MNT',
   ]) {
     assert.ok(
       FORBIDDEN.some(([, pattern]) => pattern.test(sample)),
@@ -78,6 +99,8 @@ test('the check does catch payment text', () => {
     'Бүртгүүлэх',
     'Нууц үг солих',
     'Төхөөрөмжийн хязгаар хэтэрсэн',
+    'Таны эрх идэвхгүй байна.',
+    'Эрхээ шалгах',
   ]) {
     assert.ok(!FORBIDDEN.some(([, pattern]) => pattern.test(sample)), `wrongly flagged: ${sample}`);
   }

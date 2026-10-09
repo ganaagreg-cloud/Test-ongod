@@ -8,6 +8,7 @@ import { isUniqueViolation, lockUser } from '../auth/service';
 import { escapeLike } from '../lib/like';
 import { enqueueAudioUpload, enqueueCoverUpload, enqueueStorageDelete } from '../media/jobs';
 import { coverFiles, processCover } from '../media/cover';
+import { enqueueNewEpisodePush } from '../push';
 import type { UploadDirs } from '../media/storage';
 import { audit } from './audit';
 
@@ -229,7 +230,7 @@ export function createContentService(deps: {
     },
 
     /**
-     * Resizes the uploaded image to the two square covers (a fast local step), then queues the
+     * Resizes the uploaded image to the two 16:9 pictures (a fast local step), then queues the
      * job that sends them to storage and points the episode at them.
      */
     async setCover(actor: User, id: string, image: Buffer) {
@@ -258,6 +259,8 @@ export function createContentService(deps: {
         });
         if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
         await audit(tx, actor.id, 'episode.publish', 'Episode', id, {});
+        // SPEC G: push to all active users, queued in the transaction that publishes (once).
+        await enqueueNewEpisodePush(tx, id);
       });
       return this.getEpisode(id);
     },

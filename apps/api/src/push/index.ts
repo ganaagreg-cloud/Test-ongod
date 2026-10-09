@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Db } from '../db';
 import type { Env } from '../env';
+import { mn } from '../i18n/mn';
 import { enqueue, type EnqueueOptions, type JobWriter } from '../jobs/queue';
 import { defineJob } from '../jobs/registry';
 
@@ -95,6 +96,77 @@ export function createPushJob(db: Db, sender: PushSender) {
       log.info({ sent: tokens.length, dead: deadTokens.length }, 'push sent');
     },
   });
+}
+
+const newEpisodePayloadSchema = z.object({ episodeId: z.string().min(1) });
+const newEpisodeJobSpec = {
+  type: 'push.new-episode',
+  schema: newEpisodePayloadSchema,
+  maxAttempts: 5,
+};
+const NEW_EPISODE_PAGE = 500;
+
+/**
+ * SPEC G: "Push to all active users on publish". One job per published episode (queued in the
+ * same transaction as the status change, so it exists exactly once). It pages through the devices
+ * of users whose access is active and sends in batches; it never runs inside a request. A crash
+ * mid-way repeats the push for the pages already sent (at-least-once, ADR-0010).
+ */
+export function createNewEpisodePushJob(db: Db, sender: PushSender) {
+  return defineJob({
+    ...newEpisodeJobSpec,
+    async handle({ episodeId }, { log }) {
+      const episode = await db.episode.findUnique({
+        where: { id: episodeId },
+        select: { title: true, status: true },
+      });
+      // Archived or deleted since: nothing to announce.
+      if (!episode || episode.status !== 'PUBLISHED') return;
+
+      const now = new Date();
+      let cursor: string | undefined;
+      let sent = 0;
+      for (;;) {
+        const devices = await db.device.findMany({
+          where: {
+            pushToken: { not: null },
+            user: { status: 'ACTIVE', accessUntil: { gt: now } },
+          },
+          select: { id: true, pushToken: true },
+          orderBy: { id: 'asc' },
+          take: NEW_EPISODE_PAGE,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+        if (devices.length === 0) break;
+        cursor = devices[devices.length - 1]!.id;
+        const tokens = devices.map((d) => d.pushToken!).filter((t) => EXPO_TOKEN.test(t));
+        if (tokens.length > 0) {
+          const { deadTokens } = await sender.send(
+            tokens.map((to) => ({
+              to,
+              title: mn.push.newEpisode.title,
+              body: mn.push.newEpisode.body({ title: episode.title }),
+              data: { type: 'new-episode', episodeId },
+            })),
+          );
+          if (deadTokens.length > 0) {
+            await db.device.updateMany({
+              where: { pushToken: { in: deadTokens } },
+              data: { pushToken: null },
+            });
+          }
+          sent += tokens.length;
+        }
+        if (devices.length < NEW_EPISODE_PAGE) break;
+      }
+      log.info({ episodeId, sent }, 'new episode push sent');
+    },
+  });
+}
+
+/** Queues the "new episode" push. Call it in the transaction that publishes the episode. */
+export function enqueueNewEpisodePush(db: JobWriter, episodeId: string, opts?: EnqueueOptions) {
+  return enqueue(db, newEpisodeJobSpec, { episodeId }, opts);
 }
 
 /** Queues a push to one user. Pass a transaction client to send only if the change commits. */

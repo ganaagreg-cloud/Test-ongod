@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path';
 import { z } from 'zod';
 
 const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
@@ -62,7 +63,7 @@ export const envSchema = z
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
     /** Login/register/code endpoints: attempts per window, per IP and per identifier. */
-    AUTH_RATE_LIMIT_IP_MAX: z.coerce.number().int().positive().default(30),
+    AUTH_RATE_LIMIT_IP_MAX: z.coerce.number().int().positive().default(100),
     AUTH_RATE_LIMIT_IDENTIFIER_MAX: z.coerce.number().int().positive().default(10),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(900),
 
@@ -115,6 +116,22 @@ export const envSchema = z
   .superRefine((env, ctx) => {
     // Without Bunny there are no covers and no playback: refuse to start in production.
     if (env.NODE_ENV === 'production') {
+      // The .env.example placeholders are long enough to pass min(32) but are public (audit C-08).
+      for (const key of ['JWT_ACCESS_SECRET', 'CRON_SECRET'] as const) {
+        if (/replace|change-me|example/i.test(env[key])) {
+          ctx.addIssue({ code: 'custom', path: [key], message: 'placeholder value in production' });
+        }
+      }
+      // Relative folders depend on the working directory and can be lost on redeploy (audit F-08).
+      for (const key of ['RECEIPTS_DIR', 'UPLOADS_DIR'] as const) {
+        if (!isAbsolute(env[key])) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'must be an absolute path in production',
+          });
+        }
+      }
       for (const key of missingBunnyKeys(env)) {
         ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
       }

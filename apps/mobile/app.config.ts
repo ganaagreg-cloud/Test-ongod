@@ -52,10 +52,18 @@ const config: ExpoConfig = {
       // UIBackgroundModes "audio" comes from the expo-audio plugin (enableBackgroundPlayback).
       // Lets the system "Sign in with Apple" button use the device language.
       CFBundleAllowMixedLocalizations: true,
+      // Only standard HTTPS/OS cryptography: no export-compliance questionnaire per build.
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     package: 'mn.ongod.app',
+    // Expo adds these by default; the app uses none of them (audit D-05).
+    blockedPermissions: [
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ],
   },
   plugins,
   experiments: {

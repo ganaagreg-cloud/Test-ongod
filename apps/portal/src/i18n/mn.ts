@@ -286,6 +286,8 @@ export const mn = {
           text: 'Онгод нь гишүүдэд зориулсан аудио сан. Агуулгыг зөвхөн идэвхтэй эрхтэй гишүүн сонсоно. [TODO]',
         },
         {
+          // Left out of the app-only copy: the apps show no payment wording (ADR-0006).
+          payment: true,
           title: 'Эрх ба төлбөр',
           text: 'Эрхийг банкны шилжүүлгээр төлж авна. Төлбөр баталгаажсаны дараа эрх идэвхжинэ. [TODO: буцаалтын нөхцөл]',
         },
@@ -307,6 +309,17 @@ export const mn = {
         },
       ],
     },
+  },
+
+  // Support page, also linked from the store listings (audit D-02).
+  support: {
+    metaTitle: 'Тусламж — Онгод',
+    metaDescription: 'Онгод аппын тусламж, холбоо барих хаяг.',
+    title: 'Тусламж',
+    lead: 'Нэвтрэх, төхөөрөмж, бүртгэлтэй холбоотой асуудал гарвал бидэнтэй холбогдоно уу.',
+    // TODO(owner): the real support email address and working hours.
+    contact: 'Имэйл: TODO(owner): имэйл хаяг',
+    deleteLink: 'Бүртгэлээ устгах заавар',
   },
 
   deleteAccount: {

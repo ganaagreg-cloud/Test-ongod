@@ -500,7 +500,7 @@ kbd {
 .admin-cover__image {
   width: 100%;
   max-width: calc(var(--layout-overlay-max-width) / 1.5);
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 9;
   border-radius: var(--layout-cover-radius);
   object-fit: cover;
 }

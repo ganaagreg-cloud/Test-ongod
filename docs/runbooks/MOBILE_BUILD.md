@@ -6,7 +6,7 @@ tags: [runbook, area/mobile]
 
 # Mobile build and run
 
-Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-native-expo|ADR-0001]], [[ADR-0015-local-first-android-smoke-test|ADR-0015]] · Facts: [[R-eas-json-profiles]], [[R-sentry-react-native-expo]], [[R-google-signin-v16]], [[R-expo-apple-authentication]]
+Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-native-expo|ADR-0001]], [[ADR-0015-local-first-android-smoke-test|ADR-0015]] · Facts: [[R-eas-json-profiles]], [[R-sentry-react-native-expo]], [[R-google-signin-v16]], [[R-expo-apple-authentication]]
 
 ## Settings
 
@@ -25,11 +25,11 @@ Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-
 
 ## Builds
 
-| Profile       | For                          | Notes                                           |
-| ------------- | ---------------------------- | ----------------------------------------------- |
-| `development` | developers, dev client       | internal distribution                           |
-| `preview`     | testers                      | internal, Android `.apk`, channel `preview`     |
-| `production`  | the stores                   | store distribution, build number auto-increment |
+| Profile       | For                    | Notes                                           |
+| ------------- | ---------------------- | ----------------------------------------------- |
+| `development` | developers, dev client | internal distribution                           |
+| `preview`     | testers                | internal, Android `.apk`, channel `preview`     |
+| `production`  | the stores             | store distribution, build number auto-increment |
 
 `eas build --profile <name> --platform <android|ios>`. The version shown to users is `version` in `app.config.ts`; the server's minimum (`min_version_ios` / `min_version_android` in `AppConfig`, [[SPEC#Workflows]] I) is compared with it.
 

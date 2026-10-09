@@ -6,6 +6,7 @@ import {
   changePasswordRequestSchema,
   devicesResponseSchema,
   meResponseSchema,
+  pushTokenRequestSchema,
   removeDeviceRequestSchema,
 } from '@ongod/shared';
 import { authOf, type createAuthGuard } from '../auth/guard';
@@ -58,6 +59,14 @@ export async function meRoutes(
     return devicesResponseSchema.parse({
       devices: await auth.listDevices(user.id, session.deviceId),
     });
+  });
+
+  // Registered after login, so it only ever touches the Device row of the calling session.
+  app.put('/me/devices/current/push-token', async (req, reply) => {
+    const { user, session } = authOf(req);
+    const body = pushTokenRequestSchema.parse(req.body);
+    await auth.setPushToken(user.id, session.deviceId, body.pushToken);
+    return reply.code(204).send();
   });
 
   app.delete('/me/devices/:id', async (req, reply) => {

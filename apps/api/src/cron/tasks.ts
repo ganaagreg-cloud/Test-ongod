@@ -4,7 +4,7 @@ import type { Db } from '../db';
 import { enqueueEmail } from '../email';
 import { mn } from '../i18n/mn';
 import { DAY_MS, ubDate } from '../lib/dates';
-import { enqueuePush } from '../push';
+import { enqueueNewEpisodePush, enqueuePush } from '../push';
 
 export interface CronTaskContext {
   db: Db;
@@ -127,11 +127,20 @@ export const publishScheduledEpisodes: CronTask = {
     });
     let published = 0;
     for (const episode of due) {
-      const done = await db.episode.updateMany({
-        where: { id: episode.id, status: 'SCHEDULED' },
-        data: { status: 'PUBLISHED', publishedAt: episode.scheduledFor ?? now, scheduledFor: null },
+      // The status is the precondition; the push job exists only if this tick published it.
+      const count = await db.$transaction(async (tx) => {
+        const done = await tx.episode.updateMany({
+          where: { id: episode.id, status: 'SCHEDULED' },
+          data: {
+            status: 'PUBLISHED',
+            publishedAt: episode.scheduledFor ?? now,
+            scheduledFor: null,
+          },
+        });
+        if (done.count === 1) await enqueueNewEpisodePush(tx, episode.id);
+        return done.count;
       });
-      published += done.count;
+      published += count;
     }
     return { affected: published };
   },

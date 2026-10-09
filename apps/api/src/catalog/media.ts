@@ -5,7 +5,7 @@ export const PLAY_URL_TTL_MS = 4 * 60 * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
 /**
- * Cover variants: `coverPath` is the 1400x1400 image; the 400x400 one sits next to it with a
+ * Cover variants (ADR-0034): `coverPath` is the 1280x720 picture; the 400x225 one sits next to it with a
  * "-400" suffix before the extension (covers/x/abc.webp -> covers/x/abc-400.webp).
  */
 export const thumbPathOf = (coverPath: string) =>

@@ -11,7 +11,7 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "assets": "tsx scripts/make-assets.ts",
-    "test": "tsx --test test/portal-css.test.ts test/no-dev-in-build.test.ts",
+    "test": "tsx --test test/portal-css.test.ts test/no-dev-in-build.test.ts test/app-pages.test.ts",
     "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {

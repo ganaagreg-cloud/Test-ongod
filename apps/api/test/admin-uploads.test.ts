@@ -292,13 +292,14 @@ describe('cover upload', () => {
   const coverPath = async () =>
     (await testDb.episode.findUniqueOrThrow({ where: { id: episodeId } })).coverPath;
 
-  it('makes a 1400 and a 400 square WebP (centre-cropped), queues the job, and the job stores both', async () => {
-    const res = await upload(await pngImage(1200, 700));
+  it('makes a 1280x720 and a 400x225 WebP (16:9, ADR-0034), queues the job, and the job stores both', async () => {
+    // A square upload is centre-cropped to 16:9; a 16:9 one is only scaled (next test).
+    const res = await upload(await pngImage(1200, 1200));
     expect(res.statusCode).toBe(202);
     expect(await coverPath()).toBe(''); // not stored yet
 
     expect(readdirSync(runtime.dirs.covers).sort()).toEqual([
-      expect.stringMatching(/-1400\.webp$/),
+      expect.stringMatching(/-1280\.webp$/),
       expect.stringMatching(/-400\.webp$/),
     ]);
     await runMediaJobs(runtime);
@@ -306,17 +307,51 @@ describe('cover upload', () => {
     const path = await coverPath();
     expect(path).toMatch(new RegExp(`^covers/${episodeId}/[0-9a-f-]{36}\\.webp$`));
     const full = await sharp(join(runtime.dirs.published, path)).metadata();
-    expect(full).toMatchObject({ format: 'webp', width: 1400, height: 1400 });
+    expect(full).toMatchObject({ format: 'webp', width: 1280, height: 720 });
     const thumb = await sharp(
       join(runtime.dirs.published, path.replace('.webp', '-400.webp')),
     ).metadata();
-    expect(thumb).toMatchObject({ format: 'webp', width: 400, height: 400 });
+    expect(thumb).toMatchObject({ format: 'webp', width: 400, height: 225 });
     // The working copies are cleaned up.
     expect(readdirSync(runtime.dirs.covers)).toEqual([]);
     expect(
       (await call(app, 'GET', `/v1/admin/episodes/${episodeId}`, adminToken)).json().episode
         .hasCover,
     ).toBe(true);
+  });
+
+  it('a 16:9 picture keeps all of its content: scaled, not cropped', async () => {
+    // Left half red, right half blue: a crop of the sides would change both ends.
+    const red = await sharp({
+      create: { width: 640, height: 720, channels: 3, background: '#f00' },
+    })
+      .png()
+      .toBuffer();
+    const blue = await sharp({
+      create: { width: 640, height: 720, channels: 3, background: '#00f' },
+    })
+      .png()
+      .toBuffer();
+    const wide = await sharp({
+      create: { width: 1280, height: 720, channels: 3, background: '#000' },
+    })
+      .composite([
+        { input: red, left: 0, top: 0 },
+        { input: blue, left: 640, top: 0 },
+      ])
+      .png()
+      .toBuffer();
+    expect((await upload(wide)).statusCode).toBe(202);
+    await runMediaJobs(runtime);
+    const { data, info } = await sharp(join(runtime.dirs.published, await coverPath()))
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expect([info.width, info.height]).toEqual([1280, 720]);
+    const px = (x: number, y: number) => [
+      ...data.subarray((y * info.width + x) * info.channels).subarray(0, 3),
+    ];
+    expect(px(4, 360)[0]).toBeGreaterThan(200); // still red at the far left
+    expect(px(1275, 360)[2]).toBeGreaterThan(200); // still blue at the far right
   });
 
   it('a new cover replaces the old one and the old files are deleted', async () => {
@@ -367,7 +402,7 @@ describe('cover upload', () => {
 
     const { payload, headers } = await multipart(
       {},
-      { name: 'c.png', data: await pngImage(), type: 'image/png' },
+      { name: 'c.png', data: await pngImage(), type: 'image/png', field: 'cover' },
     );
     const missing = await app.inject({
       method: 'POST',
@@ -391,6 +426,7 @@ describe('cover upload', () => {
     // 20000 x 20000 = 400 million pixels, a few KB as PNG.
     const bomb = await sharp({
       create: { width: 20000, height: 20000, channels: 3, background: '#000' },
+      limitInputPixels: false,
     })
       .png({ compressionLevel: 9 })
       .toBuffer();

@@ -54,7 +54,7 @@ export interface UploadDirs {
   tus: string;
   /** Finished audio waiting for storage, one file per MediaAsset id. */
   audio: string;
-  /** Resized covers waiting for storage: <coverId>-1400.webp and <coverId>-400.webp. */
+  /** Resized covers waiting for storage: <coverId>-1280.webp and <coverId>-400.webp. */
   covers: string;
   /** The "storage" of the local fallback. */
   published: string;

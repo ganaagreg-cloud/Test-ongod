@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   '/register',
   '/privacy',
   '/terms',
+  '/support',
   '/delete-account',
 ];
 const PRIVATE_PATHS = ['/account', '/pay', '/status', '/verify', '/forgot', '/reset'];

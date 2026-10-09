@@ -15,6 +15,19 @@ const env = z
   })
   .parse(process.env);
 
+// The seed creates fake users with a shared password and free access (audit A-01). It runs only
+// against a local database; production uses `pnpm --filter @ongod/api ops:bootstrap`.
+const dbHost = new URL(env.DATABASE_URL).hostname;
+if (
+  process.env.NODE_ENV === 'production' ||
+  !['localhost', '127.0.0.1', '::1', 'mysql'].includes(dbHost)
+) {
+  console.error(
+    `The dev seed refuses to run (NODE_ENV=${process.env.NODE_ENV}, database host "${dbHost}").`,
+  );
+  process.exit(1);
+}
+
 const db = createDb(env.DATABASE_URL);
 const DAY = 24 * 60 * 60_000;
 const now = new Date();

@@ -75,12 +75,18 @@ function mediaFromEnv(env: Env): MediaUrls {
   return createMediaUrls(createBunnySigner({ host: bunny.pullZoneHost, tokenKey: bunny.tokenKey }));
 }
 
+/** Number of proxy hops to trust (audit C-02): the host's proxy is one hop. */
+const trustProxyHops = (trust: boolean): false | ((address: string, hop: number) => boolean) =>
+  // proxy-addr's own "number" mode is `hop < n`; the Fastify types only accept the function form.
+  trust ? (_address, hop) => hop < 1 : false;
+
 export async function buildApp(deps: AppDeps) {
   const { env, db } = deps;
 
   const app = Fastify({
     loggerInstance: (deps.logger ?? createLogger(env)) as FastifyBaseLogger,
-    trustProxy: env.TRUST_PROXY,
+    // One proxy hop (the host's): the left-most X-Forwarded-For entry is client-controlled (audit C-02).
+    trustProxy: trustProxyHops(env.TRUST_PROXY),
     // Reuse a sane incoming X-Request-Id (from a proxy), otherwise generate one.
     genReqId: (req) => {
       const incoming = req.headers['x-request-id'];
@@ -92,7 +98,19 @@ export async function buildApp(deps: AppDeps) {
     reply.header('x-request-id', req.id);
   });
 
-  await app.register(helmet);
+  // Admin shows signed Bunny cover images, so the pull zone host is allowed as an image source.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'img-src': [
+          "'self'",
+          'data:',
+          ...(env.BUNNY_PULL_ZONE_HOST ? [`https://${env.BUNNY_PULL_ZONE_HOST}`] : []),
+        ],
+      },
+    },
+  });
   await app.register(cookie);
   await app.register(cors, {
     origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false,
@@ -101,6 +119,9 @@ export async function buildApp(deps: AppDeps) {
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
+    // Static files (portal, admin) and /health are not API calls; counting them used up the
+    // budget of everyone behind one carrier IP (audit C-01).
+    allowList: (req) => req.url === '/health' || !req.url.startsWith('/v1'),
   });
 
   app.setErrorHandler<FastifyError>((err, req, reply) =>

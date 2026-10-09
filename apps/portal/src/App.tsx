@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Route, Routes } from 'react-router';
 import { Skeleton } from '@ongod/ui-web';
 import { RequireAuth } from './components/RequireAuth';
+import { AppLayout } from './layout/AppLayout';
 import { Layout } from './layout/Layout';
 import Landing from './pages/Landing';
 import { mn } from './i18n/mn';
@@ -20,6 +21,10 @@ const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
+const Support = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Support })));
+const AppPrivacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.AppPrivacy })));
+const AppTerms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.AppTerms })));
+const AppSupport = lazy(() => import('./pages/Legal').then((m) => ({ default: m.AppSupport })));
 
 /**
  * Dev-only component page at /dev/ui. The import sits inside an `import.meta.env.DEV` block,
@@ -44,6 +49,12 @@ export function App() {
     <Suspense fallback={Loading}>
       <Routes>
         {devRoute}
+        {/* What the mobile apps open: no nav, no plans, no payment wording (ADR-0006). */}
+        <Route path="app" element={<AppLayout />}>
+          <Route path="terms" element={<AppTerms />} />
+          <Route path="privacy" element={<AppPrivacy />} />
+          <Route path="support" element={<AppSupport />} />
+        </Route>
         <Route element={<Layout />}>
           <Route index element={<Landing />} />
           <Route path="plans" element={<Plans />} />
@@ -59,6 +70,7 @@ export function App() {
           </Route>
           <Route path="privacy" element={<Privacy />} />
           <Route path="terms" element={<Terms />} />
+          <Route path="support" element={<Support />} />
           <Route path="delete-account" element={<DeleteAccount />} />
           <Route path="*" element={<NotFound />} />
         </Route>

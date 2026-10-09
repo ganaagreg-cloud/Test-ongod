@@ -95,10 +95,14 @@ export function createAuthService(deps: { db: Db; env: Env }) {
     ) {
       throw new AppError(429, 'RESEND_COOLDOWN');
     }
-    await tx.emailCode.updateMany({
-      where: { userId: user.id, purpose, usedAt: null },
-      data: { usedAt: new Date() },
-    });
+    // Only when an earlier code exists: an updateMany over an empty (userId, purpose) range takes
+    // a gap lock, and two sign-ups at the same moment then deadlock (audit C-05).
+    if (latest) {
+      await tx.emailCode.updateMany({
+        where: { userId: user.id, purpose, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+    }
     const code = newEmailCode();
     await tx.emailCode.create({
       data: {
@@ -207,7 +211,12 @@ export function createAuthService(deps: { db: Db; env: Env }) {
     if (existing) {
       await tx.device.update({
         where: { id: existing.id },
-        data: { lastSeenAt: new Date(), platform: d.platform, model: d.model ?? existing.model },
+        data: {
+          lastSeenAt: new Date(),
+          // A refresh does not know the platform ('unknown'): keep what the login stored.
+          platform: d.platform === 'unknown' ? existing.platform : d.platform,
+          model: d.model ?? existing.model,
+        },
       });
       return;
     }
@@ -523,6 +532,28 @@ export function createAuthService(deps: { db: Db; env: Env }) {
         orderBy: { lastSeenAt: 'desc' },
       });
       return devices.map((d) => ({ ...toDeviceDto(d), current: d.deviceId === currentDeviceId }));
+    },
+
+    /**
+     * Stores (or clears, with null) the Expo push token of the calling session's device. A token
+     * belongs to one device: the same phone signing in as another user moves it, so the old
+     * account stops getting pushes meant for this phone.
+     */
+    async setPushToken(userId: string, deviceId: string, pushToken: string | null): Promise<void> {
+      await db.$transaction(async (tx) => {
+        const device = await tx.device.findUnique({
+          where: { userId_deviceId: { userId, deviceId } },
+          select: { id: true },
+        });
+        if (!device) throw new AppError(404, 'NOT_FOUND');
+        if (pushToken) {
+          await tx.device.updateMany({
+            where: { pushToken, id: { not: device.id } },
+            data: { pushToken: null },
+          });
+        }
+        await tx.device.update({ where: { id: device.id }, data: { pushToken } });
+      });
     },
 
     async removeDevice(user: User, id: string, password: string): Promise<void> {

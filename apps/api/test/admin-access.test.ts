@@ -14,10 +14,29 @@ afterEach(async () => {
 });
 
 /** Every admin route, to prove the guards cover all of them. */
-const ADMIN_ROUTES: Array<['GET' | 'POST', string, unknown?]> = [
+const ADMIN_ROUTES: Array<['GET' | 'POST' | 'PATCH' | 'DELETE', string, unknown?]> = [
   ['GET', '/v1/admin/dashboard'],
   ['GET', '/v1/admin/subscriptions'],
   ['GET', '/v1/admin/subscriptions/x'],
+  ['GET', '/v1/admin/subscriptions/x/history'],
+  // Content (audit G-01): categories, episodes, their transitions and a user's devices.
+  ['GET', '/v1/admin/categories'],
+  ['POST', '/v1/admin/categories', { name: 'n' }],
+  ['POST', '/v1/admin/categories/reorder', { ids: ['x'] }],
+  ['PATCH', '/v1/admin/categories/x', { name: 'n' }],
+  ['DELETE', '/v1/admin/categories/x'],
+  ['GET', '/v1/admin/episodes'],
+  ['POST', '/v1/admin/episodes', { title: 't' }],
+  ['GET', '/v1/admin/episodes/x'],
+  ['PATCH', '/v1/admin/episodes/x', { title: 't' }],
+  ['DELETE', '/v1/admin/episodes/x'],
+  ['POST', '/v1/admin/episodes/x/publish'],
+  ['POST', '/v1/admin/episodes/x/schedule', { scheduledFor: '2030-01-01T00:00:00+08:00' }],
+  ['POST', '/v1/admin/episodes/x/unschedule'],
+  ['POST', '/v1/admin/episodes/x/archive'],
+  ['POST', '/v1/admin/episodes/x/restore'],
+  ['POST', '/v1/admin/episodes/x/media/retry'],
+  ['DELETE', '/v1/admin/users/x/devices/y'],
   ['GET', '/v1/admin/subscriptions/x/receipt'],
   ['POST', '/v1/admin/subscriptions/x/approve'],
   ['POST', '/v1/admin/subscriptions/x/reject', { reason: 'r' }],

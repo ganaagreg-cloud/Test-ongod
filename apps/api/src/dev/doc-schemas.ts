@@ -57,6 +57,7 @@ import {
   refreshRequestSchema,
   registerRequestSchema,
   registerResponseSchema,
+  pushTokenRequestSchema,
   rejectRequestSchema,
   removeDeviceRequestSchema,
   resendCodeRequestSchema,
@@ -250,6 +251,11 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'GET /v1/me/devices': user('me', 'Signed-in devices (max 2)', {
     responses: { 200: devicesResponseSchema },
   }),
+  'PUT /v1/me/devices/current/push-token': user(
+    'me',
+    'Store (or clear) the push token of this device',
+    { body: pushTokenRequestSchema, responses: { 204: noContent } },
+  ),
   'DELETE /v1/me/devices/:id': user('me', 'Remove a device (needs the password)', {
     body: removeDeviceRequestSchema,
     responses: { 204: noContent },
@@ -455,7 +461,7 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   ),
   'POST /v1/admin/episodes/:id/cover': admin('Upload the cover (JPEG, PNG, WebP, up to 10 MB)', {
     description:
-      'multipart/form-data, field `cover`. Resized to 1400 and 400 px, then stored by a job.',
+      'multipart/form-data, field `cover`. Resized to 16:9 (1280x720 and 400x225), then stored by a job.',
     multipart: { fields: z.object({}), file: 'cover' },
     responses: { 202: adminEpisodeResponseSchema },
   }),

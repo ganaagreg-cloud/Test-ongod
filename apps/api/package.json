@@ -8,6 +8,7 @@
     "build": "prisma generate && tsup",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "ops:bootstrap": "tsx scripts/ops-bootstrap.ts",
     "dev:setup": "tsx --env-file-if-exists=../../.env scripts/dev-setup.ts",
     "dev:approve": "tsx --env-file-if-exists=../../.env scripts/dev-approve.ts",
     "dev:totp": "tsx --env-file-if-exists=../../.env scripts/dev-totp.ts",

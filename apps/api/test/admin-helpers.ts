@@ -31,7 +31,7 @@ export async function paymentApp(
 
 export const call = (
   app: FastifyInstance,
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   token?: string,
   payload?: unknown,

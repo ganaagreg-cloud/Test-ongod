@@ -146,6 +146,15 @@ export const devicesResponseSchema = z.object({
 });
 export const removeDeviceRequestSchema = z.object({ password: z.string().min(1).max(128) });
 
+/** PUT /v1/me/devices/current/push-token: the Expo push token of this device; null turns push off. */
+export const pushTokenRequestSchema = z.object({
+  pushToken: z
+    .string()
+    .max(255)
+    .regex(/^Expo(nent)?PushToken\[[^\]]+\]$/)
+    .nullable(),
+});
+
 // ---- Social login (SPEC C, behind SOCIAL_LOGIN) ----
 
 export const authProviderSchema = z.enum(['GOOGLE', 'APPLE']);

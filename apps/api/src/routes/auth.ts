@@ -69,8 +69,8 @@ export async function authRoutes(
     const token = body.refreshToken ?? webSession.read(req, app);
     if (!token) throw new AppError(401, 'UNAUTHORIZED');
     if (viaCookie) webSession.assertSameOrigin(req);
-    // Per IP only: the token is the identifier and is unguessable.
-    limiter.check(req, 'refresh', body.deviceId);
+    // Per device only: the token is unguessable, and many phones can share one carrier IP.
+    limiter.checkIdentifier('refresh', body.deviceId);
 
     let tokens;
     try {
