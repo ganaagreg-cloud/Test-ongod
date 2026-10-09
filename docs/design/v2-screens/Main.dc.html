@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#F3EFE6;text-decoration:none}a:hover{color:#D4AF6A}
+.serif{font-family:'Lora',Georgia,serif}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.in{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.15s}.d2{animation-delay:.3s}.d3{animation-delay:.45s}.d4{animation-delay:.6s}.d5{animation-delay:.75s}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,30px) scale(1.15)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1.1)}50%{transform:translate(-50px,-20px) scale(.9)}}
+@keyframes drift3{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-40px)}}
+.blob{position:absolute;border-radius:50%;filter:blur(60px)}
+@keyframes marqL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes marqR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.row{display:flex;gap:12px;width:max-content}
+.cov{position:relative;width:112px;height:112px;border-radius:14px;overflow:hidden;flex:none;box-shadow:inset 0 0 0 1px rgba(243,239,230,.08)}
+@keyframes draw{from{stroke-dashoffset:260}to{stroke-dashoffset:0}}
+.ridge{stroke-dasharray:260;animation:draw 1.8s .2s cubic-bezier(.65,0,.35,1) both}
+@keyframes sweep{0%{transform:translateX(-140%) skewX(-20deg)}60%,100%{transform:translateX(320%) skewX(-20deg)}}
+.cta{position:relative;overflow:hidden;transition:transform .2s cubic-bezier(.3,1.4,.5,1),background .2s}
+.cta:active{transform:scale(.96)}
+.cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sweep 3.2s 1.4s ease-in-out infinite}
+.ghost{transition:transform .2s cubic-bezier(.3,1.4,.5,1),background .2s}
+.ghost:active{transform:scale(.96);background:rgba(243,239,230,.06)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+
+  <div class="blob" style="width: 420px; height: 420px; left: -120px; top: -60px; background: #0A5446; opacity: .9; animation: drift1 14s ease-in-out infinite;"></div>
+  <div class="blob" style="width: 300px; height: 300px; right: -120px; top: 180px; background: #2FA88A; opacity: .28; animation: drift2 17s ease-in-out infinite;"></div>
+  <div class="blob" style="width: 260px; height: 260px; left: 40px; top: 360px; background: #D4AF6A; opacity: .14; animation: drift3 19s ease-in-out infinite;"></div>
+
+  <div style="position: absolute; left: -60px; right: -60px; top: 70px; display: flex; flex-direction: column; gap: 12px; transform: rotate(-8deg); -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 62%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 62%, transparent 100%); opacity: .95;">
+    <div class="row" style="animation: marqL 48s linear infinite;">
+      <sc-for list="{{rowA}}" as="c" hint-placeholder-count="12">
+        <div class="cov" style="background: {{c.bg}};">
+          <div style="position: absolute; right: -30px; top: -30px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,106,.35), transparent 70%);"></div>
+          <div style="position: absolute; left: 10px; top: 10px; font-size: 9px; letter-spacing: .14em; color: #D4AF6A; font-weight: 600;">{{c.n}}</div>
+          <div class="serif" style="position: absolute; left: 10px; right: 10px; bottom: 22px; font-size: 13px; line-height: 16px; font-weight: 600;">{{c.t}}</div>
+          <svg width="112" height="18" viewBox="0 0 160 26" style="position: absolute; left: 0; bottom: 4px; opacity: .45;"><path d="M0 24 L24 10 L36 16 L58 2 L78 16 L92 10 L116 22 L160 24" fill="none" stroke="#F3EFE6" stroke-width="1.2"></path></svg>
+        </div>
+      </sc-for>
+    </div>
+    <div class="row" style="animation: marqR 56s linear infinite; margin-left: -40px;">
+      <sc-for list="{{rowB}}" as="c" hint-placeholder-count="12">
+        <div class="cov" style="background: {{c.bg}};">
+          <div style="position: absolute; right: -30px; top: -30px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,106,.3), transparent 70%);"></div>
+          <div style="position: absolute; left: 10px; top: 10px; font-size: 9px; letter-spacing: .14em; color: #D4AF6A; font-weight: 600;">{{c.n}}</div>
+          <div class="serif" style="position: absolute; left: 10px; right: 10px; bottom: 22px; font-size: 13px; line-height: 16px; font-weight: 600;">{{c.t}}</div>
+          <svg width="112" height="18" viewBox="0 0 160 26" style="position: absolute; left: 0; bottom: 4px; opacity: .45;"><path d="M0 24 L24 10 L36 16 L58 2 L78 16 L92 10 L116 22 L160 24" fill="none" stroke="#F3EFE6" stroke-width="1.2"></path></svg>
+        </div>
+      </sc-for>
+    </div>
+    <div class="row" style="animation: marqL 64s linear infinite; margin-left: -90px;">
+      <sc-for list="{{rowC}}" as="c" hint-placeholder-count="12">
+        <div class="cov" style="background: {{c.bg}};">
+          <div style="position: absolute; left: 10px; top: 10px; font-size: 9px; letter-spacing: .14em; color: #D4AF6A; font-weight: 600;">{{c.n}}</div>
+          <div class="serif" style="position: absolute; left: 10px; right: 10px; bottom: 22px; font-size: 13px; line-height: 16px; font-weight: 600;">{{c.t}}</div>
+          <svg width="112" height="18" viewBox="0 0 160 26" style="position: absolute; left: 0; bottom: 4px; opacity: .45;"><path d="M0 24 L24 10 L36 16 L58 2 L78 16 L92 10 L116 22 L160 24" fill="none" stroke="#F3EFE6" stroke-width="1.2"></path></svg>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 520px; background: linear-gradient(180deg, rgba(2,21,18,0) 0%, rgba(2,21,18,.85) 32%, #021512 55%);"></div>
+
+  <div style="position: absolute; left: 24px; right: 24px; bottom: 40px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <svg width="160" height="48" viewBox="0 0 160 48" style="margin-bottom: 18px;" aria-hidden="true">
+      <path class="ridge" d="M2 44 L30 22 L44 30 L70 6 L94 28 L110 18 L132 36 L158 44" fill="none" stroke="#D4AF6A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+    <h1 class="serif in d1" style="margin: 0; font-size: 52px; line-height: 58px; font-weight: 600; letter-spacing: .02em;">Онгод</h1>
+    <p class="in d2" style="margin: 12px 0 0; font-size: 16px; line-height: 24px; color: #A9B8B2; max-width: 290px;">Гишүүдэд зориулсан хаалттай аудио сан. Сонсож, өсөж, өөрийгөө нээ.</p>
+    <div class="in d3" style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 32px;">
+      <a href="Code.dc.html" class="cta" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 999px; background: #D4AF6A; color: #14110A; font-size: 16px; font-weight: 600;">Нэвтрэх</a>
+      <a href="Code.dc.html" class="ghost" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(243,239,230,.22); color: #F3EFE6; font-size: 16px; font-weight: 500;">Бүртгүүлэх</a>
+    </div>
+    <p class="in d4" style="margin: 20px 0 0; font-size: 12px; line-height: 16px; color: #7F918B;">Үргэлжлүүлснээр <a href="#" style="text-decoration: underline;">Үйлчилгээний нөхцөл</a>-ийг зөвшөөрнө.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const G = {
+      f: 'linear-gradient(160deg,#0D5A4C 0%,#053931 45%,#03231E 100%)',
+      b: 'linear-gradient(160deg,#4A3818 0%,#2A1F0D 50%,#140E05 100%)',
+      t: 'linear-gradient(160deg,#155463 0%,#0A3540 50%,#041A20 100%)',
+      m: 'linear-gradient(160deg,#3A5A2A 0%,#1F3A17 50%,#0D1A09 100%)',
+      p: 'linear-gradient(160deg,#5A3A4A 0%,#33202B 50%,#170D13 100%)'
+    };
+    const a = [
+      ['№ 001', 'Өөрийгөө ялах урлаг', G.f], ['№ 014', 'Зуршлын хүч', G.b], ['№ 022', 'Айдастай нүүр тулах', G.t],
+      ['№ 031', 'Цаг ашиглах ухаан', G.m], ['№ 040', 'Чимээгүйн хүч', G.p], ['№ 052', 'Бүтэлгүйтлээс суралцах', G.f]
+    ];
+    const b = [
+      ['№ 008', 'Харилцааны хил хязгаар', G.t], ['№ 017', 'Мөнгөний сэтгэлгээ', G.b], ['№ 026', 'Өглөөний дэг', G.f],
+      ['№ 033', 'Сахилга бат', G.p], ['№ 045', 'Анхаарал төвлөрөл', G.m], ['№ 058', 'Утга учир', G.t]
+    ];
+    const c = [
+      ['№ 003', 'Унших дадал', G.m], ['№ 019', 'Өөртөө итгэх', G.f], ['№ 027', 'Ганцаардал', G.b],
+      ['№ 036', 'Шийдвэр гаргах', G.t], ['№ 049', 'Эцэг эх байх', G.p], ['№ 061', 'Амрах ухаан', G.f]
+    ];
+    const map = (xs) => xs.concat(xs).map(([n, t, bg]) => ({ n, t, bg }));
+    return { rowA: map(a), rowB: map(b), rowC: map(c) };
+  }
+}
+</script>
+</body>
+</html>

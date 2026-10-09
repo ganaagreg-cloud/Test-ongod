@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Email code</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#D4AF6A;text-decoration:none}a:hover{color:#E6C98F}
+.serif{font-family:'Lora',Georgia,serif}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.in{animation:up .55s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}.d4{animation-delay:.32s}
+.box{width:48px;height:58px;border-radius:14px;background:#041F1A;box-shadow:inset 0 0 0 1px rgba(243,239,230,.10);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;position:relative;transition:box-shadow .2s,background .2s,transform .25s cubic-bezier(.3,1.5,.5,1)}
+.box.active{box-shadow:inset 0 0 0 2px #D4AF6A,0 0 0 4px rgba(212,175,106,.14)}
+.box.filled{background:#062A24;animation:pop .28s cubic-bezier(.3,1.6,.5,1)}
+.box.ok{background:#053931;box-shadow:inset 0 0 0 1px #46A758}
+@keyframes pop{0%{transform:scale(.86)}100%{transform:scale(1)}}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.caret{width:2px;height:24px;background:#D4AF6A;border-radius:2px;animation:blink 1s step-end infinite}
+@keyframes wave{0%{transform:translateY(0)}40%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+.ok{animation:wave .5s cubic-bezier(.3,1.4,.5,1) both}
+.press{transition:transform .2s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.96)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; width: 380px; height: 380px; border-radius: 50%; left: -140px; top: -170px; background: #0A5446; filter: blur(70px); opacity: .7;"></div>
+
+  <div style="position: relative; padding: 56px 20px 0; display: flex; flex-direction: column;">
+    <a href="Main.dc.html" aria-label="Буцах" class="press" style="width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(243,239,230,.06); color: #F3EFE6;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+
+    <div class="in d1" style="margin-top: 32px; width: 56px; height: 56px; border-radius: 18px; background: #053931; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px rgba(212,175,106,.3);">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D4AF6A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M4 7l8 6 8-6"></path></svg>
+    </div>
+    <h1 class="serif in d2" style="margin: 20px 0 0; font-size: 32px; line-height: 38px; font-weight: 600;">Кодоо оруулна уу</h1>
+    <p class="in d2" style="margin: 8px 0 0; font-size: 16px; line-height: 24px; color: #A9B8B2;">6 оронтой кодыг <span style="color: #F3EFE6;">bat@example.com</span> хаяг руу илгээлээ.</p>
+
+    <label class="in d3" style="position: relative; display: block; margin-top: 32px; cursor: text;">
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Баталгаажуулах код</span>
+      <input value="{{code}}" onInput="{{onInput}}" inputmode="numeric" autocomplete="one-time-code" maxlength="6" style="position: absolute; inset: 0; width: 100%; height: 58px; opacity: 0; border: 0; font-size: 16px;">
+      <div style="display: flex; justify-content: space-between; pointer-events: none;">
+        <sc-for list="{{boxes}}" as="b" hint-placeholder-count="6">
+          <div class="{{b.cls}}" style="animation-delay: {{b.delay}};">
+            <span>{{b.ch}}</span>
+            <sc-if value="{{b.caret}}" hint-placeholder-val="{{false}}"><span class="caret"></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </label>
+
+    <div class="in d4" style="margin-top: 20px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; line-height: 20px;">
+      <span style="color: #7F918B;">Код ирээгүй юу?</span>
+      <sc-if value="{{canResend}}" hint-placeholder-val="{{false}}">
+        <button onClick="{{resend}}" style="color: #D4AF6A; font-weight: 600; min-height: 44px;">Дахин илгээх</button>
+      </sc-if>
+      <sc-if value="{{waiting}}" hint-placeholder-val="{{true}}">
+        <span style="color: #A9B8B2; font-variant-numeric: tabular-nums; min-height: 44px; display: flex; align-items: center;">Дахин илгээх · 0:{{secs}}</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; bottom: 40px;">
+    <sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+      <a href="Home.dc.html" class="press in" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border-radius: 999px; background: #D4AF6A; color: #14110A; font-size: 16px; font-weight: 600;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        Баталгаажлаа — нэвтрэх
+      </a>
+    </sc-if>
+    <sc-if value="{{notDone}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 999px; background: rgba(212,175,106,.16); color: rgba(243,239,230,.45); font-size: 16px; font-weight: 600;">Баталгаажуулах</div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { code: '48', secs: 42 }; }
+  componentDidMount() {
+    this.t = setInterval(() => { if (this.state.secs > 0) this.setState({ secs: this.state.secs - 1 }); }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const code = this.state.code || '';
+    const done = code.length === 6;
+    const boxes = [0, 1, 2, 3, 4, 5].map((i) => {
+      const ch = code[i] || '';
+      let cls = 'box';
+      if (done) cls += ' ok';
+      else if (ch) cls += ' filled';
+      else if (i === code.length) cls += ' active';
+      return { ch, cls, caret: !done && i === code.length, delay: done ? (i * 0.05) + 's' : '0s' };
+    });
+    const s = this.state.secs;
+    return {
+      code, boxes, done, notDone: !done,
+      secs: s < 10 ? '0' + s : String(s),
+      waiting: s > 0, canResend: s === 0,
+      onInput: (e) => this.setState({ code: String(e.target.value || '').replace(/\D/g, '').slice(0, 6) }),
+      resend: () => this.setState({ secs: 59, code: '' })
+    };
+  }
+}
+</script>
+</body>
+</html>

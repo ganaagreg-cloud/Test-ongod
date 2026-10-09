@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Сан</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#e6e0d3}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#053931;text-decoration:none}a:hover{color:#053931}
+input{font:inherit}
+input::placeholder{color:#3F5F58}
+.serif{font-family:'Lora',Georgia,serif}
+.scroller{scrollbar-width:none}.scroller::-webkit-scrollbar{display:none}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.in{animation:up .5s cubic-bezier(.2,.8,.2,1) both}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.97)}
+.pill{position:absolute;top:0;height:40px;border-radius:999px;background:#053931;transition:left .45s cubic-bezier(.22,1,.36,1),width .45s cubic-bezier(.22,1,.36,1)}
+.chip{position:relative;height:40px;border-radius:999px;font-size:14px;font-weight:600;transition:color .25s}
+.thumb{position:absolute;top:3px;bottom:3px;border-radius:999px;background:#053931;transition:left .4s cubic-bezier(.22,1,.36,1)}
+.seg{position:relative;flex:1;height:38px;font-size:14px;font-weight:600;transition:color .3s}
+.search{transition:box-shadow .2s,background .2s}
+.search:focus-within{box-shadow:inset 0 0 0 1.5px #053931,0 0 0 4px rgba(5,57,49,.10);background:#FFFFFF}
+.sk{position:relative;overflow:hidden;background:#E5DED0;border-radius:8px}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:sh 1.2s ease-in-out infinite}
+@keyframes sh{to{transform:translateX(100%)}}
+@keyframes popb{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.saved{animation:popb .35s cubic-bezier(.3,1.6,.5,1)}
+.cov{position:relative;overflow:hidden;flex:none;color:#F3EFE6}
+.cov .ci{transition:transform .8s cubic-bezier(.22,1,.36,1)}
+.row:active .cov .ci{transform:scale(1.08)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #F1ECE1; color: #053931; font-family: 'Inter', system-ui, sans-serif;">
+  <div class="scroller" style="position: absolute; inset: 0; overflow-y: auto;">
+    <div style="padding: 60px 0 200px;">
+      <div style="padding: 0 20px; display: flex; align-items: flex-end; justify-content: space-between;">
+        <h1 class="serif in" style="margin: 0; font-size: 34px; line-height: 40px; font-weight: 600;">Сан</h1>
+        <span class="in" style="font-size: 14px; line-height: 20px; color: #3F5F58; padding-bottom: 6px;">{{total}} дугаар</span>
+      </div>
+
+      <label class="search in" style="margin: 16px 20px 0; height: 50px; border-radius: 16px; background: #FBF8F2; box-shadow: inset 0 0 0 1px rgba(5,57,49,.14); display: flex; align-items: center; gap: 10px; padding: 0 14px; animation-delay: .05s;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3F5F58" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Хайх</span>
+        <input placeholder="Дугаар, сэдэв хайх" value="{{q}}" onInput="{{onQ}}" style="flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: #053931; font-size: 16px;">
+      </label>
+
+      <div class="scroller in" style="overflow-x: auto; margin-top: 14px; padding: 2px 20px; animation-delay: .1s;">
+        <div style="position: relative; display: flex; gap: 8px; width: max-content; height: 40px;">
+          <span class="pill" style="left: {{pillX}}px; width: {{pillW}}px;"></span>
+          <sc-for list="{{chips}}" as="c" hint-placeholder-count="5">
+            <button onClick="{{c.pick}}" aria-pressed="{{c.on}}" class="chip" style="width: {{c.w}}px; color: {{c.color}}; box-shadow: {{c.ring}};">{{c.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div class="in" style="margin: 14px 20px 0; position: relative; display: flex; padding: 3px; border-radius: 999px; background: #E9E3D6; animation-delay: .15s;" role="radiogroup" aria-label="Эрэмбэ">
+        <span class="thumb" style="left: calc({{sortI}} * (100% - 6px) / 3 + 3px); width: calc((100% - 6px) / 3);"></span>
+        <sc-for list="{{sorts}}" as="s" hint-placeholder-count="3">
+          <button role="radio" aria-checked="{{s.on}}" onClick="{{s.pick}}" class="seg" style="color: {{s.color}};">{{s.label}}</button>
+        </sc-for>
+      </div>
+
+      <div style="margin-top: 14px; padding: 0 20px;">
+        <sc-if value="{{loading}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 18px; padding-top: 6px;">
+            <sc-for list="{{skel}}" as="k" hint-placeholder-count="5">
+              <div style="display: flex; gap: 14px; align-items: center;">
+                <div class="sk" style="width: 112px; height: 84px; border-radius: 14px;"></div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                  <div class="sk" style="height: 14px; width: 85%;"></div>
+                  <div class="sk" style="height: 14px; width: 60%;"></div>
+                  <div class="sk" style="height: 10px; width: 40%;"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ready}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-direction: column;">
+            <sc-for list="{{rows}}" as="e" hint-placeholder-count="6">
+              <div class="in row" style="display: flex; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(5,57,49,.10); animation-delay: {{e.delay}};">
+                <a href="Episode.dc.html" class="press" style="flex: 1; min-width: 0; display: flex; gap: 14px; align-items: center;">
+                  <div class="cov" style="width: 112px; height: 84px; border-radius: 14px;">
+                    <div class="ci" style="position: absolute; inset: 0; background: {{e.bg}};"></div>
+                    <div style="position: absolute; right: -24px; top: -24px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,106,.32), transparent 70%);"></div>
+                    <div style="position: absolute; left: 9px; top: 8px; font-size: 9px; letter-spacing: .12em; color: #D4AF6A; font-weight: 600;">{{e.n}}</div>
+                    <div class="serif" style="position: absolute; left: 9px; right: 30px; bottom: 9px; font-size: 12px; line-height: 14px; font-weight: 600;">{{e.short}}</div>
+                    <span style="position: absolute; right: 6px; bottom: 6px; height: 20px; padding: 0 6px; border-radius: 6px; background: rgba(2,21,18,.72); font-size: 11px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums;">{{e.d}}:00</span>
+                    <sc-if value="{{e.started}}" hint-placeholder-val="{{false}}">
+                      <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(243,239,230,.25);"><div style="height: 100%; width: {{e.p}}%; background: #D4AF6A;"></div></div>
+                    </sc-if>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 16px; line-height: 21px; font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{e.t}}</div>
+                    <div style="font-size: 13px; line-height: 18px; color: #3F5F58; margin-top: 4px;">{{e.meta}}</div>
+                  </div>
+                </a>
+                <button onClick="{{e.save}}" aria-label="{{e.saveLabel}}" aria-pressed="{{e.saved}}" style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-right: -10px;">
+                  <svg class="{{e.saveCls}}" width="22" height="22" viewBox="0 0 24 24" fill="{{e.fill}}" stroke="{{e.stroke}}" stroke-width="1.8" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+                </button>
+              </div>
+            </sc-for>
+            <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+              <div style="padding: 40px 0; text-align: center; color: #3F5F58; font-size: 14px;">Тохирох дугаар олдсонгүй</div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <nav aria-label="Үндсэн цэс" style="position: absolute; left: 16px; right: 16px; bottom: 32px; height: 68px; border-radius: 999px; padding: 6px; box-sizing: border-box; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: rgba(5,57,49,.94); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); box-shadow: 0 16px 40px rgba(5,57,49,.35);">
+    <a href="Home.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #B9C4B4;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-6h-6v6H4z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Нүүр</span>
+    </a>
+    <a href="Library.dc.html" aria-current="page" style="border-radius: 999px; background: #F1ECE1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #053931;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16" rx="1"></rect><rect x="10" y="4" width="4" height="16" rx="1"></rect><path d="M14.5 5.2l3.6-.9 3 15.5-3.6.9z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 600;">Сан</span>
+    </a>
+    <a href="Saved.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #B9C4B4;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Хадгалсан</span>
+    </a>
+    <a href="Profile.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #B9C4B4;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"></circle><path d="M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Профайл</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { cat: 0, sort: 0, loading: false, q: '', saved: { 22: true } }; }
+  componentWillUnmount() { clearTimeout(this.t); }
+  pickCat(k) {
+    if (k === this.state.cat) return;
+    this.setState({ cat: k, loading: true });
+    clearTimeout(this.t);
+    this.t = setTimeout(() => this.setState({ loading: false }), 650);
+  }
+  renderVals() {
+    const G = {
+      f: 'linear-gradient(160deg,#0D5A4C,#053931 45%,#03231E)',
+      b: 'linear-gradient(160deg,#4A3818,#2A1F0D 50%,#140E05)',
+      t: 'linear-gradient(160deg,#155463,#0A3540 50%,#041A20)',
+      m: 'linear-gradient(160deg,#3A5A2A,#1F3A17 50%,#0D1A09)',
+      p: 'linear-gradient(160deg,#5A3A4A,#33202B 50%,#170D13)'
+    };
+    const labels = [['Бүгд', 64], ['Сэтгэл зүй', 108], ['Хөгжил', 82], ['Харилцаа', 98], ['Санхүү', 82]];
+    let x = 0;
+    const chips = labels.map(([label, w], k) => {
+      const on = k === this.state.cat;
+      const c = { label, w, on, x, color: on ? '#F1ECE1' : '#3F5F58', ring: on ? 'none' : 'inset 0 0 0 1px rgba(5,57,49,.18)', pick: () => this.pickCat(k) };
+      x += w + 8;
+      return c;
+    });
+    const cur = chips[this.state.cat];
+    const all = [
+      [62, 'Чимээгүй байхын хүч', 'Чимээгүйн хүч', 1, 28, 0, G.p],
+      [61, 'Амрах ухаан: ядаргаа ба тэнцвэр', 'Амрах ухаан', 1, 34, 0, G.f],
+      [60, 'Мөнгөтэй харьцах сэтгэлгээ', 'Мөнгө', 4, 39, 0, G.b],
+      [59, 'Анхаарал төвлөрлийг сэргээх', 'Анхаарал', 2, 25, 0, G.t],
+      [58, 'Ажлын утга учрыг олох', 'Утга учир', 2, 31, 0, G.m],
+      [22, 'Айдастай нүүр тулах нь', 'Айдас', 1, 36, 58, G.t],
+      [17, 'Харилцааны хил хязгаар тогтоох', 'Хил хязгаар', 3, 33, 100, G.b],
+      [14, 'Зуршил хэрхэн бүрэлддэг вэ', 'Зуршил', 2, 29, 0, G.f],
+      [8, 'Сонсох урлаг: эхнэр нөхрийн харилцаа', 'Сонсох урлаг', 3, 40, 0, G.p],
+      [1, 'Өөрийгөө ялах урлаг', 'Өөрийгөө ялах', 2, 41, 20, G.m]
+    ];
+    const catName = ['', 'Сэтгэл зүй', 'Хөгжил', 'Харилцаа', 'Санхүү'];
+    const q = this.state.q.trim().toLowerCase();
+    let list = all.filter((e) => (this.state.cat === 0 || e[3] === this.state.cat) && (!q || e[1].toLowerCase().includes(q)));
+    if (this.state.sort === 1) list = list.slice().reverse();
+    if (this.state.sort === 2) list = list.slice().sort((a, b) => b[4] - a[4]);
+    const rows = list.map(([n, t, short, c, d, p, bg], k) => {
+      const saved = !!this.state.saved[n];
+      return {
+        n: '№ ' + String(n).padStart(3, '0'), t, short, bg, d,
+        meta: catName[c] + ' · 2026' + (p === 100 ? ' · Сонссон' : ''),
+        started: p > 0 && p < 100, p,
+        delay: (k * 0.045) + 's',
+        saved, saveCls: saved ? 'saved' : '',
+        fill: saved ? '#053931' : 'none', stroke: saved ? '#053931' : '#3F5F58',
+        saveLabel: saved ? 'Хадгалснаас хасах' : 'Хадгалах',
+        save: () => this.setState({ saved: { ...this.state.saved, [n]: !saved } })
+      };
+    });
+    const sorts = ['Шинэ', 'Хуучин', 'Урт'].map((label, k) => ({
+      label, on: k === this.state.sort, color: k === this.state.sort ? '#F1ECE1' : '#3F5F58',
+      pick: () => this.setState({ sort: k })
+    }));
+    return {
+      chips, pillX: cur.x, pillW: cur.w, sorts, sortI: this.state.sort,
+      loading: this.state.loading, ready: !this.state.loading,
+      skel: [1, 2, 3, 4, 5], rows, empty: rows.length === 0, total: 62,
+      q: this.state.q, onQ: (e) => this.setState({ q: e.target.value })
+    };
+  }
+}
+</script>
+</body>
+</html>

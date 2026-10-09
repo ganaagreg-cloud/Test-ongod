@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Тоглуулагч</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#F3EFE6;text-decoration:none}a:hover{color:#F3EFE6}
+.serif{font-family:'Lora',Georgia,serif}
+.scroller{scrollbar-width:none}.scroller::-webkit-scrollbar{display:none}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+.enter{animation:sheetIn .55s cubic-bezier(.22,1,.36,1) both}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.in{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.2s}.d2{animation-delay:.28s}.d3{animation-delay:.36s}.d4{animation-delay:.44s}
+@keyframes kb{0%{transform:scale(1.04) translate(0,0)}100%{transform:scale(1.14) translate(-12px,-6px)}}
+.kb{animation:kb 18s ease-in-out infinite alternate}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.92)}
+.ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .25s,transform .35s cubic-bezier(.3,1.5,.5,1)}
+.overlay{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+@keyframes ccw{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+@keyframes ccw2{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+@keyframes cw{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes cw2{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.rA{animation:ccw .5s cubic-bezier(.22,1,.36,1)}.rB{animation:ccw2 .5s cubic-bezier(.22,1,.36,1)}
+.fA{animation:cw .5s cubic-bezier(.22,1,.36,1)}.fB{animation:cw2 .5s cubic-bezier(.22,1,.36,1)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,#D4AF6A var(--p),rgba(243,239,230,.18) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#D4AF6A;margin-top:-5px;box-shadow:0 0 0 5px rgba(212,175,106,.2);transition:transform .2s}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.5)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(243,239,230,.18)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:#D4AF6A}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#D4AF6A}
+.desc{overflow:hidden;transition:max-height .5s cubic-bezier(.22,1,.36,1)}
+.chev{transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.nx .ti{transition:transform .8s cubic-bezier(.22,1,.36,1)}
+.nx:active .ti{transform:scale(1.08)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.backdrop{animation:fade .3s both}
+.opt{transition:background .2s}.opt:active{background:rgba(243,239,230,.06)}
+@keyframes popb{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+.saved{animation:popb .35s cubic-bezier(.3,1.6,.5,1)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="enter" style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+  <div class="scroller" style="position: absolute; inset: 0; overflow-y: auto;">
+    <div style="padding-top: 104px; padding-bottom: 40px;">
+
+      <div style="position: relative; width: 390px; height: 220px; overflow: hidden; background: #053931;">
+        <img src="/_blob/e87a37d44c143c99a070641534879e5c" alt="" class="kb" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation-play-state: {{kbState}};">
+        <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(2,21,18,.35) 0%, rgba(2,21,18,0) 30%, rgba(2,21,18,0) 60%, rgba(2,21,18,.85) 100%);"></div>
+        <span style="position: absolute; left: 16px; top: 14px; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(2,21,18,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-size: 12px; line-height: 24px; letter-spacing: .1em; font-weight: 600; color: #E6C98F;">№ 022</span>
+        <button onClick="{{toggle}}" aria-label="{{playLabel}}" class="overlay" style="position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 999px; background: rgba(2,21,18,.55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgba(243,239,230,.25); display: flex; align-items: center; justify-content: center; opacity: {{ovO}}; transform: scale({{ovS}}); pointer-events: {{ovPE}};">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M8.5 5.5v13l10.5-6.5z" fill="#F3EFE6"></path></svg>
+        </button>
+      </div>
+
+      <div style="padding: 10px 20px 0;">
+        <label style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);" for="scrub">Байрлал</label>
+        <input id="scrub" type="range" min="0" max="2172" value="{{pos}}" onInput="{{onSeek}}" style="--p: {{pct}}%;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; line-height: 16px; color: #A9B8B2; font-variant-numeric: tabular-nums;">
+          <span>{{elapsed}}</span><span>-{{remain}}</span>
+        </div>
+
+        <h1 class="serif in d1" style="margin: 14px 0 0; font-size: 26px; line-height: 32px; font-weight: 600;">Айдастай нүүр тулах нь</h1>
+        <div class="in d1" style="margin-top: 4px; font-size: 14px; line-height: 20px; color: #A9B8B2;">Сэтгэл зүй · 2026 · 36:12</div>
+
+        <div class="in d2" style="margin-top: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <button onClick="{{cycleSpeed}}" aria-label="Хурд" class="press" style="width: 52px; height: 44px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(243,239,230,.18); font-size: 14px; font-weight: 600; color: {{spColor}};">{{spLabel}}</button>
+          <button onClick="{{back}}" aria-label="15 секунд ухраах" class="press" style="position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;">
+            <svg class="{{rCls}}" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"></path><path d="M4 3.5v4h4"></path></svg>
+            <span style="position: absolute; font-size: 10px; font-weight: 600; margin-top: 2px;">15</span>
+          </button>
+          <button onClick="{{toggle}}" aria-label="{{playLabel}}" class="press" style="position: relative; width: 72px; height: 72px; border-radius: 999px; background: #D4AF6A; box-shadow: 0 10px 30px rgba(212,175,106,.3);">
+            <span class="ico" style="opacity: {{pauseO}}; transform: scale({{pauseS}});"><svg width="28" height="28" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.8" height="14" rx="1.3" fill="#14110A"></rect><rect x="13.7" y="5" width="3.8" height="14" rx="1.3" fill="#14110A"></rect></svg></span>
+            <span class="ico" style="opacity: {{playO}}; transform: scale({{playS}});"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M8.5 5.5v13l10.5-6.5z" fill="#14110A"></path></svg></span>
+          </button>
+          <button onClick="{{fwd}}" aria-label="30 секунд гүйлгэх" class="press" style="position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;">
+            <svg class="{{fCls}}" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"></path><path d="M20 3.5v4h-4"></path></svg>
+            <span style="position: absolute; font-size: 10px; font-weight: 600; margin-top: 2px;">30</span>
+          </button>
+          <button onClick="{{openSheet}}" aria-label="Унтах цаг" class="press" style="width: 52px; height: 44px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(243,239,230,.18); display: flex; align-items: center; justify-content: center; background: {{sleepBg}}; color: {{sleepColor}};">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>
+          </button>
+        </div>
+
+        <section class="in d3" style="margin-top: 20px; padding: 16px; border-radius: 18px; background: #062A24; box-shadow: inset 0 0 0 1px rgba(243,239,230,.06);">
+          <button onClick="{{toggleDesc}}" aria-expanded="{{open}}" style="width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 32px;">
+            <span style="font-size: 16px; line-height: 22px; font-weight: 600;">Тайлбар</span>
+            <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{chevR}}deg);"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <div class="desc" style="max-height: {{descH}}px;">
+            <p style="margin: 6px 0 0; font-size: 15px; line-height: 22px; color: #C9D3CF;">Айдас бол дайсан биш, дохио. Энэ дугаарт айдас хаанаас үүсдэг, яагаад шийдвэр гаргахад саад болдог, түүнтэй хэрхэн өдөр бүр жижиг алхмаар нүүр тулахыг ярилцана.</p>
+            <p style="margin: 10px 0 0; font-size: 15px; line-height: 22px; color: #C9D3CF;">Сонсох зуураа хамгийн их хойшлуулдаг нэг ажлаа бодоорой. Дугаарын төгсгөлд 3 алхамт дасгал бий.</p>
+          </div>
+          <button onClick="{{toggleDesc}}" style="margin-top: 6px; min-height: 32px; display: flex; align-items: center; gap: 4px; color: #D4AF6A; font-size: 14px; font-weight: 600;">{{moreLabel}}</button>
+        </section>
+
+        <section class="in d4" style="margin-top: 24px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+            <h2 style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 600;">Дараагийн</h2>
+            <a href="Library.dc.html" style="font-size: 14px; color: #D4AF6A; font-weight: 500; min-height: 44px; display: flex; align-items: center; margin: -12px 0;">Бүгд ›</a>
+          </div>
+          <sc-for list="{{next}}" as="e" hint-placeholder-count="3">
+            <a href="Episode.dc.html" class="nx press" style="display: flex; gap: 14px; align-items: center; padding: 8px 0;">
+              <div style="position: relative; flex: none; width: 128px; height: 72px; border-radius: 12px; overflow: hidden; background: #053931;">
+                <div class="ti" style="position: absolute; inset: 0; background: {{e.bg}};"></div>
+                <sc-if value="{{e.img}}" hint-placeholder-val="{{false}}"><img class="ti" src="{{e.img}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></sc-if>
+                <div class="serif" style="position: absolute; left: 8px; bottom: 7px; right: 44px; font-size: 11px; line-height: 13px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.6);">{{e.s}}</div>
+                <span style="position: absolute; right: 6px; bottom: 6px; height: 20px; padding: 0 6px; border-radius: 6px; background: rgba(2,21,18,.75); font-size: 11px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums;">{{e.d}}</span>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 15px; line-height: 20px; font-weight: 600;">{{e.t}}</div>
+                <div style="font-size: 12px; line-height: 16px; color: #A9B8B2; margin-top: 3px;">{{e.m}}</div>
+              </div>
+            </a>
+          </sc-for>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 104px; padding: 0 12px 8px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(2,21,18,.85); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);">
+    <a href="Home.dc.html" aria-label="Хаах" class="press" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </a>
+    <span style="font-size: 12px; line-height: 44px; letter-spacing: .1em; font-weight: 600; color: #A9B8B2;">ОДОО ТОГЛУУЛЖ БАЙНА</span>
+    <div style="display: flex;">
+      <button onClick="{{toggleSave}}" aria-label="{{saveLabel}}" aria-pressed="{{saved}}" class="press" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg class="{{saveCls}}" width="22" height="22" viewBox="0 0 24 24" fill="{{saveFill}}" stroke="{{saveStroke}}" stroke-width="1.8" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+      </button>
+      <button aria-label="Бусад" class="press" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#F3EFE6"><circle cx="6" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18" cy="12" r="1.6"></circle></svg>
+      </button>
+    </div>
+  </div>
+
+  <sc-if value="{{sheet}}" hint-placeholder-val="{{false}}">
+    <div class="backdrop" onClick="{{closeSheet}}" style="position: absolute; inset: 0; background: rgba(1,10,8,.6);"></div>
+    <div class="enter" role="dialog" aria-label="Унтах цаг" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 20px 34px; border-radius: 26px 26px 0 0; background: #062A24; box-shadow: inset 0 1px 0 rgba(243,239,230,.1);">
+      <div style="display: flex; justify-content: center;"><span style="width: 40px; height: 4px; border-radius: 4px; background: rgba(243,239,230,.25);"></span></div>
+      <h2 style="margin: 16px 0 6px; font-size: 20px; line-height: 26px; font-weight: 600;">Унтах цаг</h2>
+      <sc-for list="{{opts}}" as="o" hint-placeholder-count="5">
+        <button onClick="{{o.pick}}" class="opt" role="radio" aria-checked="{{o.on}}" style="width: 100%; height: 54px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(243,239,230,.06); font-size: 16px; text-align: left;">
+          <span>{{o.label}}</span>
+          <span style="width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 {{o.ring}}px {{o.ringC}}; transition: box-shadow .25s;"></span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { pos: 1084, playing: true, sp: 0, r: 0, f: 0, sheet: false, sleep: -1, open: false, saved: true }; }
+  componentDidMount() { this.t = setInterval(() => { if (this.state.playing) this.setState({ pos: Math.min(2172, this.state.pos + 1) }); }, 1000); }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const { pos, playing, sp, saved } = this.state;
+    const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const SP = ['1x', '1.25x', '1.5x', '2x'];
+    const optL = ['Унтраах', '15 минут', '30 минут', '45 минут', 'Дугаар дуусахад'];
+    const opts = optL.map((label, k) => {
+      const on = (k - 1) === this.state.sleep;
+      return { label, on, ring: on ? 7 : 1.5, ringC: on ? '#D4AF6A' : 'rgba(243,239,230,.35)', pick: () => this.setState({ sleep: k - 1, sheet: false }) };
+    });
+    const sl = this.state.sleep;
+    const RIDERS = '/_blob/e51b79ef95bf4f5911f50f6c47e473f0';
+    return {
+      pos, pct: (pos / 2172 * 100).toFixed(2), elapsed: fmt(pos), remain: fmt(2172 - pos),
+      onSeek: (e) => this.setState({ pos: Number(e.target.value) }),
+      playing, playLabel: playing ? 'Түр зогсоох' : 'Тоглуулах',
+      pauseO: playing ? 1 : 0, pauseS: playing ? 1 : 0.5, playO: playing ? 0 : 1, playS: playing ? 0.5 : 1,
+      ovO: playing ? 0 : 1, ovS: playing ? 0.7 : 1, ovPE: playing ? 'none' : 'auto', kbState: playing ? 'running' : 'paused',
+      toggle: () => this.setState({ playing: !playing }),
+      rCls: this.state.r === 0 ? '' : (this.state.r % 2 ? 'rA' : 'rB'),
+      fCls: this.state.f === 0 ? '' : (this.state.f % 2 ? 'fA' : 'fB'),
+      back: () => this.setState({ pos: Math.max(0, pos - 15), r: this.state.r + 1 }),
+      fwd: () => this.setState({ pos: Math.min(2172, pos + 30), f: this.state.f + 1 }),
+      spLabel: SP[sp], spColor: sp === 0 ? '#F3EFE6' : '#E6C98F',
+      cycleSpeed: () => this.setState({ sp: (sp + 1) % 4 }),
+      sheet: this.state.sheet, opts,
+      openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false }),
+      sleepBg: sl < 0 ? 'transparent' : 'rgba(212,175,106,.18)', sleepColor: sl < 0 ? '#F3EFE6' : '#E6C98F',
+      open: this.state.open, descH: this.state.open ? 240 : 50, chevR: this.state.open ? 180 : 0,
+      moreLabel: this.state.open ? 'Хураах' : 'Цааш унших',
+      toggleDesc: () => this.setState({ open: !this.state.open }),
+      saved, saveCls: saved ? 'saved' : '', saveFill: saved ? '#D4AF6A' : 'none', saveStroke: saved ? '#D4AF6A' : '#F3EFE6',
+      saveLabel: saved ? 'Хадгалснаас хасах' : 'Хадгалах',
+      toggleSave: () => this.setState({ saved: !saved }),
+      next: [
+        { s: 'Өөртөө итгэх', t: 'Өөртөө итгэх итгэл', m: 'Сэтгэл зүй · 2026', d: '33:10', img: RIDERS, bg: '#053931' },
+        { s: 'Ичимхий зан', t: 'Ичимхий зан ба хүмүүс', m: 'Сэтгэл зүй · 2026', d: '27:40', img: '', bg: 'linear-gradient(160deg,#5A3A4A,#33202B 50%,#170D13)' },
+        { s: 'Түгшүүр', t: 'Түгшүүрийг нам дарах 5 арга', m: 'Сэтгэл зүй · 2026', d: '38:05', img: '', bg: 'linear-gradient(160deg,#4A3818,#2A1F0D 50%,#140E05)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

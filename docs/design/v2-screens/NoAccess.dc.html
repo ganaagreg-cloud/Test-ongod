@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Эрх идэвхгүй</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#F3EFE6;text-decoration:none}a:hover{color:#D4AF6A}
+.serif{font-family:'Lora',Georgia,serif}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+.sheet{animation:sheetIn .6s .2s cubic-bezier(.22,1,.36,1) both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.backdrop{animation:fade .4s both}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.96)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .8s linear infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97)}
+@keyframes draw{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+.check{stroke-dasharray:30;animation:draw .45s .1s cubic-bezier(.65,0,.35,1) both}
+@keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+.ring{animation:ring 1s cubic-bezier(.22,1,.36,1) both}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.pop{animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.in{animation:up .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.float{animation:float 3.6s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+  <div aria-hidden="true" style="padding: 112px 20px 0; display: flex; flex-direction: column; align-items: center; filter: blur(1px);">
+    <div style="width: 248px; height: 248px; border-radius: 22px; background: linear-gradient(160deg,#1A6476,#0A3540 50%,#041A20); position: relative; overflow: hidden;">
+      <div class="serif" style="position: absolute; left: 20px; right: 20px; bottom: 46px; font-size: 28px; line-height: 33px; font-weight: 600;">Айдастай нүүр тулах нь</div>
+    </div>
+    <div class="serif" style="margin-top: 26px; font-size: 28px; line-height: 34px; font-weight: 600;">Айдастай нүүр тулах нь</div>
+    <div style="margin-top: 22px; width: 100%; height: 54px; border-radius: 999px; background: #D4AF6A;"></div>
+  </div>
+  <div class="backdrop" style="position: absolute; inset: 0; background: rgba(1,10,8,.66); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);"></div>
+
+  <div class="sheet" role="dialog" aria-labelledby="na-title" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 24px 40px; border-radius: 28px 28px 0 0; background: linear-gradient(180deg,#0A3A32 0%,#062A24 45%); box-shadow: inset 0 1px 0 rgba(243,239,230,.12); display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <span style="width: 40px; height: 4px; border-radius: 4px; background: rgba(243,239,230,.25);"></span>
+
+    <div style="position: relative; margin-top: 28px; width: 76px; height: 76px;">
+      <sc-if value="{{isOk}}" hint-placeholder-val="{{false}}">
+        <span class="ring" style="position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px #46A758;"></span>
+        <div class="pop" style="position: absolute; inset: 0; border-radius: 50%; background: rgba(70,167,88,.16); box-shadow: inset 0 0 0 1px rgba(70,167,88,.5); display: flex; align-items: center; justify-content: center;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6FD08A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path class="check" d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        </div>
+      </sc-if>
+      <sc-if value="{{notOk}}" hint-placeholder-val="{{true}}">
+        <div class="float" style="position: absolute; inset: 0; border-radius: 50%; background: rgba(212,175,106,.12); box-shadow: inset 0 0 0 1px rgba(212,175,106,.35); display: flex; align-items: center; justify-content: center;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#D4AF6A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"></path></svg>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{notOk}}" hint-placeholder-val="{{true}}">
+      <h2 id="na-title" class="serif" style="margin: 20px 0 0; font-size: 24px; line-height: 30px; font-weight: 600;">Таны эрх идэвхгүй байна</h2>
+      <p style="margin: 8px 0 0; font-size: 16px; line-height: 24px; color: #A9B8B2; max-width: 300px;">Эрх тань идэвхжсэн бол доорх товчийг дарж шинэчилнэ үү.</p>
+      <sc-if value="{{still}}" hint-placeholder-val="{{false}}">
+        <p class="in" role="status" style="margin: 12px 0 0; padding: 8px 14px; border-radius: 12px; background: rgba(224,164,59,.12); color: #E0A43B; font-size: 14px; line-height: 20px;">Эрх одоогоор идэвхжээгүй байна</p>
+      </sc-if>
+      <button onClick="{{check}}" class="press {{btnCls}}" style="margin-top: 24px; width: 100%; height: 54px; border-radius: 999px; background: #D4AF6A; color: #14110A; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <sc-if value="{{busy}}" hint-placeholder-val="{{false}}">
+          <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14110A" stroke-width="2.4" stroke-linecap="round"><path d="M12 3a9 9 0 1 1-9 9" opacity=".9"></path></svg>
+        </sc-if>
+        {{btnLabel}}
+      </button>
+      <button style="margin-top: 8px; min-height: 44px; color: #A9B8B2; font-size: 14px; font-weight: 500;">Тусламж</button>
+    </sc-if>
+
+    <sc-if value="{{isOk}}" hint-placeholder-val="{{false}}">
+      <h2 class="serif in" style="margin: 20px 0 0; font-size: 24px; line-height: 30px; font-weight: 600;">Эрх идэвхжлээ</h2>
+      <p class="in" style="margin: 8px 0 0; font-size: 16px; line-height: 24px; color: #A9B8B2; animation-delay: .06s;">2027.10.08 хүртэл бүх дугаарыг сонсоорой.</p>
+      <a href="Player.dc.html" class="press in" style="margin-top: 24px; width: 100%; height: 54px; border-radius: 999px; background: #D4AF6A; color: #14110A; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; animation-delay: .12s;">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#14110A"></path></svg>
+        Тоглуулах
+      </a>
+      <button onClick="{{reset}}" style="margin-top: 8px; min-height: 44px; color: #A9B8B2; font-size: 14px; font-weight: 500;">Дахин үзүүлэх</button>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { phase: 'idle', tries: 0, shakeN: 0 }; }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const ph = this.state.phase;
+    return {
+      isOk: ph === 'ok', notOk: ph !== 'ok', busy: ph === 'busy', still: ph === 'still',
+      btnLabel: ph === 'busy' ? 'Шалгаж байна…' : 'Эрхээ шалгах',
+      btnCls: ph === 'still' ? (this.state.shakeN % 2 ? 'shake' : 'shake ') : '',
+      check: () => {
+        if (ph === 'busy') return;
+        this.setState({ phase: 'busy' });
+        clearTimeout(this.t);
+        this.t = setTimeout(() => {
+          const tries = this.state.tries + 1;
+          this.setState({ tries, phase: tries >= 2 ? 'ok' : 'still', shakeN: this.state.shakeN + 1 });
+        }, 1100);
+      },
+      reset: () => this.setState({ phase: 'idle', tries: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -2,10 +2,21 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-// CLAUDE.md: no hardcoded colors, sizes or fonts outside packages/tokens. Every file in
-// src/ui must take them from @ongod/tokens.
-const dir = new URL('../src/ui/', import.meta.url);
-const files = readdirSync(dir).filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
+// CLAUDE.md: no hardcoded colors, sizes or fonts outside packages/tokens. Every UI file must take
+// them from @ongod/tokens: the kit (src/ui), the shared components (src/components) and every
+// screen (app/).
+const roots = ['../src/ui/', '../src/components/', '../app/'].map(
+  (path) => [path, new URL(path, import.meta.url)] as const,
+);
+const files = roots.flatMap(([path, root]) =>
+  (readdirSync(root, { recursive: true }) as string[])
+    .filter((file) => /\.tsx?$/.test(file))
+    .map((file) => ({
+      label: `${path.replace('../', '')}${file.replaceAll('\\', '/')}`,
+      root,
+      file,
+    })),
+);
 
 const SIZE_KEYS = String.raw`width|height|minWidth|maxWidth|minHeight|maxHeight|padding\w*|margin\w*|gap|fontSize|lineHeight|borderRadius|border\w*Width|top|left|right|bottom`;
 
@@ -22,15 +33,19 @@ export const RULES: Array<[string, RegExp]> = [
 const stripComments = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-for (const file of files) {
-  test(`src/ui/${file} uses tokens only`, () => {
-    const source = stripComments(readFileSync(new URL(file, dir), 'utf8'));
+for (const { label, root, file } of files) {
+  test(`${label} uses tokens only`, () => {
+    const source = stripComments(readFileSync(new URL(file, root), 'utf8'));
     for (const [name, pattern] of RULES) assert.doesNotMatch(source, pattern, name);
   });
 }
 
 test('there are UI files to check', () => {
-  assert.ok(files.length >= 12);
+  assert.ok(files.filter((f) => f.label.startsWith('src/ui/')).length >= 12);
+  assert.ok(
+    files.filter((f) => f.label.startsWith('app/')).length >= 10,
+    'screens are checked too',
+  );
 });
 
 test('the rules do catch violations (and allow token usage)', () => {

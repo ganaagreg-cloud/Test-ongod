@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Design system and motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#D4AF6A}a:hover{color:#E6C98F}
+.serif{font-family:'Lora',Georgia,serif}
+.lbl{font-size:12px;line-height:16px;letter-spacing:.1em;color:#7F918B;font-weight:600;text-transform:uppercase}
+.card{border-radius:20px;background:#041F1A;box-shadow:inset 0 0 0 1px rgba(243,239,230,.07);padding:22px}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.96)}
+@keyframes sweep{0%{transform:translateX(-140%) skewX(-20deg)}60%,100%{transform:translateX(320%) skewX(-20deg)}}
+.cta{position:relative;overflow:hidden}
+.cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:sweep 3.2s 1s ease-in-out infinite}
+.pill{position:absolute;top:0;height:40px;border-radius:999px;background:#0B4A3F;box-shadow:inset 0 0 0 1px rgba(212,175,106,.28);transition:left .45s cubic-bezier(.22,1,.36,1),width .45s cubic-bezier(.22,1,.36,1)}
+.tabpill{position:absolute;top:6px;bottom:6px;border-radius:999px;background:#0B4A3F;box-shadow:inset 0 0 0 1px rgba(212,175,106,.22);transition:left .5s cubic-bezier(.34,1.3,.5,1)}
+.tabicon{transition:transform .35s cubic-bezier(.3,1.6,.5,1),color .25s}
+.sk{position:relative;overflow:hidden;background:#062A24;border-radius:8px}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(243,239,230,.07),transparent);animation:sh 1.2s ease-in-out infinite}
+@keyframes sh{to{transform:translateX(100%)}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes up2{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.enterA{animation:up .6s cubic-bezier(.2,.8,.2,1) both}.enterB{animation:up2 .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes sheetA{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetB{from{transform:translateY(100%)}to{transform:none}}
+.shA{animation:sheetA .55s cubic-bezier(.22,1,.36,1) both}.shB{animation:sheetB .55s cubic-bezier(.22,1,.36,1) both}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,20px) scale(1.15)}}
+@keyframes drift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-15px)}}
+.mover{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+.mover2{transition:transform .45s cubic-bezier(.22,1,.36,1)}
+@keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.eq span{display:block;width:3px;height:14px;border-radius:2px;background:#D4AF6A;transform-origin:bottom}
+.eq span:nth-child(1){animation:eq .9s ease-in-out infinite}.eq span:nth-child(2){animation:eq .7s .15s ease-in-out infinite}.eq span:nth-child(3){animation:eq 1s .3s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="width: 1360px; height: 1480px; box-sizing: border-box; padding: 56px; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+    <div>
+      <div class="lbl">Онгод · v2 proposal</div>
+      <h1 class="serif" style="margin: 6px 0 0; font-size: 44px; line-height: 52px; font-weight: 600;">Aurora Forest system</h1>
+    </div>
+    <div style="font-size: 14px; color: #A9B8B2; max-width: 460px; text-align: right;">Main color #053931. Gold is the only accent, once per screen region. Motion: two springs, one enter, one sheet.</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px;">
+    <section class="card">
+      <div class="lbl">Color</div>
+      <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{swatches}}" as="s" hint-placeholder-count="15">
+          <div>
+            <div style="height: 64px; border-radius: 12px; background: {{s.hex}}; box-shadow: inset 0 0 0 1px rgba(243,239,230,.12);"></div>
+            <div style="margin-top: 6px; font-size: 12px; line-height: 16px; font-weight: 600;">{{s.name}}</div>
+            <div style="font-size: 12px; line-height: 16px; color: #A9B8B2;">{{s.hex}}</div>
+            <div style="font-size: 11px; line-height: 14px; color: #7F918B;">{{s.use}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="lbl">Type · Lora + Inter (ADR-0013 kept)</div>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div class="serif" style="font-size: 40px; line-height: 46px; font-weight: 600;">Онгод <span style="font-size: 14px; font-family: Inter, sans-serif; color: #7F918B; font-weight: 500;">hero 40/46 · Lora 600 (new)</span></div>
+        <div class="serif" style="font-size: 32px; line-height: 38px; font-weight: 600;">Өвөг Үүл өөрөө үүрд ӨҮ <span style="font-size: 14px; font-family: Inter, sans-serif; color: #7F918B; font-weight: 500;">display 32/38</span></div>
+        <div style="font-size: 24px; line-height: 30px; font-weight: 600;">Үргэлжлүүлэх <span style="font-size: 14px; color: #7F918B; font-weight: 500;">h1 24/30 · Inter 600</span></div>
+        <div style="font-size: 20px; line-height: 26px; font-weight: 600;">Энэ 7 хоногт <span style="font-size: 14px; color: #7F918B; font-weight: 500;">h2 20/26</span></div>
+        <div style="font-size: 16px; line-height: 24px;">Айдас бол дайсан биш, дохио. <span style="font-size: 14px; color: #7F918B;">body 16/24</span></div>
+        <div style="font-size: 14px; line-height: 20px; color: #A9B8B2;">Сэтгэл зүй · 36 мин <span style="color: #7F918B;">small 14/20</span></div>
+        <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #A9B8B2;">№ 022 · CAPTION 12/16 <span style="color: #7F918B;">never smaller</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+    <section class="card">
+      <div class="lbl">Buttons (press = snappy spring)</div>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <button class="press cta" style="height: 52px; border-radius: 999px; background: #D4AF6A; color: #14110A; font-weight: 600; font-size: 16px;">Primary · shimmer, 1 per screen</button>
+        <button class="press" style="height: 52px; border-radius: 999px; background: #F3EFE6; color: #03211C; font-weight: 600; font-size: 16px;">Inverse · player only</button>
+        <button class="press" style="height: 52px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(243,239,230,.22); font-weight: 500; font-size: 16px;">Secondary</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="press" style="flex: 1; height: 52px; border-radius: 999px; color: #D4AF6A; font-weight: 600; font-size: 16px; background: rgba(212,175,106,.1);">Ghost</button>
+          <button class="press" style="flex: 1; height: 52px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(229,72,77,.45); color: #F08A8D; font-weight: 600; font-size: 16px;">Гарах</button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="press" aria-label="Тоглуулах" style="width: 52px; height: 52px; border-radius: 999px; background: #D4AF6A; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(212,175,106,.35);"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#14110A"></path></svg></button>
+          <button class="press" aria-label="Буцах" style="width: 44px; height: 44px; border-radius: 999px; background: rgba(243,239,230,.08); display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></button>
+          <div style="height: 52px; flex: 1; border-radius: 999px; background: rgba(212,175,106,.16); color: rgba(243,239,230,.45); display: flex; align-items: center; justify-content: center; font-weight: 600;">Disabled</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="lbl">Selection (smooth spring)</div>
+      <div style="margin-top: 14px; position: relative; display: flex; gap: 8px; height: 40px;">
+        <span class="pill" style="left: {{pillX}}px; width: {{pillW}}px;"></span>
+        <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+          <button onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="position: relative; width: {{c.w}}px; height: 40px; border-radius: 999px; font-size: 14px; font-weight: 500; color: {{c.color}}; box-shadow: {{c.ring}}; transition: color .25s;">{{c.label}}</button>
+        </sc-for>
+      </div>
+      <div style="margin-top: 16px; position: relative; display: flex; padding: 3px; border-radius: 999px; background: #021512; box-shadow: inset 0 0 0 1px rgba(243,239,230,.08);">
+        <span style="position: absolute; top: 3px; bottom: 3px; border-radius: 999px; background: #F3EFE6; left: calc({{segI}} * (100% - 6px) / 4 + 3px); width: calc((100% - 6px) / 4); transition: left .4s cubic-bezier(.22,1,.36,1);"></span>
+        <sc-for list="{{segs}}" as="s" hint-placeholder-count="4">
+          <button onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="position: relative; flex: 1; height: 38px; font-size: 14px; font-weight: 600; color: {{s.color}}; transition: color .3s;">{{s.label}}</button>
+        </sc-for>
+      </div>
+      <div style="margin-top: 16px; display: flex; align-items: center; gap: 14px;">
+        <button role="switch" aria-checked="{{sw}}" aria-label="Жишээ шилжүүлэгч" onClick="{{toggleSw}}" style="position: relative; width: 52px; height: 32px; border-radius: 999px; background: {{swBg}}; transition: background .3s;">
+          <span style="position: absolute; top: 3px; left: {{knobX}}px; width: 26px; height: 26px; border-radius: 50%; background: #F3EFE6; transition: left .35s cubic-bezier(.3,1.4,.5,1);"></span>
+        </button>
+        <div style="flex: 1; height: 4px; border-radius: 4px; background: rgba(243,239,230,.12);"><div style="width: 58%; height: 100%; border-radius: 4px; background: linear-gradient(90deg,#B8934F,#D4AF6A);"></div></div>
+      </div>
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <div style="width: 42px; height: 50px; border-radius: 12px; background: #062A24; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600;">4</div>
+        <div style="width: 42px; height: 50px; border-radius: 12px; background: #062A24; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600;">8</div>
+        <div style="width: 42px; height: 50px; border-radius: 12px; background: #041F1A; box-shadow: inset 0 0 0 2px #D4AF6A, 0 0 0 4px rgba(212,175,106,.14);"></div>
+        <div style="width: 42px; height: 50px; border-radius: 12px; background: #041F1A; box-shadow: inset 0 0 0 1px rgba(243,239,230,.1);"></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+          <div class="sk" style="height: 12px; width: 90%;"></div>
+          <div class="sk" style="height: 12px; width: 60%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="lbl">Navigation (tap the tabs)</div>
+      <div style="margin-top: 14px; position: relative; height: 68px; border-radius: 999px; padding: 6px; box-sizing: border-box; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: rgba(6,42,36,.78); box-shadow: inset 0 0 0 1px rgba(243,239,230,.09);">
+        <span class="tabpill" style="left: calc(6px + {{tabI}} * (100% - 12px) / 4); width: calc((100% - 12px) / 4);"></span>
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{t.color}};">
+            <svg class="tabicon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="transform: scale({{t.s}});"><path d="{{t.icon}}"></path></svg>
+            <span style="font-size: 11px; line-height: 14px; font-weight: 600;">{{t.label}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="margin-top: 14px; height: 60px; border-radius: 18px; padding: 0 8px 0 10px; display: flex; align-items: center; gap: 12px; background: rgba(6,42,36,.9); box-shadow: inset 0 0 0 1px rgba(243,239,230,.09); position: relative; overflow: hidden;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(160deg,#155463,#041A20);"></div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; font-weight: 600;">Айдастай нүүр тулах нь</div>
+          <div style="font-size: 12px; color: #A9B8B2;">Mini player · docked 8pt above tabs</div>
+        </div>
+        <div class="eq" style="display: flex; align-items: flex-end; gap: 2px; height: 14px;"><span></span><span></span><span></span></div>
+        <div style="position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; background: rgba(243,239,230,.1);"><div style="width: 42%; height: 100%; background: #D4AF6A;"></div></div>
+      </div>
+      <div style="margin-top: 14px; font-size: 13px; line-height: 19px; color: #A9B8B2;">Glass = surfaceRaised at 78% + blur 24. Active tab = forest-700 pill + gold hairline, icon bounces 1 → 1.12 → 1.</div>
+    </section>
+  </div>
+
+  <section class="card" style="flex: 1;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="lbl">Motion tokens (each tile is live; replay all)</div>
+      <button onClick="{{replay}}" class="press" style="height: 44px; padding: 0 18px; border-radius: 999px; background: rgba(212,175,106,.14); color: #E6C98F; font-weight: 600; font-size: 14px;">Replay</button>
+    </div>
+    <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px;">
+      <div style="border-radius: 16px; background: #021512; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 120px; border-radius: 12px; background: #062A24; display: flex; align-items: center; justify-content: center;">
+          <div class="mover" style="width: 64px; height: 64px; border-radius: 16px; background: #D4AF6A; transform: scale({{pressS}});"></div>
+        </div>
+        <div style="font-weight: 600;">snappy</div>
+        <div style="font-size: 12px; line-height: 17px; color: #A9B8B2;">Press, toggles, icon bounce. Reanimated withSpring damping 18, stiffness 260, mass .8. CSS ≈ 220ms cubic-bezier(.3,1.4,.5,1)</div>
+      </div>
+      <div style="border-radius: 16px; background: #021512; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 120px; border-radius: 12px; background: #062A24; position: relative; overflow: hidden;">
+          <div class="mover2" style="position: absolute; top: 44px; left: 14px; width: 60px; height: 32px; border-radius: 999px; background: #0B4A3F; box-shadow: inset 0 0 0 1px rgba(212,175,106,.3); transform: translateX({{slideX}}px);"></div>
+        </div>
+        <div style="font-weight: 600;">smooth</div>
+        <div style="font-size: 12px; line-height: 17px; color: #A9B8B2;">Indicators, carousels, layout. withSpring damping 26, stiffness 180. CSS ≈ 450ms cubic-bezier(.22,1,.36,1)</div>
+      </div>
+      <div style="border-radius: 16px; background: #021512; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 120px; border-radius: 12px; background: #062A24; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px;">
+          <sc-for list="{{enterRows}}" as="r" hint-placeholder-count="3">
+            <div class="{{enterCls}}" style="height: 22px; border-radius: 6px; background: rgba(243,239,230,.12); width: {{r.w}}; animation-delay: {{r.d}};"></div>
+          </sc-for>
+        </div>
+        <div style="font-weight: 600;">enter</div>
+        <div style="font-size: 12px; line-height: 17px; color: #A9B8B2;">Screen mount: fade + 16pt rise, 600ms, stagger 60ms, max 8 items. Reanimated FadeInDown.springify()</div>
+      </div>
+      <div style="border-radius: 16px; background: #021512; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 120px; border-radius: 12px; background: rgba(1,10,8,.6); position: relative; overflow: hidden;">
+          <div class="{{sheetCls}}" style="position: absolute; left: 0; right: 0; bottom: 0; height: 72px; border-radius: 16px 16px 0 0; background: #0A3A32; display: flex; justify-content: center; padding-top: 8px; box-sizing: border-box;"><span style="width: 32px; height: 4px; border-radius: 4px; background: rgba(243,239,230,.3);"></span></div>
+        </div>
+        <div style="font-weight: 600;">sheet</div>
+        <div style="font-size: 12px; line-height: 17px; color: #A9B8B2;">Player, sleep timer, no-access. Spring up 550ms, drag-to-dismiss past 30% or velocity &gt; 800</div>
+      </div>
+      <div style="border-radius: 16px; background: #021512; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 120px; border-radius: 12px; background: #021512; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(243,239,230,.06);">
+          <div style="position: absolute; width: 120px; height: 120px; border-radius: 50%; left: -20px; top: -30px; background: #0A5446; filter: blur(30px); animation: drift1 12s ease-in-out infinite;"></div>
+          <div style="position: absolute; width: 90px; height: 90px; border-radius: 50%; right: -10px; bottom: -20px; background: #D4AF6A; opacity: .25; filter: blur(30px); animation: drift2 15s ease-in-out infinite;"></div>
+        </div>
+        <div style="font-weight: 600;">ambient</div>
+        <div style="font-size: 12px; line-height: 17px; color: #A9B8B2;">Aurora glow on welcome and player only. 12–19s loops, paused when reduce-motion is on or app is backgrounded</div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1480}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { chip: 1, seg: 0, sw: true, tab: 0, n: 0, pressed: false, slid: false }; }
+  componentWillUnmount() { clearTimeout(this.a); clearTimeout(this.b); }
+  renderVals() {
+    const sw = [
+      ['Forest 950', '#021512', 'Screen bg'], ['Forest 900', '#041F1A', 'Surface'], ['Forest 850', '#062A24', 'Raised, cards'],
+      ['Aurora Forest', '#053931', 'Brand · main'], ['Forest 700', '#0B4A3F', 'Selected, active'],
+      ['Gold', '#D4AF6A', 'Accent, 1 per region'], ['Gold pressed', '#B8934F', 'Pressed'], ['Cream', '#F3EFE6', 'Text 1 · 13.4:1'],
+      ['Sage', '#A9B8B2', 'Text 2 · 7.5:1'], ['Moss', '#7F918B', 'Text 3 · 4.6:1*'],
+      ['Aurora glow', '#2FA88A', 'Ambient only'], ['Teal cover', '#155463', 'Cover family'], ['Bronze cover', '#4A3818', 'Cover family'],
+      ['Success', '#46A758', 'Active access'], ['Danger', '#E5484D', 'Destructive']
+    ].map(([name, hex, use]) => ({ name, hex, use }));
+    const cl = [['Бүгд', 64], ['Сэтгэл зүй', 108], ['Хөгжил', 82], ['Санхүү', 82]];
+    let x = 0;
+    const chips = cl.map(([label, w], k) => {
+      const on = k === this.state.chip;
+      const c = { label, w, x, on, color: on ? '#F3EFE6' : '#A9B8B2', ring: on ? 'none' : 'inset 0 0 0 1px rgba(243,239,230,.12)', pick: () => this.setState({ chip: k }) };
+      x += w + 8; return c;
+    });
+    const segs = ['1x', '1.25x', '1.5x', '2x'].map((label, k) => ({ label, on: k === this.state.seg, color: k === this.state.seg ? '#14110A' : '#A9B8B2', pick: () => this.setState({ seg: k }) }));
+    const ti = [
+      ['Нүүр', 'M4 10.5L12 4l8 6.5V20h-5v-6h-6v6H4z'], ['Сан', 'M4 4h4v16H4zM10 4h4v16h-4zM15 5l3.5-1 3 15.5-3.5 1z'],
+      ['Хадгалсан', 'M6 4h12v16l-6-4-6 4z'], ['Профайл', 'M12 12.3a3.8 3.8 0 1 0 0-7.6 3.8 3.8 0 0 0 0 7.6zM4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4']
+    ];
+    const tabs = ti.map(([label, icon], k) => ({ label, icon, on: k === this.state.tab, color: k === this.state.tab ? '#F3EFE6' : '#A9B8B2', s: k === this.state.tab ? 1.12 : 1, pick: () => this.setState({ tab: k }) }));
+    const n = this.state.n;
+    return {
+      swatches: sw, chips, pillX: chips[this.state.chip].x, pillW: chips[this.state.chip].w,
+      segs, segI: this.state.seg,
+      sw: this.state.sw, swBg: this.state.sw ? '#D4AF6A' : 'rgba(243,239,230,.18)', knobX: this.state.sw ? 23 : 3,
+      toggleSw: () => this.setState({ sw: !this.state.sw }),
+      tabs, tabI: this.state.tab,
+      enterCls: n % 2 ? 'enterB' : 'enterA', sheetCls: n % 2 ? 'shB' : 'shA',
+      enterRows: [{ w: '80%', d: '0s' }, { w: '64%', d: '.06s' }, { w: '72%', d: '.12s' }],
+      pressS: this.state.pressed ? 0.88 : 1, slideX: this.state.slid ? 120 : 0,
+      replay: () => {
+        this.setState({ n: n + 1, pressed: true, slid: !this.state.slid });
+        clearTimeout(this.a); this.a = setTimeout(() => this.setState({ pressed: false }), 180);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-10-08
+updated: 2026-10-09
 tags: [index]
 ---
 
@@ -47,6 +47,8 @@ tags: [index]
 | ADR-0024 | [[ADR-0024-dev-preview-tooling]]                     | accepted |
 | ADR-0025 | [[ADR-0025-ui-component-set]]                        | accepted |
 | ADR-0026 | [[ADR-0026-web-session-cookie-and-portal]]           | accepted |
+| ADR-0029 | [[ADR-0029-admin-app-implementation]]                | accepted |
+| ADR-0030 | [[ADR-0030-mobile-app-foundation]]                   | accepted |
 
 ## Research
 
@@ -62,24 +64,31 @@ tags: [index]
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
 | [[R-claude-code-commands]]         | VERIFIED   | 2026-12-07    |
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |
+| [[R-eas-json-profiles]]            | VERIFIED   | 2026-12-08    |
+| [[R-expo-apple-authentication]]    | TO-VERIFY  | 2026-11-08    |
 | [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |
 | [[R-google-id-token-verification]] | TO-VERIFY  | 2026-12-07    |
+| [[R-google-signin-v16]]            | VERIFIED   | 2026-12-08    |
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
 | [[R-hosting-limits]]               | TO-VERIFY  | —             |
 | [[R-mysql-skip-locked-claim]]      | VERIFIED   | —             |
 | [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
 | [[R-prisma-7-agent-guard]]         | VERIFIED   | 2026-12-07    |
+| [[R-sentry-react-native-expo]]     | VERIFIED   | 2026-12-08    |
+| [[R-tanstack-table-v9]]            | VERIFIED   | 2026-12-08    |
+| [[R-tus-js-client-4]]              | VERIFIED   | 2026-12-08    |
 | [[R-typescript-eslint-ts-support]] | VERIFIED   | 2026-12-07    |
 
 ## Latest logs
 
+- [[2026-10-09]]
 - [[2026-10-08]]
 - [[2026-10-05]]
 
 ## Runbooks
 
-- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)
+- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[MOBILE_BUILD]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)

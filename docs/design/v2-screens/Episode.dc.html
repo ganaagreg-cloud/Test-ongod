@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Дугаарын дэлгэрэнгүй</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#F3EFE6;text-decoration:none}a:hover{color:#F3EFE6}
+.serif{font-family:'Lora',Georgia,serif}
+.scroller{scrollbar-width:none}.scroller::-webkit-scrollbar{display:none}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.in{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.1s}.d2{animation-delay:.18s}.d3{animation-delay:.26s}.d4{animation-delay:.34s}.d5{animation-delay:.42s}
+@keyframes rise{from{opacity:0;transform:translateY(30px) scale(.92)}to{opacity:1;transform:none}}
+.rise{animation:rise .8s cubic-bezier(.22,1,.36,1) both}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.96)}
+.desc{overflow:hidden;transition:max-height .5s cubic-bezier(.22,1,.36,1)}
+.chev{transition:transform .35s cubic-bezier(.22,1,.36,1)}
+@keyframes popb{0%{transform:scale(1)}40%{transform:scale(1.3)}100%{transform:scale(1)}}
+.saved{animation:popb .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:.8;transform:scale(1.08)}}
+.cov{position:relative;overflow:hidden;flex:none;box-shadow:inset 0 0 0 1px rgba(243,239,230,.08)}
+.bar{transition:opacity .25s}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; left: -60px; right: -60px; top: -80px; height: 520px; background: radial-gradient(60% 55% at 50% 45%, #1C6E7F 0%, #0A3540 45%, transparent 75%); filter: blur(30px); animation: breathe 9s ease-in-out infinite;"></div>
+  <div style="position: absolute; left: 0; right: 0; top: 280px; height: 300px; background: linear-gradient(180deg, transparent, #021512 70%);"></div>
+
+  <div class="scroller" onScroll="{{onScroll}}" style="position: absolute; inset: 0; overflow-y: auto;">
+    <div style="padding: 112px 20px 60px; display: flex; flex-direction: column; align-items: center;">
+      <div class="rise">
+      <div class="cov" style="width: 248px; height: 248px; border-radius: 22px; background: linear-gradient(160deg,#1A6476 0%,#0A3540 50%,#041A20 100%); box-shadow: inset 0 0 0 1px rgba(243,239,230,.1), 0 30px 60px rgba(0,0,0,.5); transform: translateY({{covY}}px) scale({{covS}}); opacity: {{covO}};">
+        <div style="position: absolute; right: -50px; top: -50px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,106,.38), transparent 70%);"></div>
+        <div style="position: absolute; left: 20px; top: 18px; font-size: 12px; letter-spacing: .16em; color: #D4AF6A; font-weight: 600;">№ 022</div>
+        <div class="serif" style="position: absolute; left: 20px; right: 20px; bottom: 46px; font-size: 28px; line-height: 33px; font-weight: 600;">Айдастай нүүр тулах нь</div>
+        <svg width="248" height="34" viewBox="0 0 160 26" style="position: absolute; left: 0; bottom: 10px; opacity: .45;"><path d="M0 24 L24 10 L36 16 L58 2 L78 16 L92 10 L116 22 L160 24" fill="none" stroke="#F3EFE6" stroke-width="1"></path></svg>
+      </div>
+      </div>
+
+      <h1 class="serif in d1" style="margin: 26px 0 0; font-size: 28px; line-height: 34px; font-weight: 600; text-align: center;">Айдастай нүүр тулах нь</h1>
+      <div class="in d2" style="margin-top: 6px; font-size: 14px; line-height: 20px; color: #A9B8B2;">Сэтгэл зүй · 2026.09.21 · 36 мин</div>
+
+      <div class="in d3" style="margin-top: 22px; width: 100%; display: flex; gap: 12px; align-items: center;">
+        <a href="Player.dc.html" class="press" style="flex: 1; height: 54px; border-radius: 999px; background: #D4AF6A; color: #14110A; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 16px; font-weight: 600; box-shadow: 0 10px 30px rgba(212,175,106,.28);">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#14110A"></path></svg>
+          Үргэлжлүүлэх · 18 мин
+        </a>
+        <button onClick="{{toggleSave}}" aria-label="{{saveLabel}}" aria-pressed="{{saved}}" class="press" style="flex: none; width: 54px; height: 54px; border-radius: 999px; background: rgba(243,239,230,.08); box-shadow: inset 0 0 0 1px rgba(243,239,230,.1); display: flex; align-items: center; justify-content: center;">
+          <svg class="{{saveCls}}" width="22" height="22" viewBox="0 0 24 24" fill="{{saveFill}}" stroke="{{saveStroke}}" stroke-width="1.8" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+        </button>
+      </div>
+      <div class="in d3" style="width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 10px;">
+        <div style="flex: 1; height: 3px; border-radius: 3px; background: rgba(243,239,230,.12);"><div style="width: 50%; height: 100%; border-radius: 3px; background: #D4AF6A;"></div></div>
+        <span style="font-size: 12px; color: #A9B8B2; font-variant-numeric: tabular-nums;">18:04 / 36:12</span>
+      </div>
+
+      <section class="in d4" style="width: 100%; margin-top: 26px;">
+        <h2 style="margin: 0 0 8px; font-size: 16px; line-height: 22px; font-weight: 600;">Тайлбар</h2>
+        <div class="desc" style="max-height: {{descH}}px;">
+          <p style="margin: 0; font-size: 16px; line-height: 24px; color: #C9D3CF;">Айдас бол дайсан биш, дохио. Энэ дугаарт бид айдас хаанаас үүсдэг, яагаад шийдвэр гаргахад саад болдог, түүнтэй хэрхэн өдөр бүр жижиг алхмаар нүүр тулахыг ярилцана.</p>
+          <p style="margin: 12px 0 0; font-size: 16px; line-height: 24px; color: #C9D3CF;">Сонсох зуураа өөрийн хамгийн их хойшлуулдаг нэг ажлаа бодоорой. Дугаарын төгсгөлд 3 алхамт дасгал бий.</p>
+        </div>
+        <button onClick="{{toggleDesc}}" aria-expanded="{{open}}" style="margin-top: 4px; min-height: 44px; display: flex; align-items: center; gap: 6px; color: #D4AF6A; font-size: 14px; font-weight: 600;">
+          {{moreLabel}}
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate({{chevR}}deg);"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+      </section>
+
+      <section class="in d5" style="width: 100%; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(243,239,230,.07);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <h2 style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 600;">Дараагийн</h2>
+          <a href="Library.dc.html" style="font-size: 14px; color: #D4AF6A; font-weight: 500; min-height: 44px; display: flex; align-items: center; margin: -12px 0;">Бүгд ›</a>
+        </div>
+        <sc-for list="{{next}}" as="e" hint-placeholder-count="3">
+          <a href="Episode.dc.html" class="press" style="display: flex; gap: 14px; align-items: center; padding: 10px 0;">
+            <div class="cov" style="width: 64px; height: 64px; border-radius: 12px; background: {{e.bg}};">
+              <div style="position: absolute; left: 7px; top: 6px; font-size: 8px; letter-spacing: .12em; color: #D4AF6A; font-weight: 600;">{{e.n}}</div>
+              <div class="serif" style="position: absolute; left: 7px; right: 6px; bottom: 7px; font-size: 10px; line-height: 12px; font-weight: 600;">{{e.s}}</div>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 16px; line-height: 22px; font-weight: 600;">{{e.t}}</div>
+              <div style="font-size: 12px; line-height: 16px; color: #A9B8B2; margin-top: 3px;">{{e.m}}</div>
+            </div>
+          </a>
+        </sc-for>
+      </section>
+    </div>
+  </div>
+
+  <div class="bar" style="position: absolute; left: 0; right: 0; top: 0; height: 100px; background: rgba(2,21,18,.75); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 1px 0 rgba(243,239,230,.06); opacity: {{barO}}; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 22px; box-sizing: border-box;">
+    <span style="font-size: 16px; font-weight: 600; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Айдастай нүүр тулах нь</span>
+  </div>
+  <div style="position: absolute; left: 16px; right: 16px; top: 50px; display: flex; justify-content: space-between;">
+    <a href="Home.dc.html" aria-label="Буцах" class="press" style="width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(2,21,18,.45); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(243,239,230,.1);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <button aria-label="Бусад" class="press" style="width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: rgba(2,21,18,.45); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(243,239,230,.1);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#F3EFE6"><circle cx="6" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18" cy="12" r="1.6"></circle></svg>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { y: 0, open: false, saved: true }; }
+  renderVals() {
+    const y = this.state.y;
+    const c = Math.min(Math.max(y, 0), 260);
+    const saved = this.state.saved;
+    return {
+      covY: Math.round(c * 0.35), covS: (1 - c / 900).toFixed(3), covO: (1 - c / 340).toFixed(2),
+      barO: y > 240 ? 1 : 0,
+      open: this.state.open, descH: this.state.open ? 260 : 72, chevR: this.state.open ? 180 : 0,
+      moreLabel: this.state.open ? 'Хураах' : 'Цааш унших',
+      toggleDesc: () => this.setState({ open: !this.state.open }),
+      saved, saveCls: saved ? 'saved' : '', saveFill: saved ? '#D4AF6A' : 'none', saveStroke: saved ? '#D4AF6A' : '#F3EFE6',
+      saveLabel: saved ? 'Хадгалснаас хасах' : 'Хадгалах',
+      toggleSave: () => this.setState({ saved: !saved }),
+      onScroll: (e) => this.setState({ y: e.target.scrollTop }),
+      next: [
+        { n: '№ 023', s: 'Итгэл', t: 'Өөртөө итгэх итгэл', m: 'Сэтгэл зүй · 33 мин', bg: 'linear-gradient(160deg,#0D5A4C,#053931 45%,#03231E)' },
+        { n: '№ 024', s: 'Ичимхий', t: 'Ичимхий зан ба хүмүүс', m: 'Сэтгэл зүй · 27 мин', bg: 'linear-gradient(160deg,#5A3A4A,#33202B 50%,#170D13)' },
+        { n: '№ 025', s: 'Түгшүүр', t: 'Түгшүүрийг нам дарах 5 арга', m: 'Сэтгэл зүй · 38 мин', bg: 'linear-gradient(160deg,#4A3818,#2A1F0D 50%,#140E05)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

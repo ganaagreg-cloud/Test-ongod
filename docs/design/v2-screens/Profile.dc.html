@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>Онгод — Профайл</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Lora:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;background:#010f0d}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+a{color:#F3EFE6;text-decoration:none}a:hover{color:#F3EFE6}
+.serif{font-family:'Lora',Georgia,serif}
+.scroller{scrollbar-width:none}.scroller::-webkit-scrollbar{display:none}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.in{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.05s}.d2{animation-delay:.12s}.d3{animation-delay:.19s}.d4{animation-delay:.26s}
+.press{transition:transform .22s cubic-bezier(.3,1.4,.5,1)}.press:active{transform:scale(.97)}
+@keyframes sweep{0%{transform:translateX(-150%) skewX(-20deg)}50%,100%{transform:translateX(420%) skewX(-20deg)}}
+.shine{position:relative;overflow:hidden}
+.shine::after{content:"";position:absolute;top:0;bottom:0;left:0;width:30%;background:linear-gradient(90deg,transparent,rgba(230,201,143,.22),transparent);animation:sweep 4.5s 1s ease-in-out infinite}
+@keyframes arc{from{stroke-dashoffset:151}}
+.arc{animation:arc 1.6s .3s cubic-bezier(.22,1,.36,1) both}
+.sw{position:relative;width:52px;height:32px;border-radius:999px;transition:background .3s}
+.knob{position:absolute;top:3px;width:26px;height:26px;border-radius:50%;background:#F3EFE6;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:left .35s cubic-bezier(.3,1.4,.5,1)}
+.row{transition:background .2s}.row:active{background:rgba(243,239,230,.04)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #021512; color: #F3EFE6; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; width: 420px; height: 340px; right: -140px; top: -180px; border-radius: 50%; background: #0A5446; filter: blur(80px); opacity: .6;"></div>
+  <div class="scroller" style="position: absolute; inset: 0; overflow-y: auto;">
+    <div style="padding: 60px 20px 200px; display: flex; flex-direction: column; gap: 22px; position: relative;">
+
+      <div class="in d1" style="display: flex; align-items: center; gap: 16px;">
+        <div style="position: relative; width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(160deg,#0D5A4C,#053931); box-shadow: 0 0 0 2px #021512, 0 0 0 3.5px rgba(212,175,106,.6); display: flex; align-items: center; justify-content: center;">
+          <span class="serif" style="font-size: 30px; font-weight: 600; color: #E6C98F;">Б</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="serif" style="font-size: 24px; line-height: 30px; font-weight: 600;">Бат-Эрдэнэ</div>
+          <div style="font-size: 14px; line-height: 20px; color: #A9B8B2;">@bat</div>
+        </div>
+        <button aria-label="Тохиргоо" class="press" style="width: 44px; height: 44px; border-radius: 999px; background: rgba(243,239,230,.06); display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F3EFE6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+        </button>
+      </div>
+
+      <div class="in d2 shine" style="border-radius: 22px; padding: 18px; background: linear-gradient(135deg,#0B4A3F 0%,#053931 55%,#04231D 100%); box-shadow: inset 0 0 0 1px rgba(212,175,106,.28); display: flex; align-items: center; gap: 16px;">
+        <svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true" style="flex: none; transform: rotate(-90deg);">
+          <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(243,239,230,.12)" stroke-width="4"></circle>
+          <circle class="arc" cx="29" cy="29" r="24" fill="none" stroke="#D4AF6A" stroke-width="4" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="3"></circle>
+        </svg>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(70,167,88,.16); color: #6FD08A; font-size: 12px; font-weight: 600;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: #6FD08A; box-shadow: 0 0 0 3px rgba(111,208,138,.2);"></span>Идэвхтэй
+          </div>
+          <div style="margin-top: 6px; font-size: 16px; line-height: 22px; font-weight: 600;">2027.10.08 хүртэл</div>
+          <div style="font-size: 12px; line-height: 16px; color: #C9D3CF;">364 өдөр үлдсэн</div>
+        </div>
+      </div>
+
+      <div class="in d3" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{stats}}" as="s" hint-placeholder-count="3">
+          <div style="border-radius: 18px; padding: 14px 12px; background: #062A24; box-shadow: inset 0 0 0 1px rgba(243,239,230,.07);">
+            <div class="serif" style="font-size: 28px; line-height: 34px; font-weight: 600; font-variant-numeric: tabular-nums;">{{s.v}}</div>
+            <div style="margin-top: 2px; font-size: 12px; line-height: 16px; color: #A9B8B2;">{{s.l}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="in d4" style="border-radius: 20px; background: #041F1A; box-shadow: inset 0 0 0 1px rgba(243,239,230,.07); overflow: hidden;">
+        <sc-for list="{{menu}}" as="m" hint-placeholder-count="6">
+          <a href="#" class="row" style="display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0 16px; border-bottom: 1px solid rgba(243,239,230,.05);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A9B8B2" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.icon}}"></path></svg>
+            <span style="flex: 1; font-size: 16px; line-height: 22px;">{{m.l}}</span>
+            <span style="font-size: 14px; color: #7F918B;">{{m.hint}}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7F918B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </a>
+        </sc-for>
+        <div style="display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0 16px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A9B8B2" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+          <span id="notif-l" style="flex: 1; font-size: 16px; line-height: 22px;">Шинэ дугаарын мэдэгдэл</span>
+          <button role="switch" aria-checked="{{notif}}" aria-labelledby="notif-l" onClick="{{toggleNotif}}" style="min-width: 44px; min-height: 44px; display: flex; align-items: center;">
+            <span class="sw" style="display: block; background: {{swBg}};"><span class="knob" style="left: {{knobX}}px;"></span></span>
+          </button>
+        </div>
+      </div>
+
+      <button class="press" style="height: 52px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(229,72,77,.4); color: #F08A8D; font-size: 16px; font-weight: 600;">Гарах</button>
+    </div>
+  </div>
+
+  <nav aria-label="Үндсэн цэс" style="position: absolute; left: 16px; right: 16px; bottom: 32px; height: 68px; border-radius: 999px; padding: 6px; box-sizing: border-box; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: rgba(6,42,36,.78); -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%); box-shadow: inset 0 0 0 1px rgba(243,239,230,.09), 0 16px 40px rgba(0,0,0,.45);">
+    <a href="Home.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #A9B8B2;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5v-6h-6v6H4z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Нүүр</span>
+    </a>
+    <a href="Library.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #A9B8B2;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="4" height="16" rx="1"></rect><rect x="10" y="4" width="4" height="16" rx="1"></rect><path d="M14.5 5.2l3.6-.9 3 15.5-3.6.9z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Сан</span>
+    </a>
+    <a href="Saved.dc.html" style="border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #A9B8B2;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 500;">Хадгалсан</span>
+    </a>
+    <a href="Profile.dc.html" aria-current="page" style="border-radius: 999px; background: #0B4A3F; box-shadow: inset 0 0 0 1px rgba(212,175,106,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #F3EFE6;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"></circle><path d="M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4"></path></svg>
+      <span style="font-size: 11px; line-height: 14px; font-weight: 600;">Профайл</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { k: 0, notif: true }; }
+  componentDidMount() {
+    const start = Date.now();
+    this.t = setInterval(() => {
+      const k = Math.min(1, (Date.now() - start) / 1400);
+      this.setState({ k });
+      if (k >= 1) clearInterval(this.t);
+    }, 33);
+  }
+  componentWillUnmount() { clearInterval(this.t); }
+  renderVals() {
+    const e = 1 - Math.pow(1 - this.state.k, 3);
+    const notif = this.state.notif;
+    return {
+      stats: [
+        { v: String(Math.round(37 * e)), l: 'Сонссон дугаар' },
+        { v: (21.5 * e).toFixed(1), l: 'Нийт цаг' },
+        { v: String(Math.round(12 * e)), l: 'Дараалсан өдөр' }
+      ],
+      menu: [
+        { l: 'Тохиргоо', hint: '', icon: 'M4 7h10M18 7h2M4 17h4M12 17h8M14 4v6M8 14v6' },
+        { l: 'Төхөөрөмжүүд', hint: '2 / 2', icon: 'M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2' },
+        { l: 'Тусламж', hint: '', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01' },
+        { l: 'Үйлчилгээний нөхцөл', hint: '', icon: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5' },
+        { l: 'Нууцлалын бодлого', hint: '', icon: 'M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z' }
+      ],
+      notif, swBg: notif ? '#D4AF6A' : 'rgba(243,239,230,.18)', knobX: notif ? 23 : 3,
+      toggleNotif: () => this.setState({ notif: !notif })
+    };
+  }
+}
+</script>
+</body>
+</html>
