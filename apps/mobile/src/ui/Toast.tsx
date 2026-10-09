@@ -1,4 +1,4 @@
-import {
+﻿import {
   createContext,
   useCallback,
   useContext,
@@ -13,14 +13,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  layout,
-  motion,
-  nativeTextStyle,
-  radius,
-  spacing,
-  type ThemeColors,
-} from '@ongod/tokens';
+import { layout, motion, nativeTextStyle, radius, spacing, type ThemeColors } from '@ongod/tokens';
 import { floatingShadow } from './Glass';
 import { Icon } from './Icon';
 import { springs } from './motion';
@@ -73,14 +66,16 @@ function ToastView({
   const start = useSharedValue(0);
 
   const dismiss = useCallback(() => {
-    y.value = withSpring(-height.value * OFFSCREEN - layout.headerHeight, springs.snappy, (done) => {
-      if (done) scheduleOnRN(onDismiss, item.id);
-    });
+    y.set(
+      withSpring(-height.get() * OFFSCREEN - layout.headerHeight, springs.snappy, (done) => {
+        if (done) scheduleOnRN(onDismiss, item.id);
+      }),
+    );
   }, [y, height, onDismiss, item.id]);
 
   useEffect(() => {
     // Drops in from the top, then leaves by itself.
-    y.value = withSpring(0, springs.snappy);
+    y.set(withSpring(0, springs.snappy));
     // Screen readers hear it once, when it appears.
     AccessibilityInfo.announceForAccessibility(item.message);
     const timer = setTimeout(dismiss, durationMs);
@@ -93,13 +88,13 @@ function ToastView({
       start.value = y.value;
     })
     .onUpdate((e) => {
-      y.value = Math.min(0, start.value + e.translationY);
+      y.set(Math.min(0, start.get() + e.translationY));
     })
     .onEnd((e) => {
       if (e.translationY < -spacing.md || e.velocityY < -motion.flingVelocity / 2) {
         scheduleOnRN(dismiss);
       } else {
-        y.value = withSpring(0, springs.snappy);
+        y.set(withSpring(0, springs.snappy));
       }
     });
 
@@ -111,17 +106,14 @@ function ToastView({
 
   const animated = useAnimatedStyle(() => ({
     opacity: 1 - dim.value * (1 - motion.toastOlderOpacity),
-    transform: [
-      { translateY: y.value },
-      { scale: 1 - dim.value * (1 - motion.toastOlderScale) },
-    ],
+    transform: [{ translateY: y.value }, { scale: 1 - dim.value * (1 - motion.toastOlderScale) }],
   }));
 
   return (
     <GestureDetector gesture={swipe}>
       <Animated.View
         onLayout={(e) => {
-          height.value = e.nativeEvent.layout.height;
+          height.set(e.nativeEvent.layout.height);
         }}
         style={[styles.toast, animated]}
         accessibilityRole={item.tone === 'danger' ? 'alert' : undefined}

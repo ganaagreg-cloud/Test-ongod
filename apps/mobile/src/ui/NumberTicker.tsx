@@ -14,7 +14,11 @@ function Digit({ digit, name, color }: { digit: number; name: TextStyleName; col
     y.value = withSpring(-digit * lineHeight, springs.smooth);
   }, [digit, lineHeight, y]);
   const column = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-  const text = { ...nativeTextStyle(name), color, fontVariant: ['tabular-nums'] as ['tabular-nums'] };
+  const text = {
+    ...nativeTextStyle(name),
+    color,
+    fontVariant: ['tabular-nums'] as ['tabular-nums'],
+  };
   return (
     <View style={{ height: lineHeight, overflow: 'hidden' }}>
       {/* Invisible "0" gives the column its width; the real column slides behind the window. */}

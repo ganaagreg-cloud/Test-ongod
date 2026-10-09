@@ -30,7 +30,11 @@ function contrast(a: string, b: string): number {
 }
 
 const AA = 4.5;
-const pairs = (t: ThemeColors, name: string, list: Array<[keyof ThemeColors, keyof ThemeColors]>) => {
+const pairs = (
+  t: ThemeColors,
+  name: string,
+  list: Array<[keyof ThemeColors, keyof ThemeColors]>,
+) => {
   for (const [fg, bg] of list) {
     const ratio = contrast(t[fg], t[bg]);
     assert.ok(ratio >= AA, `${name}: ${fg} on ${bg} is ${ratio.toFixed(2)}:1, needs ${AA}`);

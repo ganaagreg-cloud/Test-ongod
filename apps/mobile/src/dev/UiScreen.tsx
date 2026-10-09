@@ -88,9 +88,21 @@ const TABS: TabItem[] = [
   { key: 'profile', label: 'Профайл', icon: 'profile' },
 ];
 const HERO: HeroItem[] = [
-  { id: '1', tag: 'Шинэ цуврал', title: 'Тал нутгийн ухаан', meta: '8 дугаар · дундаж 32 мин', family: 'forest' },
+  {
+    id: '1',
+    tag: 'Шинэ цуврал',
+    title: 'Тал нутгийн ухаан',
+    meta: '8 дугаар · дундаж 32 мин',
+    family: 'forest',
+  },
   { id: '2', tag: 'Онцлох', title: 'Өөрийгөө ялах урлаг', meta: '№ 001 · 41 мин', family: 'teal' },
-  { id: '3', tag: 'Энэ сарын сэдэв', title: 'Зуршил ба сахилга бат', meta: '5 дугаар · 2 цаг 40 мин', family: 'bronze' },
+  {
+    id: '3',
+    tag: 'Энэ сарын сэдэв',
+    title: 'Зуршил ба сахилга бат',
+    meta: '5 дугаар · 2 цаг 40 мин',
+    family: 'bronze',
+  },
 ];
 
 export const SECTIONS = [
@@ -109,7 +121,17 @@ export const SECTIONS = [
 ] as const;
 type SectionId = (typeof SECTIONS)[number];
 
-function Section({ id, only, title, children }: { id: SectionId; only: string | undefined; title: string; children: ReactNode }) {
+function Section({
+  id,
+  only,
+  title,
+  children,
+}: {
+  id: SectionId;
+  only: string | undefined;
+  title: string;
+  children: ReactNode;
+}) {
   const styles = useThemedStyles(makeStyles);
   if (only && only !== id) return null;
   return (
@@ -204,7 +226,12 @@ function Showcase({ only }: { only: string | undefined }) {
           onChangeText={setEmail}
           hint="Баталгаажуулах код энэ хаяг руу очно."
         />
-        <Input label="Нууц үг" secureTextEntry defaultValue="1234567" error="Хамгийн багадаа 8 тэмдэгт" />
+        <Input
+          label="Нууц үг"
+          secureTextEntry
+          defaultValue="1234567"
+          error="Хамгийн багадаа 8 тэмдэгт"
+        />
         <Input label="Идэвхгүй" editable={false} defaultValue="Засах боломжгүй" />
       </Section>
 
@@ -221,13 +248,34 @@ function Showcase({ only }: { only: string | undefined }) {
       </Section>
 
       <Section id="code" only={only} title="CodeInput (type 6 digits: wave · wrong: shake)">
-        <CodeInput label="Баталгаажуулах код" value={code} onChange={(v) => { setCode(v); setCodeError(undefined); }} error={codeError} />
+        <CodeInput
+          label="Баталгаажуулах код"
+          value={code}
+          onChange={(v) => {
+            setCode(v);
+            setCodeError(undefined);
+          }}
+          error={codeError}
+        />
         <View style={styles.pair}>
           <View style={styles.grow}>
-            <Button label="Алдаа" variant="secondary" onPress={() => setCodeError('Код буруу байна')} fullWidth />
+            <Button
+              label="Алдаа"
+              variant="secondary"
+              onPress={() => setCodeError('Код буруу байна')}
+              fullWidth
+            />
           </View>
           <View style={styles.grow}>
-            <Button label="Арилгах" variant="ghost" onPress={() => { setCode(''); setCodeError(undefined); }} fullWidth />
+            <Button
+              label="Арилгах"
+              variant="ghost"
+              onPress={() => {
+                setCode('');
+                setCodeError(undefined);
+              }}
+              fullWidth
+            />
           </View>
         </View>
       </Section>
@@ -241,7 +289,11 @@ function Showcase({ only }: { only: string | undefined }) {
           durationLabel="36:00"
           family="teal"
           progress={{ value: 0.58, label: '58% сонссон' }}
-          save={{ saved, label: saved ? 'Хадгалснаас хасах' : 'Хадгалах', onToggle: () => setSaved((v) => !v) }}
+          save={{
+            saved,
+            label: saved ? 'Хадгалснаас хасах' : 'Хадгалах',
+            onToggle: () => setSaved((v) => !v),
+          }}
           onPress={() => toast.show('Ангийг нээлээ')}
         />
         <EpisodeRow
@@ -254,10 +306,36 @@ function Showcase({ only }: { only: string | undefined }) {
           save={{ saved: false, label: 'Хадгалах', onToggle: () => undefined }}
           onPress={() => undefined}
         />
-        <EpisodeRow index={2} title="Амрах ухаан" meta="Харилцаа · Сонссон" number="№ 061" durationLabel="34:00" family="moss" onPress={() => undefined} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
-          <EpisodeCard title="Чимээгүй байхын хүч" durationLabel="28:00" number="№ 062" family="plum" width={layout.overlayMaxWidth / 2} onPress={() => undefined} />
-          <EpisodeCard title="Анхаарал төвлөрлийг сэргээх" durationLabel="25:00" number="№ 059" family="teal" width={layout.overlayMaxWidth / 2} onPress={() => undefined} />
+        <EpisodeRow
+          index={2}
+          title="Амрах ухаан"
+          meta="Харилцаа · Сонссон"
+          number="№ 061"
+          durationLabel="34:00"
+          family="moss"
+          onPress={() => undefined}
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.cards}
+        >
+          <EpisodeCard
+            title="Чимээгүй байхын хүч"
+            durationLabel="28:00"
+            number="№ 062"
+            family="plum"
+            width={layout.overlayMaxWidth / 2}
+            onPress={() => undefined}
+          />
+          <EpisodeCard
+            title="Анхаарал төвлөрлийг сэргээх"
+            durationLabel="25:00"
+            number="№ 059"
+            family="teal"
+            width={layout.overlayMaxWidth / 2}
+            onPress={() => undefined}
+          />
         </ScrollView>
       </Section>
 
@@ -271,8 +349,18 @@ function Showcase({ only }: { only: string | undefined }) {
             slideLabel={(n) => `${n}-р слайд`}
           />
         </View>
-        <CategoryCard name="Сэтгэл зүй" countLabel="24 дугаар" family="forest" onPress={() => undefined} />
-        <CategoryCard name="Хувь хүний хөгжил" countLabel="18 дугаар" family="bronze" onPress={() => undefined} />
+        <CategoryCard
+          name="Сэтгэл зүй"
+          countLabel="24 дугаар"
+          family="forest"
+          onPress={() => undefined}
+        />
+        <CategoryCard
+          name="Хувь хүний хөгжил"
+          countLabel="18 дугаар"
+          family="bronze"
+          onPress={() => undefined}
+        />
       </Section>
 
       <Section id="nav" only={only} title="TabBar · MiniPlayer (always dark glass)">
@@ -305,9 +393,24 @@ function Showcase({ only }: { only: string | undefined }) {
           action={<Button label="Сан руу очих" variant="secondary" />}
         />
         <Button label="Sheet нээх" variant="secondary" onPress={() => setSheet(true)} fullWidth />
-        <Button label="Toast: амжилттай" variant="secondary" onPress={() => toast.show('Хадгаллаа', { tone: 'success' })} fullWidth />
-        <Button label="Toast: алдаа" variant="secondary" onPress={() => toast.show('Холболт тасарлаа', { tone: 'danger' })} fullWidth />
-        <Sheet visible={sheet} onClose={() => setSheet(false)} title="Таны эрх идэвхгүй байна" closeLabel="Хаах">
+        <Button
+          label="Toast: амжилттай"
+          variant="secondary"
+          onPress={() => toast.show('Хадгаллаа', { tone: 'success' })}
+          fullWidth
+        />
+        <Button
+          label="Toast: алдаа"
+          variant="secondary"
+          onPress={() => toast.show('Холболт тасарлаа', { tone: 'danger' })}
+          fullWidth
+        />
+        <Sheet
+          visible={sheet}
+          onClose={() => setSheet(false)}
+          title="Таны эрх идэвхгүй байна"
+          closeLabel="Хаах"
+        >
           <Button label="Эрхээ шалгах" onPress={() => setSheet(false)} fullWidth />
         </Sheet>
       </Section>
@@ -327,7 +430,25 @@ function Showcase({ only }: { only: string | undefined }) {
       <Section id="icons" only={only} title="Icons">
         <View style={styles.wrap}>
           {(
-            ['bookmark', 'bookmarkFilled', 'chevronRight', 'chevronLeft', 'close', 'check', 'alert', 'info', 'play', 'pause', 'copy', 'home', 'library', 'profile', 'bell', 'search', 'mail'] as const
+            [
+              'bookmark',
+              'bookmarkFilled',
+              'chevronRight',
+              'chevronLeft',
+              'close',
+              'check',
+              'alert',
+              'info',
+              'play',
+              'pause',
+              'copy',
+              'home',
+              'library',
+              'profile',
+              'bell',
+              'search',
+              'mail',
+            ] as const
           ).map((name) => (
             <View key={name} style={styles.icon}>
               <Icon name={name} color={colors.textSecondary} />
@@ -338,7 +459,8 @@ function Showcase({ only }: { only: string | undefined }) {
         <ListItem title="Хэрэглэгчийн нэр" value="@bat" onPress={() => undefined} />
         <ListItem title="Бүртгэл устгах" tone="destructive" onPress={() => undefined} />
         <Text style={styles.label}>
-          platform: {Platform.OS} · secure storage: {secureStoreBackend} · audio engine: {audioAvailable ? 'native' : 'stub'}
+          platform: {Platform.OS} · secure storage: {secureStoreBackend} · audio engine:{' '}
+          {audioAvailable ? 'native' : 'stub'}
         </Text>
         <AudioWebNotice />
       </Section>
@@ -350,7 +472,8 @@ export default function UiScreen() {
   const params = useLocalSearchParams<{ surface?: string; section?: string }>();
   const [which, setWhich] = useState(params.surface ?? 'both');
   const [run, setRun] = useState(0);
-  const surfaces: Surface[] = which === 'dark' ? ['dark'] : which === 'cream' ? ['cream'] : ['dark', 'cream'];
+  const surfaces: Surface[] =
+    which === 'dark' ? ['dark'] : which === 'cream' ? ['cream'] : ['dark', 'cream'];
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>

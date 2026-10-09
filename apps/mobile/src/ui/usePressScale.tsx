@@ -1,5 +1,10 @@
-import { forwardRef, type ComponentProps } from 'react';
-import { Pressable, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
+﻿import { forwardRef, type ComponentProps } from 'react';
+import {
+  Pressable,
+  type GestureResponderEvent,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { motion } from '@ongod/tokens';
 import { haptic } from './haptics';
@@ -18,10 +23,10 @@ export function usePressScale({
   return {
     animatedStyle,
     onPressIn: () => {
-      value.value = withSpring(scale, springs.snappy);
+      value.set(withSpring(scale, springs.snappy));
     },
     onPressOut: () => {
-      value.value = withSpring(1, springs.snappy);
+      value.set(withSpring(1, springs.snappy));
     },
     /** Call when a tap completes. */
     tap: () => {

@@ -57,7 +57,12 @@ export function Equalizer({ playing }: { playing: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end', gap: layout.eqGap, height: layout.eqBarHeight },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: layout.eqGap,
+    height: layout.eqBarHeight,
+  },
   bar: {
     width: layout.eqBarWidth,
     height: layout.eqBarHeight,

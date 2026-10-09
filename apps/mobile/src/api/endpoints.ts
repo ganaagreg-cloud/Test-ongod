@@ -1,11 +1,14 @@
 import {
   appConfigResponseSchema,
   completeProfileResponseSchema,
+  episodesPageSchema,
   loginResponseSchema,
   meResponseSchema,
+  playResponseSchema,
   registerResponseSchema,
   type LoginRequest,
   type RegisterRequest,
+  type SaveProgressRequest,
 } from '@ongod/shared';
 import type { ApiClient } from './client';
 
@@ -71,6 +74,21 @@ export function createEndpoints(client: ApiClient) {
         body,
         schema: completeProfileResponseSchema,
       }),
+
+    /** First page of the newest episodes (library list; the dev audio screen uses it). */
+    listEpisodes: (limit = 20) =>
+      request(`/episodes?limit=${limit}`, { schema: episodesPageSchema }),
+
+    /** The signed audio URL of an episode (a bearer credential: never log it). */
+    playEpisode: (episodeId: string) =>
+      request(`/episodes/${encodeURIComponent(episodeId)}/play`, {
+        method: 'POST',
+        schema: playResponseSchema,
+      }),
+
+    /** Listening progress (ADR-0021: whole seconds, last write wins). */
+    saveProgress: (episodeId: string, body: SaveProgressRequest) =>
+      request(`/progress/${encodeURIComponent(episodeId)}`, { method: 'PUT', body }),
 
     me: (signal?: AbortSignal) =>
       request('/me', { schema: meResponseSchema, ...(signal ? { signal } : {}) }),

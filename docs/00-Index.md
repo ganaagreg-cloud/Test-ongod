@@ -52,6 +52,7 @@ tags: [index]
 | ADR-0029 | [[ADR-0029-admin-app-implementation]]                | accepted |
 | ADR-0030 | [[ADR-0030-mobile-app-foundation]]                   | accepted |
 | ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]         | accepted |
+| ADR-0032 | [[ADR-0032-audio-expo-audio-instead-of-track-player]] | accepted |
 
 ## Research
 
@@ -69,6 +70,7 @@ tags: [index]
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |
 | [[R-eas-json-profiles]]            | VERIFIED   | 2026-12-08    |
 | [[R-expo-apple-authentication]]    | TO-VERIFY  | 2026-11-08    |
+| [[R-expo-audio-sdk57]]             | VERIFIED   | 2026-12-08    |
 | [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
@@ -83,7 +85,7 @@ tags: [index]
 | [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
 | [[R-prisma-7-agent-guard]]         | VERIFIED   | 2026-12-07    |
 | [[R-sentry-react-native-expo]]     | VERIFIED   | 2026-12-08    |
-| [[R-track-player-new-arch]]        | TO-VERIFY  | 2026-11-09    |
+| [[R-track-player-new-arch]]        | VERIFIED   | —             |
 | [[R-tanstack-table-v9]]            | VERIFIED   | 2026-12-08    |
 | [[R-tus-js-client-4]]              | VERIFIED   | 2026-12-08    |
 | [[R-typescript-eslint-ts-support]] | VERIFIED   | 2026-12-07    |

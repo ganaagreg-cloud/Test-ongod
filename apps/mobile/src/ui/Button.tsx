@@ -47,7 +47,11 @@ function palette(variant: ButtonVariant, c: ThemeColors, pressed: boolean, disab
   switch (variant) {
     case 'primary':
       return disabled
-        ? { bg: withAlpha(c.accent, 0.16), fg: withAlpha(c.textPrimary, 0.45), border: 'transparent' }
+        ? {
+            bg: withAlpha(c.accent, 0.16),
+            fg: withAlpha(c.textPrimary, 0.45),
+            border: 'transparent',
+          }
         : { bg: pressed ? c.accentPressed : c.accent, fg: c.onAccent, border: 'transparent' };
     case 'inverse':
       return { bg: c.textPrimary, fg: c.bg, border: 'transparent' };

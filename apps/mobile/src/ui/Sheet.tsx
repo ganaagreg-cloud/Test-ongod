@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+﻿import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -85,13 +85,16 @@ function SheetBody({
       start.value = y.value;
     })
     .onUpdate((e) => {
-      y.value = Math.max(0, start.value + e.translationY);
+      y.set(Math.max(0, start.get() + e.translationY));
     })
     .onEnd((e) => {
-      if (e.translationY > height.value * motion.sheetDismissShare || e.velocityY > motion.flingVelocity) {
+      if (
+        e.translationY > height.value * motion.sheetDismissShare ||
+        e.velocityY > motion.flingVelocity
+      ) {
         scheduleOnRN(onClose);
       } else {
-        y.value = withSpring(0, springs.sheet);
+        y.set(withSpring(0, springs.sheet));
       }
     });
 
@@ -115,7 +118,7 @@ function SheetBody({
           <Animated.View
             aria-modal
             onLayout={(e) => {
-              height.value = e.nativeEvent.layout.height;
+              height.set(e.nativeEvent.layout.height);
             }}
             style={[styles.panel, { paddingBottom: spacing.xl + insets.bottom }, panel]}
           >

@@ -97,6 +97,10 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    label: { color: c.textSecondary, ...nativeTextStyle('small'), fontFamily: nativeTextStyle('h1').fontFamily },
+    label: {
+      color: c.textSecondary,
+      ...nativeTextStyle('small'),
+      fontFamily: nativeTextStyle('h1').fontFamily,
+    },
     labelSelected: { color: c.bg },
   });

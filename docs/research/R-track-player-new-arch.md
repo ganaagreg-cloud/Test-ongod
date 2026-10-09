@@ -1,27 +1,25 @@
 ---
-topic: react-native-track-player 4.1.2 on the React Native New Architecture (RN 0.86 / Expo SDK 57)
-status: TO-VERIFY
+topic: react-native-track-player on the React Native New Architecture (RN 0.86 / Expo SDK 57)
+status: VERIFIED
 checked: '2026-10-09'
-recheck_after: '2026-11-09'
-source: '`npx expo-doctor` output on apps/mobile (2026-10-09); node_modules/react-native-track-player/package.json 4.1.2 (no codegenConfig, peer react-native >=0.60.0-rc.2)'
+recheck_after: '—'
+source: '`npx expo-doctor` on apps/mobile (2026-10-09); node_modules/react-native-track-player/package.json 4.1.2; https://cdn.jsdelivr.net/npm/@rntp/player@5.7.0/README.md (fetched 2026-10-09)'
 tags: [research, area/mobile, risk]
 ---
 
 ## Fact
 
-- `expo-doctor` check "Validate packages against React Native Directory package metadata" failed for exactly one package: **react-native-track-player: Unsupported on New Architecture**. The other 20 checks passed.
-- The installed 4.1.2 has no `codegenConfig` in its `package.json`, so it is a classic (non-TurboModule) native module. On the New Architecture such a module only works through React Native's compatibility layer.
-- What is NOT known: whether the interop layer in RN 0.86 runs it correctly (playback, lock-screen controls, background service). Nothing has been built or run on a device yet.
+- **4.1.2 (installed until 2026-10-09):** `expo-doctor` check "Validate packages against React Native Directory package metadata" failed for exactly one package: **react-native-track-player: Unsupported on New Architecture** (the other 20 checks passed). The package has no `codegenConfig`, so it is a classic native module that could only run through React Native's compatibility layer; whether that layer runs it correctly on RN 0.86 was never tested.
+- **v5 (`@rntp/player` 5.7.0):** its README says it is "Built on the New Architecture" (Fabric + TurboModules, React Native 0.74 or later) and that it is **"Free for non-commercial use"**; commercial use needs a paid license (rntp.dev/pricing, badge "License: Commercial", terms in `license.txt`, which was not read). No price is stated in the README. Expo is not mentioned.
 
-## Consequence
+## Conclusion
 
-- The player screen (phase 3, [[SPEC]] playback, lock-screen artwork) depends on it ([[ADR-0001-mobile-react-native-expo|ADR-0001]]). It must be proven on a device first: [[DEVICE_SMOKE]] row 1 (loads) and the first player build (plays, pauses, lock screen, background).
-- If it fails: look for a newer release or a maintained fork, or a different audio library; that needs a new ADR (never edit ADR-0001).
+react-native-track-player is replaced by **expo-audio** ([[ADR-0032-audio-expo-audio-instead-of-track-player|ADR-0032]], facts in [[R-expo-audio-sdk57]]). After the swap `expo-doctor` passes 21/21. This note is closed; it stays as the record of why.
 
 ## Not covered
 
-- Any release notes or issues of the library (not read). Re-check `https://reactnative.directory` and the repo's releases before deciding.
+- The RNTP v5 price and license text; release notes and issues of either version (not read, not needed after the decision).
 
 ## Used by
 
-[[DEVICE_SMOKE]], [[ADR-0031-mobile-ui-kit-v2-implementation|ADR-0031]]
+[[ADR-0032-audio-expo-audio-instead-of-track-player|ADR-0032]], [[ADR-0001-mobile-react-native-expo|ADR-0001]] (the audio part is superseded)

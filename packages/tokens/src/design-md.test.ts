@@ -59,7 +59,17 @@ test('spacing, radius and layout match DESIGN.md', () => {
   }
   assert.deepEqual(
     { ...radius },
-    { small: 8, mini: 10, card: 12, thumb: 14, cardLarge: 18, category: 20, hero: 22, sheet: 26, pill: 999 },
+    {
+      small: 8,
+      mini: 10,
+      card: 12,
+      thumb: 14,
+      cardLarge: 18,
+      category: 20,
+      hero: 22,
+      sheet: 26,
+      pill: 999,
+    },
   );
 
   // Components section: heights and sizes.
@@ -104,8 +114,14 @@ test('motion tokens match DESIGN.md "Motion"', () => {
   assert.equal(motion.enter.rise, 16);
   assert.equal(motion.enter.staggerMs, 60);
   assert.equal(motion.enter.maxStagger, 8);
-  assert.deepEqual([motion.pressScale, motion.pressScaleRound, motion.iconBounce], [0.96, 0.92, 1.12]);
-  assert.deepEqual([motion.toastMax, motion.toastOlderScale, motion.toastOlderOpacity], [2, 0.96, 0.7]);
+  assert.deepEqual(
+    [motion.pressScale, motion.pressScaleRound, motion.iconBounce],
+    [0.96, 0.92, 1.12],
+  );
+  assert.deepEqual(
+    [motion.toastMax, motion.toastOlderScale, motion.toastOlderOpacity],
+    [2, 0.96, 0.7],
+  );
   assert.match(design, /at most 2 at once, 8 pt apart.*96% scale and 70% opacity/);
   assert.equal(spacing.xs, 8);
   assert.equal(motion.shimmerMs, 1200);

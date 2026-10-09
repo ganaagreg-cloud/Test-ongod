@@ -37,7 +37,13 @@ export function Glass({
 
   if (Platform.OS === 'android') {
     return (
-      <View style={[style, styles.clip, { backgroundColor: withAlpha(base, Math.max(opacity, glass.androidOpacity)) }]}>
+      <View
+        style={[
+          style,
+          styles.clip,
+          { backgroundColor: withAlpha(base, Math.max(opacity, glass.androidOpacity)) },
+        ]}
+      >
         {children}
       </View>
     );

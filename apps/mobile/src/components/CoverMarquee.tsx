@@ -29,9 +29,30 @@ type Row = {
 };
 
 const ROWS: readonly Row[] = [
-  { numbers: [1, 14, 22, 31, 40, 52], families: ['forest', 'bronze', 'teal', 'moss', 'plum', 'forest'], ms: 48000, reverse: false, shift: 0, opacity: 0.4 },
-  { numbers: [8, 17, 26, 33, 45, 58], families: ['teal', 'bronze', 'forest', 'plum', 'moss', 'teal'], ms: 56000, reverse: true, shift: -0.36, opacity: 0.85 },
-  { numbers: [3, 19, 27, 36, 49, 61], families: ['moss', 'forest', 'bronze', 'teal', 'plum', 'forest'], ms: 64000, reverse: false, shift: -0.8, opacity: 1 },
+  {
+    numbers: [1, 14, 22, 31, 40, 52],
+    families: ['forest', 'bronze', 'teal', 'moss', 'plum', 'forest'],
+    ms: 48000,
+    reverse: false,
+    shift: 0,
+    opacity: 0.4,
+  },
+  {
+    numbers: [8, 17, 26, 33, 45, 58],
+    families: ['teal', 'bronze', 'forest', 'plum', 'moss', 'teal'],
+    ms: 56000,
+    reverse: true,
+    shift: -0.36,
+    opacity: 0.85,
+  },
+  {
+    numbers: [3, 19, 27, 36, 49, 61],
+    families: ['moss', 'forest', 'bronze', 'teal', 'plum', 'forest'],
+    ms: 64000,
+    reverse: false,
+    shift: -0.8,
+    opacity: 1,
+  },
 ];
 
 const TILE = layout.marqueeTile;

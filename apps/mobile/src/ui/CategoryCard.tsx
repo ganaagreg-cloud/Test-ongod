@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+﻿import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -58,12 +58,12 @@ export function CategoryCard({
       onPress={onPress}
       scale={motion.pressScaleCard}
       onPressIn={() => {
-        zoom.value = withSpring(motion.coverZoom, springs.smooth);
-        nudge.value = withSpring(motion.chevronNudge, springs.snappy);
+        zoom.set(withSpring(motion.coverZoom, springs.smooth));
+        nudge.set(withSpring(motion.chevronNudge, springs.snappy));
       }}
       onPressOut={() => {
-        zoom.value = withSpring(1, springs.smooth);
-        nudge.value = withSpring(0, springs.snappy);
+        zoom.set(withSpring(1, springs.smooth));
+        nudge.set(withSpring(0, springs.snappy));
       }}
       style={styles.card}
     >

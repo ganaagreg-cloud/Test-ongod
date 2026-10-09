@@ -65,12 +65,7 @@ export function Skeleton({
     <View
       aria-hidden
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
-      style={[
-        styles.base,
-        styles[shape],
-        width != null && { width },
-        height != null && { height },
-      ]}
+      style={[styles.base, styles[shape], width != null && { width }, height != null && { height }]}
     >
       {active ? (
         <Animated.View style={[StyleSheet.absoluteFill, sweep]}>

@@ -1,5 +1,11 @@
 import { StyleSheet, Text } from 'react-native';
-import { nativeFontFamily, nativeTextStyle, spacing, type CoverFamily, type ThemeColors } from '@ongod/tokens';
+import {
+  nativeFontFamily,
+  nativeTextStyle,
+  spacing,
+  type CoverFamily,
+  type ThemeColors,
+} from '@ongod/tokens';
 import { EpisodeThumb } from './EpisodeThumb';
 import { useThemedStyles } from './surface';
 import { PressableScale } from './usePressScale';

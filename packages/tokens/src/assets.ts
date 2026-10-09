@@ -41,12 +41,20 @@ export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: tr
   home: { paths: ['M4 10.5L12 4l8 6.5V20h-5v-6h-6v6H4z'] },
   library: { paths: ['M4 4h4v16H4z', 'M10 4h4v16h-4z', 'M15 5l3.5-1 3 15.5-3.5 1z'] },
   profile: {
-    paths: ['M12 4.7a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6z', 'M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4'],
+    paths: [
+      'M12 4.7a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6z',
+      'M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4',
+    ],
   },
   bell: { paths: ['M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z', 'M10 20.5a2 2 0 0 0 4 0'] },
   search: { paths: ['M11 4.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13z', 'M16 16l4 4'] },
   chevronLeft: { paths: ['M15 5l-7 7 7 7'] },
-  mail: { paths: ['M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z', 'M4 7l8 6 8-6'] },
+  mail: {
+    paths: [
+      'M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z',
+      'M4 7l8 6 8-6',
+    ],
+  },
 };
 
 /**

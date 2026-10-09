@@ -38,5 +38,9 @@ const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     row: { flexDirection: 'row' },
     hit: { minHeight: layout.touchTarget, justifyContent: 'center' },
-    label: { color: c.accentText, ...nativeTextStyle('small'), fontFamily: nativeFontFamily.ui[500] },
+    label: {
+      color: c.accentText,
+      ...nativeTextStyle('small'),
+      fontFamily: nativeFontFamily.ui[500],
+    },
   });

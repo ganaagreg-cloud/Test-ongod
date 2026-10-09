@@ -94,9 +94,7 @@ export function MiniPlayer({
           accessibilityRole="progressbar"
           accessibilityValue={{ min: 0, max: 100, now: percent }}
         >
-          <View
-            style={[styles.bar, { width: `${percent}%`, backgroundColor: dark.accent }]}
-          />
+          <View style={[styles.bar, { width: `${percent}%`, backgroundColor: dark.accent }]} />
         </View>
       </Glass>
     </SurfaceProvider>

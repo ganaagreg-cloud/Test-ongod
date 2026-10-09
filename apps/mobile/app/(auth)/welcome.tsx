@@ -51,7 +51,12 @@ export default function Welcome() {
             <Text style={styles.subtitle}>{mn.welcome.subtitle}</Text>
           </Enter>
           <Enter index={3} style={styles.actions}>
-            <Button label={mn.welcome.login} sheen fullWidth onPress={() => router.push('/login')} />
+            <Button
+              label={mn.welcome.login}
+              sheen
+              fullWidth
+              onPress={() => router.push('/login')}
+            />
             <Button
               label={mn.welcome.register}
               variant="secondary"

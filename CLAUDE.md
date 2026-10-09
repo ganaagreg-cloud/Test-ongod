@@ -2,7 +2,7 @@ Project: Онгод — a paid, members-only audio/video library app for a Mongo
 
 Read docs/SPEC.md and docs/DESIGN.md before any task. If a request conflicts with them, stop and tell me.
 
-Stack: Node 20 + TypeScript. API: Fastify, Prisma, MySQL 8. Admin + Portal: React + Vite. Mobile: Expo (dev build, not Expo Go) + expo-router + react-native-track-player. Shared zod schemas live in packages/shared.
+Stack: Node 20 + TypeScript. API: Fastify, Prisma, MySQL 8. Admin + Portal: React + Vite. Mobile: Expo (dev build, not Expo Go) + expo-router + expo-audio (audio; ADR-0032 replaced react-native-track-player). Shared zod schemas live in packages/shared.
 
 Rules:
 

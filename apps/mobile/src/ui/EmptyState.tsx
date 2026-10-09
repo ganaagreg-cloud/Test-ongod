@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { layout, nativeTextStyle, spacing, type ThemeColors } from '@ongod/tokens';
 import { MountainLine } from './Icon';
