@@ -119,6 +119,17 @@ test('artwork is 16:9, thumbnails 4:3', () => {
   assert.equal(Math.round(layout.thumbWidth / aspect.thumbnail), 84);
 });
 
+test('category card and hero title match the client answers (2026-10-09)', () => {
+  assert.equal(layout.categoryCardHeight, 104);
+  assert.equal(radius.category, 20);
+  assert.deepEqual(
+    [typeScale.hero.fontSize, typeScale.hero.lineHeight, typeScale.hero.weight],
+    [52, 58, 600],
+  );
+  assert.deepEqual([typeScale.cardTitle.fontSize, typeScale.cardTitle.lineHeight], [19, 24]);
+  assert.match(design, /104 pt tall, full width, radius 20, 12 pt apart/);
+});
+
 test('light theme matches DESIGN.md "Light theme colors"', () => {
   const block = design.slice(design.indexOf('Light theme colors'));
   const expected: Record<string, string> = {

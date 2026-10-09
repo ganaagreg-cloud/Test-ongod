@@ -5,6 +5,7 @@
 export const mn = {
   appName: 'Онгод',
   close: 'Хаах',
+  back: 'Буцах',
   audioWebOnly: 'Аудио зөвхөн утсан дээр тоглоно',
 
   common: {
@@ -42,7 +43,7 @@ export const mn = {
   },
 
   welcome: {
-    subtitle: 'Гишүүдэд зориулсан аудио сан',
+    subtitle: 'Гишүүдэд зориулсан хаалттай аудио сан. Сонсож, өсөж, өөрийгөө нээ.',
     login: 'Нэвтрэх',
     register: 'Бүртгүүлэх',
   },
@@ -84,6 +85,7 @@ export const mn = {
     text: (email: string) => `${email} хаяг руу 6 оронтой код илгээлээ. Код 10 минут хүчинтэй.`,
     code: 'Баталгаажуулах код',
     submit: 'Баталгаажуулах',
+    noCode: 'Код ирээгүй юу?',
     resend: 'Код дахин илгээх',
     resendIn: (seconds: number) => `Шинэ код авахад ${seconds} секунд`,
     resent: 'Шинэ код илгээлээ.',

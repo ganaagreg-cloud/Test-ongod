@@ -367,6 +367,15 @@ export const layout = {
   /** Category card: fixed height, 3 pt accent strip on the left edge. */
   categoryCardHeight: 104,
   categoryAccentStrip: 3,
+  /** Welcome: cover tile size, where the tilted rows start, how far they bleed past the screen. */
+  marqueeTile: 112,
+  marqueeTop: 70,
+  marqueeBleed: 60,
+  /** Welcome: letter spacing of the hero title (0.02em), width of the intro text. */
+  heroTracking: 1,
+  welcomeTextMax: 290,
+  /** Icon tile on the email-code screen. */
+  iconTile: 56,
   /** The round gold play button. */
   playButton: 52,
   /** Code input boxes. */

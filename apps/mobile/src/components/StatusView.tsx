@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '@ongod/tokens';
-import { EmptyState } from '../ui';
+import { AuroraBackground, EmptyState, SurfaceProvider } from '../ui';
 
 /** A calm full-screen message (no connection, update required, unexpected error). */
 export function StatusView({
@@ -14,9 +14,12 @@ export function StatusView({
   action?: ReactNode;
 }) {
   return (
-    <View style={styles.root}>
-      <EmptyState title={title} text={text} action={action} />
-    </View>
+    <SurfaceProvider surface="dark">
+      <View style={styles.root}>
+        <AuroraBackground variant="soft" />
+        <EmptyState title={title} text={text} action={action} />
+      </View>
+    </SurfaceProvider>
   );
 }
 

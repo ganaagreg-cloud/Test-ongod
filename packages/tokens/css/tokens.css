@@ -117,6 +117,12 @@
   --layout-dot-active-width: 22px;
   --layout-category-card-height: 104px;
   --layout-category-accent-strip: 3px;
+  --layout-marquee-tile: 112px;
+  --layout-marquee-top: 70px;
+  --layout-marquee-bleed: 60px;
+  --layout-hero-tracking: 1px;
+  --layout-welcome-text-max: 290px;
+  --layout-icon-tile: 56px;
   --layout-play-button: 52px;
   --layout-code-box-height: 58px;
   --layout-code-caret-width: 2px;

@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+﻿import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { mn } from '../src/i18n/mn';
 
@@ -10,6 +10,9 @@ import { mn } from '../src/i18n/mn';
 const API = process.env.MOBILE_E2E_API_URL ?? 'http://localhost:3100';
 const MAILPIT = 'http://localhost:8025';
 const shot = (name: string) => join(__dirname, '../../../docs/screens', `mobile-${name}.png`);
+
+/** Lets the entrance animations and the line drawing finish before a screenshot. */
+const settle = (page: Page) => page.waitForTimeout(2600);
 
 const up = async (url: string) =>
   fetch(url).then(
@@ -96,6 +99,7 @@ test('signed out: the Welcome screen, no payment text, the log in / register cho
   await expect(page.getByRole('button', { name: mn.welcome.login })).toBeVisible();
   await expect(page.getByRole('button', { name: mn.welcome.register })).toBeVisible();
   await expectNoPaymentText(page);
+  await settle(page);
   await page.screenshot({ path: shot('welcome') });
 });
 
@@ -110,6 +114,7 @@ test('login: empty fields are explained, a wrong password shows the server messa
   await expect(page.getByText('Нэвтрэх нэр эсвэл нууц үг буруу байна.')).toBeVisible();
   await expect(page.getByRole('button', { name: mn.login.submit, exact: true })).toBeEnabled();
   await expectNoPaymentText(page);
+  await settle(page);
   await page.screenshot({ path: shot('login') });
 });
 
@@ -131,6 +136,7 @@ test('register: fields are checked before anything is sent', async ({ page }) =>
   await expect(page.getByText(mn.errors.password)).toBeVisible();
   await expect(page.getByText(mn.errors.username)).toBeVisible();
   expect(sent).toBe(0);
+  await settle(page);
   await page.screenshot({ path: shot('register-errors') });
 });
 
@@ -154,6 +160,7 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
       .getByRole('button', { name: mn.verify.resendIn(60) })
       .or(page.getByRole('button', { name: /Шинэ код авахад/ })),
   ).toBeDisabled();
+  await settle(page);
   await page.screenshot({ path: shot('verify-email') });
 
   // a wrong code is refused with the server's message; the screen stays
@@ -173,6 +180,7 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
   // nothing sensitive in web storage (the preview keeps tokens in memory only)
   const stored = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
   expect(stored).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}\./);
+  await settle(page);
   await page.screenshot({ path: shot('home') });
 
   // logging out returns to the Welcome screen
@@ -197,12 +205,17 @@ test('forgot password: code by email, new password, then log in with it', async 
   const NEW_PASSWORD = 'e2e-NewPassword-2';
   await openLogin(page);
   await page.getByRole('button', { name: mn.login.forgot }).click();
+  await expect(page.getByLabel(mn.forgot.email, { exact: true })).toBeVisible();
+  await settle(page);
+  await page.screenshot({ path: shot('forgot-password') });
   await page.getByLabel(mn.forgot.email, { exact: true }).fill(user.email);
   const before = await mailCount(user.email);
   await page.getByRole('button', { name: mn.forgot.submit, exact: true }).click();
 
   await expect(page.getByRole('heading', { name: mn.reset.title })).toBeVisible();
   await expect(page.getByLabel(mn.reset.email, { exact: true })).toHaveValue(user.email);
+  await settle(page);
+  await page.screenshot({ path: shot('reset-password') });
   await page.getByLabel(mn.reset.code, { exact: true }).fill(await nextCode(user.email, before));
   await page.getByLabel(mn.reset.newPassword, { exact: true }).fill(NEW_PASSWORD);
   await page.getByRole('button', { name: mn.reset.submit, exact: true }).click();
@@ -262,6 +275,7 @@ test('device limit: the 3rd device sees the other two and can remove one', async
     const removeButtons = third.getByRole('button', { name: mn.deviceLimit.remove });
     await expect(removeButtons).toHaveCount(2);
     await expect(third.getByText(/Сүлд|Сүүлд/).first()).toBeVisible();
+    await third.waitForTimeout(2600);
     await third.screenshot({ path: shot('device-limit') });
 
     await removeButtons.first().click();
@@ -286,6 +300,7 @@ test('update required: below the server minimum the app is blocked', async ({ pa
   await expect(page.getByText(mn.update.title)).toBeVisible();
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveCount(0);
   await expectNoPaymentText(page);
+  await settle(page);
   await page.screenshot({ path: shot('update-required') });
 });
 
@@ -348,6 +363,7 @@ test('complete profile: a locked social account must fill the form (answers mock
   await expect(page.getByLabel(mn.completeProfile.username, { exact: true })).toHaveValue(
     'social.person@example.com',
   );
+  await settle(page);
   await page.screenshot({ path: shot('complete-profile') });
 
   // incomplete: nothing is sent

@@ -1,5 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { colors, nativeTextStyle, spacing } from '@ongod/tokens';
 import { api } from '../../src/api';
 import { checks } from '../../src/auth/validation';
 import { AuthHeader } from '../../src/components/AuthHeader';
@@ -9,6 +11,11 @@ import { Button, CodeInput, Screen, useToast } from '../../src/ui';
 
 /** Seconds before a new code can be requested (the server enforces the same 60 s, SPEC A). */
 const RESEND_SECONDS = 60;
+
+const styles = StyleSheet.create({
+  resend: { gap: spacing.xxs },
+  noCode: { color: colors.textTertiary, ...nativeTextStyle('small') },
+});
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -39,7 +46,7 @@ export default function VerifyEmail() {
 
   return (
     <Screen>
-      <AuthHeader title={mn.verify.title} text={mn.verify.text(email)} />
+      <AuthHeader icon="mail" title={mn.verify.title} text={mn.verify.text(email)} />
       <CodeInput
         label={mn.verify.code}
         value={code}
@@ -52,24 +59,27 @@ export default function VerifyEmail() {
           if (value.length === 6) void submit(value);
         }}
       />
+      <View style={styles.resend}>
+        <Text style={styles.noCode}>{mn.verify.noCode}</Text>
+        <Button
+          label={wait > 0 ? mn.verify.resendIn(wait) : mn.verify.resend}
+          variant="ghost"
+          disabled={wait > 0}
+          loading={resend.pending}
+          onPress={() =>
+            void resend.run(async () => {
+              await api.resendCode(email);
+              setWait(RESEND_SECONDS);
+              toast.show(mn.verify.resent, { tone: 'success' });
+            })
+          }
+        />
+      </View>
       <Button
         label={mn.verify.submit}
         fullWidth
         loading={pending}
         onPress={() => void submit(code)}
-      />
-      <Button
-        label={wait > 0 ? mn.verify.resendIn(wait) : mn.verify.resend}
-        variant="ghost"
-        disabled={wait > 0}
-        loading={resend.pending}
-        onPress={() =>
-          void resend.run(async () => {
-            await api.resendCode(email);
-            setWait(RESEND_SECONDS);
-            toast.show(mn.verify.resent, { tone: 'success' });
-          })
-        }
       />
     </Screen>
   );
