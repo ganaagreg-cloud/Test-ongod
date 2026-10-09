@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { layout, radius, spacing, themes, typeScale } from './index';
+import { aspect, glass, layout, motion, radius, spacing, themes, typeScale } from './index';
 
 // docs/DESIGN.md is the spec; these tests fail if the tokens drift from the numbers written there.
 const design = readFileSync(new URL('../../../docs/DESIGN.md', import.meta.url), 'utf8');
@@ -54,23 +54,69 @@ test('spacing, radius and layout match DESIGN.md', () => {
 
   const radiusLine = design.match(/^Radius: (.*)$/m)?.[1];
   assert.ok(radiusLine);
-  assert.equal(radius.small, 8);
-  assert.equal(radius.card, 12);
-  assert.equal(radius.sheet, 20);
-  assert.equal(radius.pill, 999);
+  for (const [, name, value] of radiusLine.matchAll(/(\w+) (\d+)/g)) {
+    assert.equal((radius as Record<string, number>)[name!], Number(value), `radius.${name}`);
+  }
+  assert.deepEqual(
+    { ...radius },
+    { small: 8, mini: 10, card: 12, thumb: 14, cardLarge: 18, category: 20, hero: 22, sheet: 26, pill: 999 },
+  );
 
   // Components section: heights and sizes.
   assert.equal(layout.buttonHeight, 52);
   assert.equal(layout.inputHeight, 52);
   assert.equal(layout.chipHeight, 36);
-  assert.equal(layout.tabBarHeight, 64);
+  assert.equal(layout.tabBarHeight, 68);
   assert.equal(layout.tabBarInset, 16);
-  assert.equal(layout.tabBarBgOpacity, 0.92);
+  assert.deepEqual([glass.tabBar, glass.miniPlayer, glass.header], [0.78, 0.82, 0.72]);
+  assert.equal(glass.androidOpacity, 0.96);
+  assert.match(design, /surfaceRaised at 78%.*mini player \(82%\).*headers \(72%\)/);
+  assert.match(design, /Android has no blur: surfaceRaised at 96%/);
   assert.equal(layout.miniPlayerGap, 8);
   assert.equal(layout.miniPlayerCover, 40);
   assert.equal(layout.episodeRowCover, 64);
   assert.equal(layout.touchTarget, 44);
   assert.ok(section('# Components').includes('52 pt tall'));
+});
+
+test('cream colors match DESIGN.md "Cream colors"', () => {
+  const line = design.match(/^Cream colors[^:]*: (.*)$/m)?.[1];
+  assert.ok(line, 'DESIGN.md has a Cream colors line');
+  // "name #hex" and "name rgba(...)" pairs; prose in parentheses is skipped by the pattern.
+  const spec = new Map(
+    [...line.matchAll(/(\w+) (#[0-9A-Fa-f]{6}|rgba\([^)]*\))/g)].map((m) => [m[1]!, m[2]!]),
+  );
+  assert.ok(spec.size >= 20, 'parsed the cream color list');
+  for (const [name, value] of spec) {
+    const actual = (themes.cream as Record<string, string>)[name];
+    assert.ok(actual, `token ${name} exists`);
+    assert.equal(norm(actual), norm(value), `cream.${name}`);
+  }
+});
+
+test('motion tokens match DESIGN.md "Motion"', () => {
+  assert.match(design, /snappy \{damping 18, stiffness 260, mass 0\.8\}/);
+  assert.match(design, /smooth \{damping 26, stiffness 180\}/);
+  assert.match(design, /sheet \{damping 28, stiffness 220\}/);
+  assert.deepEqual({ ...motion.spring.snappy }, { damping: 18, stiffness: 260, mass: 0.8 });
+  assert.deepEqual([motion.spring.smooth.damping, motion.spring.smooth.stiffness], [26, 180]);
+  assert.deepEqual([motion.spring.sheet.damping, motion.spring.sheet.stiffness], [28, 220]);
+  assert.equal(motion.enter.rise, 16);
+  assert.equal(motion.enter.staggerMs, 60);
+  assert.equal(motion.enter.maxStagger, 8);
+  assert.deepEqual([motion.pressScale, motion.pressScaleRound, motion.iconBounce], [0.96, 0.92, 1.12]);
+  assert.equal(motion.shimmerMs, 1200);
+  assert.equal(motion.carouselAutoMs, 4800);
+  for (const ms of motion.ambientMs) assert.ok(ms >= 12000 && ms <= 19000);
+  assert.ok(motion.drawMs <= 1800);
+});
+
+test('artwork is 16:9, thumbnails 4:3', () => {
+  assert.equal(aspect.artwork, 16 / 9);
+  assert.equal(aspect.thumbnail, 4 / 3);
+  assert.match(design, /episode pictures are 16:9/);
+  assert.match(design, /4:3 center crop \(112×84\)/);
+  assert.equal(Math.round(layout.thumbWidth / aspect.thumbnail), 84);
 });
 
 test('light theme matches DESIGN.md "Light theme colors"', () => {

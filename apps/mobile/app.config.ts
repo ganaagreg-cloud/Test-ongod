@@ -10,7 +10,11 @@ const googleIosScheme = process.env.GOOGLE_IOS_URL_SCHEME;
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
 
-const plugins: NonNullable<ExpoConfig['plugins']> = ['expo-router', 'expo-secure-store'];
+const plugins: NonNullable<ExpoConfig['plugins']> = [
+  'expo-router',
+  'expo-secure-store',
+  'expo-image',
+];
 if (googleIosScheme) {
   plugins.push(['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosScheme }]);
 }
@@ -32,7 +36,7 @@ const config: ExpoConfig = {
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
-  backgroundColor: '#0A0E0C',
+  backgroundColor: '#021512', // themes.dark.bg (app.config cannot import the workspace package)
   ios: {
     bundleIdentifier: 'mn.ongod.app',
     supportsTablet: false,

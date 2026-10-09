@@ -1,13 +1,13 @@
----
+﻿---
 type: design
-status: proposed
+status: accepted
 date: 2026-10-09
 tags: [design, area/mobile, area/web]
 ---
 
 # Design v2 — Aurora Forest + motion
 
-Decision: [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]] (proposed) · Replaces parts of [[DESIGN]] when accepted · Visual target: `docs/design/v2-screens/*.dc.html` (open any file in a browser to read exact values; they are HTML mockups, not app code).
+Decision: [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]] (accepted) + [[ADR-0028-cream-library-and-16x9-artwork|ADR-0028]] (accepted; overrides §1 "square covers", §7 Episode/Library/Home hero notes and §7b) · [[DESIGN]] now mirrors this file · Visual target: `docs/design/v2-screens/*.dc.html` (open any file in a browser to read exact values; they are HTML mockups, not app code).
 
 Why v2: v1 told the UI to "stay quiet", had one motion rule (200 ms ease-out) and no motion libraries, so the result looked like a dev gallery. v2 keeps every v1 rule about access, stores and accessibility, and changes the look and motion only.
 
@@ -51,7 +51,7 @@ Light theme (admin): optional change `primary #1F3B2E → #053931` (white on it 
 
 ## 3. Type, radius, elevation
 
-- Type scale unchanged, plus `hero` 40/48 Lora 600 (welcome title only).
+- Type scale unchanged, plus `hero` 52/58 Lora 600 (welcome title only; matches Main.dc.html), `cardTitle` 19/24 Lora 600 (category cards).
 - Radius: small 8, card 12 (row covers), **cardLarge 18** (cards, tiles, mini player), **hero 22** (hero carousel, large covers), **sheet 26**, pill 999.
 - Elevation: v1 said "no shadows". v2 allows exactly two: `floating` (tab bar, mini player: y 16, blur 40, black 45%) and `goldGlow` (the main play button: y 8, blur 24, gold 35%). Android: `elevation` 8 for floating only.
 - Glass: tab bar, mini player, collapsed headers = `expo-blur` intensity ~40 + surfaceRaised at 78–82%. Android fallback: no blur, surfaceRaised at 96%.

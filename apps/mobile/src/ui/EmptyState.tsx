@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, layout, nativeTextStyle, spacing } from '@ongod/tokens';
+import Animated from 'react-native-reanimated';
+import { layout, nativeTextStyle, spacing, type ThemeColors } from '@ongod/tokens';
 import { MountainLine } from './Icon';
+import { useEnterStyle } from './motion';
+import { useThemedStyles } from './surface';
 
 /** Mountain-line motif + text + one action. For empty lists and calm error states. */
 export function EmptyState({
@@ -14,30 +17,33 @@ export function EmptyState({
   /** Usually one <Button>. */
   action?: ReactNode;
 }) {
+  const styles = useThemedStyles(makeStyles);
+  const enter = useEnterStyle(0);
   return (
-    <View style={styles.box}>
-      <MountainLine />
+    <Animated.View style={[styles.box, enter]}>
+      <MountainLine draw />
       <Text style={styles.title} accessibilityRole="header">
         {title}
       </Text>
       {text ? <Text style={styles.text}>{text}</Text> : null}
       {action}
-    </View>
+    </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  box: {
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.huge,
-    paddingHorizontal: layout.screenPadding,
-  },
-  title: { color: colors.textPrimary, textAlign: 'center', ...nativeTextStyle('h2') },
-  text: {
-    maxWidth: layout.overlayMaxWidth,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    ...nativeTextStyle('body'),
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    box: {
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.huge,
+      paddingHorizontal: layout.screenPadding,
+    },
+    title: { color: c.textPrimary, textAlign: 'center', ...nativeTextStyle('h2') },
+    text: {
+      maxWidth: layout.overlayMaxWidth,
+      color: c.textSecondary,
+      textAlign: 'center',
+      ...nativeTextStyle('body'),
+    },
+  });

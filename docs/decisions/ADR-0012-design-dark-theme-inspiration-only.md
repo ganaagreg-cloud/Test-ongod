@@ -6,6 +6,8 @@ date: 2026-10-08
 tags: [adr, area/design]
 ---
 
+Superseded by [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]], [[ADR-0028-cream-library-and-16x9-artwork|ADR-0028]]
+
 ## Context
 
 The client supplied a concept image and pointed to the "Философи" app as a reference.

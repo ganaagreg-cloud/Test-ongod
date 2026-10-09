@@ -1,42 +1,61 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { colors, nativeTextStyle, spacing } from '@ongod/tokens';
-import { Badge } from './Badge';
-import { Cover } from './Cover';
+import { StyleSheet, Text } from 'react-native';
+import { nativeFontFamily, nativeTextStyle, spacing, type CoverFamily, type ThemeColors } from '@ongod/tokens';
+import { EpisodeThumb } from './EpisodeThumb';
+import { useThemedStyles } from './surface';
+import { PressableScale } from './usePressScale';
 
 export interface EpisodeCardProps {
   title: string;
-  /** "32 мин" */
+  /** "28:00" */
   durationLabel: string;
   coverUri?: string | null | undefined;
+  number?: string | undefined;
+  family?: CoverFamily;
   onPress?: (() => void) | undefined;
-  /** Card width; the cover is square. */
+  /** Card width (horizontal lists); the picture is 16:9. */
   width?: number;
 }
 
-/** Large card: the cover is the hero, the UI stays quiet. */
-export function EpisodeCard({ title, durationLabel, coverUri, onPress, width }: EpisodeCardProps) {
+/** Card for horizontal lists ("Шинэ"): the 16:9 picture is the hero, the title sits under it. */
+export function EpisodeCard({
+  title,
+  durationLabel,
+  coverUri,
+  number,
+  family,
+  onPress,
+  width,
+}: EpisodeCardProps) {
+  const styles = useThemedStyles(makeStyles);
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${durationLabel}`}
       onPress={onPress}
       disabled={!onPress}
       style={[styles.card, width != null && { width }]}
     >
-      <Cover uri={coverUri} />
+      <EpisodeThumb
+        variant="artwork"
+        uri={coverUri}
+        title={title}
+        number={number}
+        durationLabel={durationLabel}
+        {...(family && { family })}
+      />
       <Text style={styles.title} numberOfLines={2}>
         {title}
       </Text>
-      <Badge label={durationLabel} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
-const styles = StyleSheet.create({
-  card: { gap: spacing.xs },
-  title: {
-    color: colors.textPrimary,
-    ...nativeTextStyle('body'),
-    fontFamily: nativeTextStyle('h1').fontFamily,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    card: { gap: spacing.xs },
+    title: {
+      color: c.textPrimary,
+      ...nativeTextStyle('small'),
+      fontFamily: nativeFontFamily.ui[500],
+    },
+  });

@@ -1,11 +1,13 @@
 ---
 id: ADR-0027
 title: Design v2 — Aurora Forest palette, motion system and motion libraries
-status: proposed
+status: accepted
 date: 2026-10-09
 supersedes: [ADR-0012 (palette and "quiet UI" parts only)]
 tags: [adr, area/design, area/mobile]
 ---
+
+Item 5 (square covers) superseded by [[ADR-0028-cream-library-and-16x9-artwork|ADR-0028]] (16:9 artwork).
 
 ## Context
 

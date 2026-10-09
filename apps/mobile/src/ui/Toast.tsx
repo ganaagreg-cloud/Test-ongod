@@ -8,11 +8,24 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, layout, motion, nativeTextStyle, radius, spacing } from '@ongod/tokens';
+import {
+  layout,
+  motion,
+  nativeTextStyle,
+  radius,
+  spacing,
+  type ThemeColors,
+} from '@ongod/tokens';
+import { floatingShadow } from './Glass';
 import { Icon } from './Icon';
-import { useReduceMotion } from './useReduceMotion';
+import { springs } from './motion';
+import { useSurface, useThemedStyles } from './surface';
+import { PressableScale } from './usePressScale';
 
 export type ToastTone = 'info' | 'success' | 'danger';
 
@@ -35,7 +48,8 @@ export function useToast(): ToastApi {
 }
 
 const ICON = { info: 'info', success: 'check', danger: 'alert' } as const;
-const TONE_COLOR = { info: colors.info, success: colors.success, danger: colors.danger } as const;
+/** Pulls a toast this far (as a share of its height) above the screen when it is dismissed. */
+const OFFSCREEN = 2;
 
 function ToastView({
   item,
@@ -48,56 +62,80 @@ function ToastView({
   durationMs: number;
   onDismiss: (id: number) => void;
 }) {
-  const reduceMotion = useReduceMotion();
-  const [appear] = useState(() => new Animated.Value(0));
+  const { colors } = useSurface();
+  const styles = useThemedStyles(makeStyles);
+  const tone = { info: colors.info, success: colors.success, danger: colors.danger }[item.tone];
+  const height = useSharedValue<number>(layout.touchTarget);
+  const y = useSharedValue(-layout.overlayMaxWidth);
+  const start = useSharedValue(0);
+
+  const dismiss = useCallback(() => {
+    y.value = withSpring(-height.value * OFFSCREEN - layout.headerHeight, springs.snappy, (done) => {
+      if (done) scheduleOnRN(onDismiss, item.id);
+    });
+  }, [y, height, onDismiss, item.id]);
 
   useEffect(() => {
-    Animated.timing(appear, {
-      toValue: 1,
-      duration: reduceMotion ? 0 : motion.durationMs,
-      useNativeDriver: true,
-    }).start();
+    // Drops in from the top, then leaves by itself.
+    y.value = withSpring(0, springs.snappy);
     // Screen readers hear it once, when it appears.
     AccessibilityInfo.announceForAccessibility(item.message);
-    const timer = setTimeout(() => onDismiss(item.id), durationMs);
+    const timer = setTimeout(dismiss, durationMs);
     return () => clearTimeout(timer);
-  }, [appear, durationMs, item.id, item.message, onDismiss, reduceMotion]);
+  }, [y, durationMs, item.message, dismiss]);
+
+  const swipe = Gesture.Pan()
+    .activeOffsetY([-spacing.xxs, spacing.xxs])
+    .onStart(() => {
+      start.value = y.value;
+    })
+    .onUpdate((e) => {
+      y.value = Math.min(0, start.value + e.translationY);
+    })
+    .onEnd((e) => {
+      if (e.translationY < -spacing.md || e.velocityY < -motion.flingVelocity / 2) {
+        scheduleOnRN(dismiss);
+      } else {
+        y.value = withSpring(0, springs.snappy);
+      }
+    });
+
+  const animated = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
 
   return (
-    <Animated.View
-      style={[
-        styles.toast,
-        {
-          opacity: appear,
-          transform: [
-            {
-              translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [spacing.md, 0] }),
-            },
-          ],
-        },
-      ]}
-      accessibilityRole={item.tone === 'danger' ? 'alert' : undefined}
-      accessibilityLiveRegion="polite"
-    >
-      <Icon name={ICON[item.tone]} color={TONE_COLOR[item.tone]} />
-      <Text style={styles.message}>{item.message}</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={closeLabel}
-        onPress={() => onDismiss(item.id)}
-        style={styles.close}
+    <GestureDetector gesture={swipe}>
+      <Animated.View
+        onLayout={(e) => {
+          height.value = e.nativeEvent.layout.height;
+        }}
+        style={[styles.toast, animated]}
+        accessibilityRole={item.tone === 'danger' ? 'alert' : undefined}
+        accessibilityLiveRegion="polite"
       >
-        <Icon name="close" color={colors.textSecondary} />
-      </Pressable>
-    </Animated.View>
+        <Icon name={ICON[item.tone]} color={tone} />
+        <Text style={styles.message}>{item.message}</Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={closeLabel}
+          onPress={dismiss}
+          scale={motion.pressScaleRound}
+          style={styles.close}
+        >
+          <Icon name="close" color={colors.textSecondary} />
+        </PressableScale>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
-/** Wrap the app once (inside the safe-area provider); call `useToast().show("...")` anywhere below. */
+/**
+ * Wrap the app once (inside the safe-area provider and GestureHandlerRootView); call
+ * `useToast().show("...")` anywhere below. Toasts drop from the top; swipe up to dismiss.
+ */
 export function ToastProvider({
   children,
   closeLabel,
-  durationMs = 4000,
+  durationMs = motion.toastMs,
 }: {
   children: ReactNode;
   closeLabel: string;
@@ -122,7 +160,7 @@ export function ToastProvider({
       {children}
       <View
         pointerEvents="box-none"
-        style={[styles.host, { bottom: layout.screenPadding + insets.bottom }]}
+        style={[hostStyles.host, { top: layout.screenPadding + insets.top }]}
       >
         {items.map((item) => (
           <ToastView
@@ -138,7 +176,7 @@ export function ToastProvider({
   );
 }
 
-const styles = StyleSheet.create({
+const hostStyles = StyleSheet.create({
   host: {
     position: 'absolute',
     left: layout.screenPadding,
@@ -146,25 +184,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    width: '100%',
-    maxWidth: layout.overlayMaxWidth,
-    paddingVertical: spacing.xs,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.xs,
-    borderRadius: radius.card,
-    borderWidth: layout.borderWidth,
-    borderColor: colors.hairline,
-    backgroundColor: colors.surfaceRaised,
-  },
-  message: { flex: 1, color: colors.textPrimary, ...nativeTextStyle('small') },
-  close: {
-    width: layout.touchTarget,
-    height: layout.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
+
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      width: '100%',
+      maxWidth: layout.overlayMaxWidth,
+      paddingVertical: spacing.xs,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.xs,
+      borderRadius: radius.cardLarge,
+      borderWidth: layout.borderWidth,
+      borderColor: c.hairline,
+      backgroundColor: c.surfaceRaised,
+      ...floatingShadow,
+    },
+    message: { flex: 1, color: c.textPrimary, ...nativeTextStyle('small') },
+    close: {
+      width: layout.touchTarget,
+      height: layout.touchTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

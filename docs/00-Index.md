@@ -12,7 +12,7 @@ tags: [index]
 ## Specs
 
 - [[SPEC]]: product, workflows, data model, acceptance tests
-- [[DESIGN]]: tokens, components, screens
+- [[DESIGN]]: tokens, components, screens (v2) · [[DESIGN-v2-aurora]] · mockups `docs/design/v2-screens/` · screenshots `docs/screens/`
 - [[glossary]]
 - [[open-questions]]
 - Client: [[changes]] · [[approvals]] · [[messages]] (project brief: `client/project-brief.md`, added by Ganaa)
@@ -47,8 +47,11 @@ tags: [index]
 | ADR-0024 | [[ADR-0024-dev-preview-tooling]]                     | accepted |
 | ADR-0025 | [[ADR-0025-ui-component-set]]                        | accepted |
 | ADR-0026 | [[ADR-0026-web-session-cookie-and-portal]]           | accepted |
+| ADR-0027 | [[ADR-0027-design-v2-aurora-forest-motion]]          | accepted |
+| ADR-0028 | [[ADR-0028-cream-library-and-16x9-artwork]]          | accepted |
 | ADR-0029 | [[ADR-0029-admin-app-implementation]]                | accepted |
 | ADR-0030 | [[ADR-0030-mobile-app-foundation]]                   | accepted |
+| ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]         | accepted |
 
 ## Research
 
@@ -75,6 +78,7 @@ tags: [index]
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
 | [[R-hosting-limits]]               | TO-VERIFY  | —             |
+| [[R-motion-libs-sdk-57]]           | VERIFIED   | 2026-12-08    |
 | [[R-mysql-skip-locked-claim]]      | VERIFIED   | —             |
 | [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
 | [[R-prisma-7-agent-guard]]         | VERIFIED   | 2026-12-07    |

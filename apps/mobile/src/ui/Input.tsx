@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { colors, layout, nativeTextStyle, radius, spacing } from '@ongod/tokens';
+import {
+  layout,
+  nativeTextStyle,
+  radius,
+  spacing,
+  withAlpha,
+  type ThemeColors,
+} from '@ongod/tokens';
+import { useSurface, useThemedStyles } from './surface';
 
 export interface InputProps extends Omit<TextInputProps, 'style' | 'placeholderTextColor'> {
   label: string;
@@ -18,6 +26,8 @@ export function Input({
   onBlur,
   ...rest
 }: InputProps) {
+  const { colors } = useSurface();
+  const styles = useThemedStyles(makeStyles);
   const [focused, setFocused] = useState(false);
   const message = error ?? hint;
   return (
@@ -27,7 +37,7 @@ export function Input({
         accessibilityLabel={label}
         accessibilityHint={message}
         placeholderTextColor={colors.textTertiary}
-        selectionColor={colors.accent}
+        selectionColor={colors.focusRing}
         editable={editable}
         onFocus={(event) => {
           setFocused(true);
@@ -40,6 +50,7 @@ export function Input({
         style={[
           styles.input,
           focused && styles.focused,
+          focused && { boxShadow: `0px 0px 0px 4px ${withAlpha(colors.focusRing, 0.14)}` },
           error ? styles.invalid : null,
           !editable && styles.disabled,
         ]}
@@ -57,22 +68,23 @@ export function Input({
   );
 }
 
-const styles = StyleSheet.create({
-  field: { gap: spacing.xs },
-  label: { color: colors.textSecondary, ...nativeTextStyle('small') },
-  input: {
-    minHeight: layout.inputHeight,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: layout.borderWidth,
-    borderColor: colors.hairline,
-    backgroundColor: colors.surface,
-    color: colors.textPrimary,
-    ...nativeTextStyle('body'),
-  },
-  focused: { borderColor: colors.focusRing },
-  invalid: { borderColor: colors.danger },
-  disabled: { opacity: 0.5 },
-  message: { color: colors.textSecondary, ...nativeTextStyle('caption') },
-  error: { color: colors.danger },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    field: { gap: spacing.xs },
+    label: { color: c.textSecondary, ...nativeTextStyle('small') },
+    input: {
+      minHeight: layout.inputHeight,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.cardLarge,
+      borderWidth: layout.borderWidth,
+      borderColor: c.hairlineStrong,
+      backgroundColor: c.surface,
+      color: c.textPrimary,
+      ...nativeTextStyle('body'),
+    },
+    focused: { borderColor: c.focusRing },
+    invalid: { borderColor: c.danger },
+    disabled: { opacity: 0.5 },
+    message: { color: c.textSecondary, ...nativeTextStyle('caption') },
+    error: { color: c.danger },
+  });

@@ -1,6 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, layout, nativeTextStyle, spacing, type IconName } from '@ongod/tokens';
+import { StyleSheet, Text, View } from 'react-native';
+import {
+  layout,
+  motion,
+  nativeTextStyle,
+  spacing,
+  type IconName,
+  type ThemeColors,
+} from '@ongod/tokens';
 import { Icon } from './Icon';
+import { useSurface, useThemedStyles } from './surface';
+import { PressableScale } from './usePressScale';
 
 export interface ListItemProps {
   title: string;
@@ -13,6 +22,8 @@ export interface ListItemProps {
 
 /** Settings row. Navigable rows show a chevron. */
 export function ListItem({ title, value, icon, tone = 'default', onPress }: ListItemProps) {
+  const { colors } = useSurface();
+  const styles = useThemedStyles(makeStyles);
   const destructive = tone === 'destructive';
   const color = destructive ? colors.danger : colors.textPrimary;
   const content = (
@@ -27,29 +38,30 @@ export function ListItem({ title, value, icon, tone = 'default', onPress }: List
   );
   if (!onPress) return <View style={styles.row}>{content}</View>;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={value != null ? `${title}, ${value}` : title}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      scale={motion.pressScale}
+      style={styles.row}
     >
       {content}
-    </Pressable>
+    </PressableScale>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: layout.touchTarget + spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderBottomWidth: layout.borderWidth,
-    borderBottomColor: colors.hairline,
-  },
-  pressed: { backgroundColor: colors.surfaceRaised },
-  title: { flex: 1, ...nativeTextStyle('body') },
-  value: { color: colors.textSecondary, ...nativeTextStyle('small') },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: layout.touchTarget + spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderBottomWidth: layout.borderWidth,
+      borderBottomColor: c.hairline,
+    },
+    title: { flex: 1, ...nativeTextStyle('body') },
+    value: { color: c.textSecondary, ...nativeTextStyle('small') },
+  });
