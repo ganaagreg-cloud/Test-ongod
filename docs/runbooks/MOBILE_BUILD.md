@@ -20,7 +20,7 @@ Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-
 ## Run
 
 1. API: `pnpm dev` (needs port 3000 free). The app needs the API for everything except the Welcome screen.
-2. Dev build (not Expo Go): `pnpm --filter @ongod/mobile android` (Android Studio) or `eas build --profile development --platform android`. Then `pnpm dev:mobile` starts Metro for the dev client.
+2. Dev build (not Expo Go; Expo Go is allowed for preview only, see [[EXPO_GO_PREVIEW]]): `pnpm --filter @ongod/mobile android` (Android Studio) or `eas build --profile development --platform android`. Then `pnpm dev:mobile` starts Metro for the dev client.
 3. Browser preview of the screens (no Google/Apple, no SecureStore): `pnpm dev:mobile:web`.
 
 ## Builds

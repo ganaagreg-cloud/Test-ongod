@@ -1,16 +1,11 @@
 // Google and Apple sign-in on the phone (SPEC C, ADR-0009, ADR-0019). Native only: the browser
 // preview uses social.web.ts. Both return the ID token for the API, which verifies it itself;
 // the phone never decides who the user is.
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 import { env } from '../config/env';
+import { isExpoGo } from '../lib/expoGo';
 
 export interface GoogleResult {
   idToken: string;
@@ -25,11 +20,19 @@ export interface AppleResult {
   lastName?: string;
 }
 
-/** True when this build has the Google client IDs it needs (see .env.example). */
-export const googleConfigured = env.googleWebClientId !== undefined;
+/**
+ * True when this build has the Google client IDs it needs (see .env.example). Always false in
+ * Expo Go (ADR-0033): the native module is not there, so the button is hidden.
+ */
+export const googleConfigured = env.googleWebClientId !== undefined && !isExpoGo;
+
+// Never imported at the top of the file: in Expo Go the native module does not exist and
+// importing it would crash the app at start-up.
+const loadGoogle = () => import('@react-native-google-signin/google-signin');
 
 let googleReady = false;
-function configureGoogle() {
+async function configureGoogle() {
+  const { GoogleSignin } = await loadGoogle();
   if (googleReady) return;
   GoogleSignin.configure({
     // The web client ID is what the ID token is issued for (the API's GOOGLE_CLIENT_IDS).
@@ -41,7 +44,9 @@ function configureGoogle() {
 
 /** Resolves to null when the user closes the Google sheet. */
 export async function signInWithGoogle(): Promise<GoogleResult | null> {
-  configureGoogle();
+  if (isExpoGo) return null;
+  await configureGoogle();
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await loadGoogle();
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     const response = await GoogleSignin.signIn();
@@ -57,7 +62,8 @@ export async function signInWithGoogle(): Promise<GoogleResult | null> {
 
 /** Whether to offer Sign in with Apple: iOS only, and only if the system supports it. */
 export async function isAppleAvailable(): Promise<boolean> {
-  if (Platform.OS !== 'ios') return false;
+  // Expo Go signs with its own bundle id, so Apple would issue a token the API rejects.
+  if (Platform.OS !== 'ios' || isExpoGo) return false;
   try {
     return await AppleAuthentication.isAvailableAsync();
   } catch {

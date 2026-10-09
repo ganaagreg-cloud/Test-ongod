@@ -53,6 +53,7 @@ tags: [index]
 | ADR-0030 | [[ADR-0030-mobile-app-foundation]]                   | accepted |
 | ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]         | accepted |
 | ADR-0032 | [[ADR-0032-audio-expo-audio-instead-of-track-player]] | accepted |
+| ADR-0033 | [[ADR-0033-expo-go-preview-only]] | accepted |
 
 ## Research
 
@@ -98,4 +99,4 @@ tags: [index]
 
 ## Runbooks
 
-- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[MOBILE_BUILD]] · [[DEVICE_SMOKE]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)
+- [[DEPLOY]] · [[BUNNY_SWITCH]] · [[MOBILE_BUILD]] · [[EXPO_GO_PREVIEW]] · [[DEVICE_SMOKE]] · [[SECRETS]] · [[STORE]] · [[LAUNCH_CHECKLIST]] (all drafts)
