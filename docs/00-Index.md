@@ -57,6 +57,7 @@ tags: [index]
 | ADR-0033 | [[ADR-0033-expo-go-preview-only]]                     | accepted               |
 | ADR-0034 | [[ADR-0034-ios-first-zero-cost-device-gate]]          | accepted               |
 | ADR-0035 | [[ADR-0035-episode-pictures-16x9-files]]              | accepted               |
+| ADR-0036 | [[ADR-0036-ci-github-actions]]                        | accepted               |
 
 ## Research
 
@@ -80,6 +81,7 @@ tags: [index]
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |
 | [[R-google-id-token-verification]] | TO-VERIFY  | 2026-12-07    |
+| [[R-github-actions-billing]]       | TO-VERIFY  | 2027-01-15    |
 | [[R-google-signin-v16]]            | VERIFIED   | 2026-12-08    |
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |

@@ -212,7 +212,9 @@ export async function foreignRows(page: Page, screen: 'payments' | 'episodes'): 
   const loaded = page.waitForResponse((res) => res.url().includes(api));
   await page.goto(screen);
   await loaded;
-  await page.getByRole('table').waitFor();
+  // While loading, the table is aria-busy and shows aria-hidden skeleton rows, which would count
+  // as 0 rows (it did on 2026-10-17 in the afterAll check).
+  await page.locator('table:not([aria-busy])').waitFor();
   return page
     .getByRole('row')
     .filter({ has: page.locator('td') })

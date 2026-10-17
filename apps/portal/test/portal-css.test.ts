@@ -17,14 +17,17 @@ test('portal.css has no raw colors, pixel sizes or font names', () => {
 });
 
 test('every var(--...) in portal.css exists in the tokens or the component CSS', () => {
+  // Array.from, not .matchAll(...).map: iterator helpers only exist from Node 22 (.nvmrc is 20).
   const defined = new Set(
-    [
-      readFileSync(new URL('../../../packages/tokens/css/tokens.css', import.meta.url), 'utf8'),
-      readFileSync(new URL('../../../packages/ui-web/src/ui.css', import.meta.url), 'utf8'),
-    ]
-      .join('\n')
-      .matchAll(/(--[a-z0-9-]+)\s*:/g)
-      .map((m) => m[1]),
+    Array.from(
+      [
+        readFileSync(new URL('../../../packages/tokens/css/tokens.css', import.meta.url), 'utf8'),
+        readFileSync(new URL('../../../packages/ui-web/src/ui.css', import.meta.url), 'utf8'),
+      ]
+        .join('\n')
+        .matchAll(/(--[a-z0-9-]+)\s*:/g),
+      (m) => m[1],
+    ),
   );
   const used = new Set([...source.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]));
   assert.deepEqual(
