@@ -140,6 +140,8 @@
   --layout-aurora-medium: 300px;
   --layout-aurora-small: 260px;
   --layout-duration-badge-height: 22px;
+  --aspect-artwork: 1.7777777777777777;
+  --aspect-thumbnail: 1.3333333333333333;
   --motion-duration: 200ms;
   --motion-easing: ease-out;
 }

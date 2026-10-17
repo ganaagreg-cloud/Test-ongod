@@ -6,6 +6,8 @@ date: '2026-10-08'
 tags: [adr, area/backend, area/media]
 ---
 
+Item 5 (1400x1400 and 400x400 square covers) superseded by [[ADR-0035-episode-pictures-16x9-files|ADR-0035]] (16:9 files).
+
 ## Context
 
 [[SPEC#Workflows]] G fixes the episode lifecycle (Draft, Scheduled, Published; media Ready) and the acceptance tests say a link without access is refused and expired access stops playback. It leaves open how the catalog is paged, what "next" means, how long a play link lives, and what progress and saved do on edge cases. This ADR fills those gaps for `/v1/categories`, `/v1/episodes`, `/v1/home`, `/v1/episodes/:id/play`, `/v1/progress` and `/v1/saved`. It does not change SPEC, DESIGN or any accepted ADR; it builds on [[ADR-0004-media-bunny-token-auth|ADR-0004]] and [[ADR-0020-bunny-signed-urls-hs256-no-ip|ADR-0020]].

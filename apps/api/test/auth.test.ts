@@ -70,6 +70,19 @@ describe('SPEC A: register', () => {
     expect(dupName.json().error.code).toBe('USERNAME_TAKEN');
   });
 
+  it('handles registrations at the same moment (no deadlock, every user gets a code)', async () => {
+    // Regression (log 2026-10-09): issuing the first code used a locking update on an empty
+    // index range, so parallel sign-ups took overlapping gap locks and MySQL killed one with a
+    // deadlock (500). Several rounds, because a single burst does not always collide.
+    const app = await authApp();
+    for (let round = 0; round < 3; round++) {
+      const emails = Array.from({ length: 8 }, (_, i) => `race${round}.${i}@example.com`);
+      const results = await Promise.all(emails.map((email) => register(app, { email })));
+      expect(results.map((r) => r.statusCode)).toEqual(emails.map(() => 201));
+      for (const email of emails) expect(await lastCode(email)).toMatch(/^\d{6}$/);
+    }
+  });
+
   it.each([
     ['username too short', { username: 'ab' }],
     ['username too long', { username: 'a'.repeat(31) }],

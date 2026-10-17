@@ -7,3 +7,5 @@ packages/tokens/css/
 playwright-report
 test-results
 apps/api/src/generated/
+# design-tool exports (re-exported as a whole, never edited by hand)
+docs/design/**/*.html

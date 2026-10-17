@@ -4,20 +4,20 @@ import sharp from 'sharp';
 import { AppError } from '../errors';
 import type { UploadDirs } from './storage';
 
-/** ADR-0021: the cover is 1400x1400, the thumbnail 400x400, both square WebP. */
-export const COVER_SIZE = 1400;
-export const THUMB_SIZE = 400;
+/** ADR-0035: episode pictures are 16:9 WebP, 1280x720 and 640x360 (devices crop lists to 4:3). */
+export const COVER = { width: 1280, height: 720 } as const;
+export const THUMB = { width: 640, height: 360 } as const;
 const FORMATS = new Set(['jpeg', 'png', 'webp']);
 /** Refuses decompression bombs: a small file that expands to a huge bitmap. */
 const MAX_INPUT_PIXELS = 50_000_000;
 
 export const coverFiles = (dirs: UploadDirs, coverId: string) => ({
-  full: join(dirs.covers, `${coverId}-${COVER_SIZE}.webp`),
-  thumb: join(dirs.covers, `${coverId}-${THUMB_SIZE}.webp`),
+  full: join(dirs.covers, `${coverId}-full.webp`),
+  thumb: join(dirs.covers, `${coverId}-thumb.webp`),
 });
 
 /**
- * Turns an uploaded image into the two square covers, centre-cropped (DESIGN.md: covers are 1:1).
+ * Turns an uploaded image into the two 16:9 pictures, centre-cropped whatever its shape (DESIGN.md).
  * The format is read from the bytes, not from the file name or the declared type.
  */
 export async function processCover(
@@ -34,13 +34,13 @@ export async function processCover(
     await image
       .clone()
       .rotate()
-      .resize(COVER_SIZE, COVER_SIZE, { fit: 'cover', position: 'centre' })
+      .resize(COVER.width, COVER.height, { fit: 'cover', position: 'centre' })
       .webp({ quality: 82 })
       .toFile(files.full);
     await image
       .clone()
       .rotate()
-      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover', position: 'centre' })
+      .resize(THUMB.width, THUMB.height, { fit: 'cover', position: 'centre' })
       .webp({ quality: 80 })
       .toFile(files.thumb);
   } catch {

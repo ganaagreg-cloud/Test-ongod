@@ -1,4 +1,5 @@
 import {
+  aspect,
   themes,
   fontFamily,
   fontWeights,
@@ -37,6 +38,8 @@ export function toCssVariables(): string {
   for (const [k, v] of Object.entries(layout)) {
     lines.push(`--layout-${kebab(k)}: ${v}px;`);
   }
+  // width / height, for CSS aspect-ratio (ADR-0035: artwork 16:9, list thumbnails 4:3).
+  for (const [k, v] of Object.entries(aspect)) lines.push(`--aspect-${kebab(k)}: ${v};`);
   lines.push(`--motion-duration: ${motion.durationMs}ms;`);
   lines.push(`--motion-easing: ${motion.easing};`);
 

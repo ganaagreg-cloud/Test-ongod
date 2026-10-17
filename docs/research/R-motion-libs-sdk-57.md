@@ -11,15 +11,15 @@ tags: [research, area/mobile, tooling]
 
 Installed with `npx expo install` in apps/mobile (Expo SDK 57, RN 0.86.3, pnpm, `node-linker=hoisted`):
 
-| Package | Installed | package.json range |
-|---|---|---|
-| react-native-reanimated | 4.5.1 | 4.5.1 |
-| react-native-worklets | 0.10.1 | (expo-chosen) |
-| react-native-gesture-handler | 2.32.0 | ~2.32.0 |
-| expo-blur | 57.0.3 | ~57.0.3 |
-| expo-linear-gradient | 57.0.2 | ~57.0.2 |
-| expo-haptics | 57.0.3 | ~57.0.3 |
-| expo-image | 57.0.5 | ~57.0.5 |
+| Package                      | Installed | package.json range |
+| ---------------------------- | --------- | ------------------ |
+| react-native-reanimated      | 4.5.1     | 4.5.1              |
+| react-native-worklets        | 0.10.1    | (expo-chosen)      |
+| react-native-gesture-handler | 2.32.0    | ~2.32.0            |
+| expo-blur                    | 57.0.3    | ~57.0.3            |
+| expo-linear-gradient         | 57.0.2    | ~57.0.2            |
+| expo-haptics                 | 57.0.3    | ~57.0.3            |
+| expo-image                   | 57.0.5    | ~57.0.5            |
 
 - Reanimated 4 needs `react-native-worklets` as a direct dependency (Expo docs: `npx expo install react-native-reanimated react-native-worklets`).
 - Babel: no `babel.config.js` and no manual plugin. `babel-preset-expo` adds the worklets plugin automatically when `react-native-worklets` is installed (Expo docs: "No additional configuration is required"; confirmed in `babel-preset-expo/build/configs/expo.js`).

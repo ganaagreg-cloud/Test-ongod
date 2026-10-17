@@ -95,10 +95,20 @@ export function createAuthService(deps: { db: Db; env: Env }) {
     ) {
       throw new AppError(429, 'RESEND_COOLDOWN');
     }
-    await tx.emailCode.updateMany({
+    // Retire older unused codes by primary key. A locking update on the (userId, purpose) range
+    // locks the empty index gap when there are none (every new user), so parallel sign-ups
+    // deadlocked (500). No code for this user can appear in between: register's user is not
+    // committed yet, and every other caller holds lockUser.
+    const open = await tx.emailCode.findMany({
       where: { userId: user.id, purpose, usedAt: null },
-      data: { usedAt: new Date() },
+      select: { id: true },
     });
+    if (open.length > 0) {
+      await tx.emailCode.updateMany({
+        where: { id: { in: open.map((c) => c.id) }, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+    }
     const code = newEmailCode();
     await tx.emailCode.create({
       data: {

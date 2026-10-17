@@ -292,31 +292,48 @@ describe('cover upload', () => {
   const coverPath = async () =>
     (await testDb.episode.findUniqueOrThrow({ where: { id: episodeId } })).coverPath;
 
-  it('makes a 1400 and a 400 square WebP (centre-cropped), queues the job, and the job stores both', async () => {
+  it('makes a 1280x720 and a 640x360 WebP (16:9, centre-cropped), queues the job, and the job stores both', async () => {
     const res = await upload(await pngImage(1200, 700));
     expect(res.statusCode).toBe(202);
     expect(await coverPath()).toBe(''); // not stored yet
 
     expect(readdirSync(runtime.dirs.covers).sort()).toEqual([
-      expect.stringMatching(/-1400\.webp$/),
-      expect.stringMatching(/-400\.webp$/),
+      expect.stringMatching(/-full\.webp$/),
+      expect.stringMatching(/-thumb\.webp$/),
     ]);
     await runMediaJobs(runtime);
 
     const path = await coverPath();
     expect(path).toMatch(new RegExp(`^covers/${episodeId}/[0-9a-f-]{36}\\.webp$`));
     const full = await sharp(join(runtime.dirs.published, path)).metadata();
-    expect(full).toMatchObject({ format: 'webp', width: 1400, height: 1400 });
+    expect(full).toMatchObject({ format: 'webp', width: 1280, height: 720 });
     const thumb = await sharp(
       join(runtime.dirs.published, path.replace('.webp', '-400.webp')),
     ).metadata();
-    expect(thumb).toMatchObject({ format: 'webp', width: 400, height: 400 });
+    expect(thumb).toMatchObject({ format: 'webp', width: 640, height: 360 });
     // The working copies are cleaned up.
     expect(readdirSync(runtime.dirs.covers)).toEqual([]);
     expect(
       (await call(app, 'GET', `/v1/admin/episodes/${episodeId}`, adminToken)).json().episode
         .hasCover,
     ).toBe(true);
+  });
+
+  it('crops a portrait or square upload to 16:9 too (ADR-0035)', async () => {
+    for (const [width, height] of [
+      [600, 900],
+      [700, 700],
+    ] as const) {
+      expect((await upload(await pngImage(width, height))).statusCode).toBe(202);
+      await runMediaJobs(runtime);
+      const path = await coverPath();
+      const full = await sharp(join(runtime.dirs.published, path)).metadata();
+      expect(full).toMatchObject({ width: 1280, height: 720 });
+      const thumb = await sharp(
+        join(runtime.dirs.published, path.replace('.webp', '-400.webp')),
+      ).metadata();
+      expect(thumb).toMatchObject({ width: 640, height: 360 });
+    }
   });
 
   it('a new cover replaces the old one and the old files are deleted', async () => {
@@ -367,7 +384,7 @@ describe('cover upload', () => {
 
     const { payload, headers } = await multipart(
       {},
-      { name: 'c.png', data: await pngImage(), type: 'image/png' },
+      { name: 'c.png', data: await pngImage(), type: 'image/png', field: 'cover' },
     );
     const missing = await app.inject({
       method: 'POST',
@@ -388,9 +405,11 @@ describe('cover upload', () => {
   });
 
   it('refuses an image that expands to an absurd size (decompression bomb)', async () => {
-    // 20000 x 20000 = 400 million pixels, a few KB as PNG.
+    // 20000 x 20000 = 400 million pixels, a few KB as PNG. Building it needs sharp's own default
+    // pixel limit (268M since 0.35) off; the API's lower limit is what is under test.
     const bomb = await sharp({
       create: { width: 20000, height: 20000, channels: 3, background: '#000' },
+      limitInputPixels: false,
     })
       .png({ compressionLevel: 9 })
       .toBuffer();

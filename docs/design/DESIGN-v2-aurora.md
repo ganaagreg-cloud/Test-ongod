@@ -26,24 +26,24 @@ Why v2: v1 told the UI to "stay quiet", had one motion rule (200 ms ease-out) an
 
 Main color from the client: **Aurora Forest #053931**. The background is a darker step of the same hue, so the whole app reads green, not black.
 
-| Token | v1 | v2 | Use |
-|---|---|---|---|
-| bg | #0A0E0C | **#021512** | screen background (forest 950) |
-| surface | #121815 | **#041F1A** | inputs, list groups (forest 900) |
-| surfaceRaised | #1A221E | **#062A24** | cards, sheets, glass base (forest 850) |
-| surfaceSunken | #0A0E0C | **#021512** | = bg |
-| brand (new) | – | **#053931** | Aurora Forest: hero panels, access card, "this week" card |
-| heritage | #1F3B2E | **#0B4A3F** | selected chip pill, active tab pill (forest 700) |
-| hairline | rgba(243,239,230,0.08) | same | borders |
-| textPrimary | #F3EFE6 | same | 13.4:1 on surfaceRaised |
-| textSecondary | #A7AFA9 | **#A9B8B2** | 7.5:1 on surfaceRaised, 6.2:1 on brand |
-| textTertiary | #6E7771 | **#7F918B** | 4.6:1 on surfaceRaised. NOT allowed on brand or heritage (3.9:1 / 3.1:1); use textSecondary there |
-| accent | #D4AF6A | same | gold. One gold element per screen region |
-| accentPressed | #B8934F | same | |
-| onAccent | #14110A | same | 9.1:1 on gold |
-| glow (new) | – | **#2FA88A** | ambient aurora blobs only, never text or icons |
-| overlay | rgba(10,14,12,0.72) | **rgba(1,10,8,0.66)** | sheet backdrop |
-| success / danger / warning / info | same | same | |
+| Token                             | v1                     | v2                    | Use                                                                                               |
+| --------------------------------- | ---------------------- | --------------------- | ------------------------------------------------------------------------------------------------- |
+| bg                                | #0A0E0C                | **#021512**           | screen background (forest 950)                                                                    |
+| surface                           | #121815                | **#041F1A**           | inputs, list groups (forest 900)                                                                  |
+| surfaceRaised                     | #1A221E                | **#062A24**           | cards, sheets, glass base (forest 850)                                                            |
+| surfaceSunken                     | #0A0E0C                | **#021512**           | = bg                                                                                              |
+| brand (new)                       | –                      | **#053931**           | Aurora Forest: hero panels, access card, "this week" card                                         |
+| heritage                          | #1F3B2E                | **#0B4A3F**           | selected chip pill, active tab pill (forest 700)                                                  |
+| hairline                          | rgba(243,239,230,0.08) | same                  | borders                                                                                           |
+| textPrimary                       | #F3EFE6                | same                  | 13.4:1 on surfaceRaised                                                                           |
+| textSecondary                     | #A7AFA9                | **#A9B8B2**           | 7.5:1 on surfaceRaised, 6.2:1 on brand                                                            |
+| textTertiary                      | #6E7771                | **#7F918B**           | 4.6:1 on surfaceRaised. NOT allowed on brand or heritage (3.9:1 / 3.1:1); use textSecondary there |
+| accent                            | #D4AF6A                | same                  | gold. One gold element per screen region                                                          |
+| accentPressed                     | #B8934F                | same                  |                                                                                                   |
+| onAccent                          | #14110A                | same                  | 9.1:1 on gold                                                                                     |
+| glow (new)                        | –                      | **#2FA88A**           | ambient aurora blobs only, never text or icons                                                    |
+| overlay                           | rgba(10,14,12,0.72)    | **rgba(1,10,8,0.66)** | sheet backdrop                                                                                    |
+| success / danger / warning / info | same                   | same                  |                                                                                                   |
 
 Cover families (for the podcaster's cover template, and for typographic placeholder covers): forest `#0D5A4C → #03231E`, teal `#155463 → #041A20`, bronze `#4A3818 → #140E05`, moss `#3A5A2A → #0D1A09`, plum `#5A3A4A → #170D13`.
 
@@ -59,17 +59,17 @@ Light theme (admin): optional change `primary #1F3B2E → #053931` (white on it 
 
 ## 4. Motion tokens (new `motion` keys)
 
-| Token | Reanimated | CSS equivalent in mockups | Used for |
-|---|---|---|---|
-| spring.snappy | `withSpring(v, { damping: 18, stiffness: 260, mass: 0.8 })` | 220 ms cubic-bezier(.3,1.4,.5,1) | press scale, toggles, switch knob, icon bounce, save pop |
-| spring.smooth | `withSpring(v, { damping: 26, stiffness: 180 })` | 450 ms cubic-bezier(.22,1,.36,1) | chip pill, segmented thumb, tab pill, carousel, cover scale |
-| spring.sheet | `withSpring(v, { damping: 28, stiffness: 220 })` | 550 ms cubic-bezier(.22,1,.36,1) | player, sleep timer, no-access sheets |
-| enter | `FadeInDown.springify().damping(20)` + 16 pt rise | 600 ms, stagger 60 ms | section mount; max 8 staggered items, rest appear at once |
-| pressScale | 0.96 (0.92 for round icon buttons) | | every Pressable |
-| iconBounce | 1 → 1.12 → 1 | | active tab icon, save icon |
-| shimmer | 1200 ms linear loop | | skeletons; primary CTA sheen every 3.2 s (welcome only) |
-| carouselAutoMs | 4800 | | home hero; pauses while touched |
-| ambient | 12–19 s loops | | aurora blobs on Welcome and Player only |
+| Token          | Reanimated                                                  | CSS equivalent in mockups        | Used for                                                    |
+| -------------- | ----------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------- |
+| spring.snappy  | `withSpring(v, { damping: 18, stiffness: 260, mass: 0.8 })` | 220 ms cubic-bezier(.3,1.4,.5,1) | press scale, toggles, switch knob, icon bounce, save pop    |
+| spring.smooth  | `withSpring(v, { damping: 26, stiffness: 180 })`            | 450 ms cubic-bezier(.22,1,.36,1) | chip pill, segmented thumb, tab pill, carousel, cover scale |
+| spring.sheet   | `withSpring(v, { damping: 28, stiffness: 220 })`            | 550 ms cubic-bezier(.22,1,.36,1) | player, sleep timer, no-access sheets                       |
+| enter          | `FadeInDown.springify().damping(20)` + 16 pt rise           | 600 ms, stagger 60 ms            | section mount; max 8 staggered items, rest appear at once   |
+| pressScale     | 0.96 (0.92 for round icon buttons)                          |                                  | every Pressable                                             |
+| iconBounce     | 1 → 1.12 → 1                                                |                                  | active tab icon, save icon                                  |
+| shimmer        | 1200 ms linear loop                                         |                                  | skeletons; primary CTA sheen every 3.2 s (welcome only)     |
+| carouselAutoMs | 4800                                                        |                                  | home hero; pauses while touched                             |
+| ambient        | 12–19 s loops                                               |                                  | aurora blobs on Welcome and Player only                     |
 
 Rules: animate only `transform` and `opacity` (UI thread). No animation longer than 700 ms on a user action. When reduce-motion is on: springs become 0 ms, ambient and shimmer stop, enter becomes a plain 150 ms fade. Pause ambient loops when the app is in the background.
 
@@ -92,19 +92,19 @@ Not added: NativeWind/Tailwind, shadcn, Skia, Lottie, @gorhom/bottom-sheet (ADR-
 
 shadcn/ui, 21st.dev and Shuffle are web libraries (React DOM + Tailwind). They do not run in Expo. We use them only as visual references and rebuild the pattern natively:
 
-| Pattern seen on | Our component | Native build |
-|---|---|---|
-| shadcn Drawer (vaul) | `Sheet` v2 | Reanimated translateY + Pan gesture, snap, backdrop fade |
-| shadcn Input OTP | `CodeInput` | 6 boxes over one hidden TextInput, caret blink, filled pop, success wave, error shake |
-| shadcn Tabs / Toggle Group | `Segmented` | sliding thumb (smooth spring) |
-| shadcn Skeleton | `Skeleton` v2 | LinearGradient sweep (shimmer) |
-| shadcn Toast (Sonner) | `Toast` v2 | top drop with snappy spring, swipe up to dismiss |
-| shadcn Carousel (Embla) | `HeroCarousel` | paged FlatList + Reanimated scroll handler, Ken Burns on active, stretching dots |
-| 21st.dev Shimmer Button | `Button` primary `shimmer` prop | gradient sweep, Welcome screen only |
-| 21st.dev Number Ticker | `NumberTicker` | Reanimated derived value → text |
-| 21st.dev animated gradient / aurora backgrounds | `AuroraBackground` | 2–3 blurred circles (react-native-svg radial gradient), slow drift |
-| 21st.dev animated tabs / dock | `TabBar` | glass pill, sliding forest-700 pill, icon bounce |
-| Shuffle.dev | – | Website blocks only. Could serve the portal landing page later; nothing for the app |
+| Pattern seen on                                 | Our component                   | Native build                                                                          |
+| ----------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------- |
+| shadcn Drawer (vaul)                            | `Sheet` v2                      | Reanimated translateY + Pan gesture, snap, backdrop fade                              |
+| shadcn Input OTP                                | `CodeInput`                     | 6 boxes over one hidden TextInput, caret blink, filled pop, success wave, error shake |
+| shadcn Tabs / Toggle Group                      | `Segmented`                     | sliding thumb (smooth spring)                                                         |
+| shadcn Skeleton                                 | `Skeleton` v2                   | LinearGradient sweep (shimmer)                                                        |
+| shadcn Toast (Sonner)                           | `Toast` v2                      | top drop with snappy spring, swipe up to dismiss                                      |
+| shadcn Carousel (Embla)                         | `HeroCarousel`                  | paged FlatList + Reanimated scroll handler, Ken Burns on active, stretching dots      |
+| 21st.dev Shimmer Button                         | `Button` primary `shimmer` prop | gradient sweep, Welcome screen only                                                   |
+| 21st.dev Number Ticker                          | `NumberTicker`                  | Reanimated derived value → text                                                       |
+| 21st.dev animated gradient / aurora backgrounds | `AuroraBackground`              | 2–3 blurred circles (react-native-svg radial gradient), slow drift                    |
+| 21st.dev animated tabs / dock                   | `TabBar`                        | glass pill, sliding forest-700 pill, icon bounce                                      |
+| Shuffle.dev                                     | –                               | Website blocks only. Could serve the portal landing page later; nothing for the app   |
 
 ## 7. Screens (see mockups for exact layout)
 

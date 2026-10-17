@@ -1,5 +1,5 @@
 import multipart from '@fastify/multipart';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
@@ -181,7 +181,7 @@ export async function adminContentRoutes(
   });
 
   // ---- resumable audio upload (tus) ----
-  const handleTus = async (req: FastifyRequest, reply: import('fastify').FastifyReply) => {
+  const handleTus = async (req: FastifyRequest, reply: FastifyReply) => {
     // Set after the guard, overriding anything the client sent: who is uploading.
     const raw = req.raw;
     for (let i = raw.rawHeaders.length - 2; i >= 0; i -= 2) {

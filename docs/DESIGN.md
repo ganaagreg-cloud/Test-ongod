@@ -109,4 +109,4 @@ Dark-theme values for the shared keys: primary = accent, onPrimary = onAccent, a
 - Put gold text or thin gold icons on cream.
 - Use textTertiary on brand or heritage surfaces.
 - Add NativeWind/Tailwind, Skia, Lottie or a bottom-sheet library ([[ADR-0025-ui-component-set|ADR-0025]], [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]]).
-- Build the rejected mockups AltA-*, AltB-*, AltC-*.
+- Build the rejected mockups AltA-\*, AltB-\*, AltC-\*.
