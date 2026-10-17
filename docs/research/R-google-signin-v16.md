@@ -22,4 +22,4 @@ tags: [research, area/mobile, area/auth]
 
 ## Used by
 
-[[ADR-0009-social-login-feature-flag|ADR-0009]], [[ADR-0029-mobile-app-foundation|ADR-0029]]
+[[ADR-0009-social-login-feature-flag|ADR-0009]], [[ADR-0030-mobile-app-foundation|ADR-0030]]

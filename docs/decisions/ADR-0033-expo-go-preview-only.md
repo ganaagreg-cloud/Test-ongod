@@ -6,6 +6,8 @@ date: 2026-10-09
 tags: [adr, area/mobile, tooling]
 ---
 
+"Results from Expo Go never count for [[DEVICE_SMOKE]]" superseded by [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (they count for gate A).
+
 ## Context
 
 [[CLAUDE]] says the mobile app runs as a dev build, not Expo Go, because the app uses native modules Expo Go does not contain (Google sign-in, Sentry native, background audio). Ganaa wants to look at screens quickly on a real phone without building first.

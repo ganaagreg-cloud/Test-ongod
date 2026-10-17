@@ -21,4 +21,4 @@ tags: [research, area/mobile, tooling]
 
 ## Used by
 
-[[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0015-local-first-android-smoke-test|ADR-0015]]
+[[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0015-local-first-android-smoke-test|ADR-0015]]

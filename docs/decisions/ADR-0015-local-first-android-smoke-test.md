@@ -1,7 +1,7 @@
 ---
 id: ADR-0015
 title: Local-first build; Android device smoke test gates further mobile UI
-status: accepted
+status: superseded by [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]]
 date: 2026-10-08
 tags: [adr, area/mobile, area/process]
 ---

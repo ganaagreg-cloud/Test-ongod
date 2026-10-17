@@ -14,7 +14,7 @@ tags: [research, area/mobile, tooling]
 - Metro: `const { getSentryExpoConfig } = require('@sentry/react-native/metro'); module.exports = getSentryExpoConfig(__dirname);`.
 - Code: `Sentry.init({ dsn, ... })` once, then `export default Sentry.wrap(RootLayout)` in the expo-router root layout.
 - Source maps and debug symbols upload by themselves during EAS builds and local release builds when the plugin and the Metro config are present. `SENTRY_AUTH_TOKEN`: a gitignored `.env.local` for local builds, an **EAS secret** for EAS builds.
-- The docs name **no switch** to turn the upload off other than not adding the plugin. We therefore add the plugin only when `SENTRY_ORG` and `SENTRY_PROJECT` are set ([[ADR-0029-mobile-app-foundation|ADR-0029]]).
+- The docs name **no switch** to turn the upload off other than not adding the plugin. We therefore add the plugin only when `SENTRY_ORG` and `SENTRY_PROJECT` are set ([[ADR-0030-mobile-app-foundation|ADR-0030]]).
 - The page does not say whether it works in Expo Go; we use a dev build anyway ([[ADR-0001-mobile-react-native-expo|ADR-0001]]).
 
 ## Not checked
@@ -23,4 +23,4 @@ tags: [research, area/mobile, tooling]
 
 ## Used by
 
-[[ADR-0016-monitoring-logs-alert-emails|ADR-0016]], [[ADR-0029-mobile-app-foundation|ADR-0029]]
+[[ADR-0016-monitoring-logs-alert-emails|ADR-0016]], [[ADR-0030-mobile-app-foundation|ADR-0030]]

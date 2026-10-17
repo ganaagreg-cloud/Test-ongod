@@ -6,7 +6,7 @@ tags: [runbook, area/mobile]
 
 # Mobile build and run
 
-Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-native-expo|ADR-0001]], [[ADR-0015-local-first-android-smoke-test|ADR-0015]] · Facts: [[R-eas-json-profiles]], [[R-sentry-react-native-expo]], [[R-google-signin-v16]], [[R-expo-apple-authentication]]
+Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-native-expo|ADR-0001]], [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] · Facts: [[R-eas-json-profiles]], [[R-sentry-react-native-expo]], [[R-google-signin-v16]], [[R-expo-apple-authentication]]
 
 ## Settings
 
@@ -20,7 +20,7 @@ Decisions: [[ADR-0029-mobile-app-foundation|ADR-0029]], [[ADR-0001-mobile-react-
 ## Run
 
 1. API: `pnpm dev` (needs port 3000 free). The app needs the API for everything except the Welcome screen.
-2. Dev build (not Expo Go; Expo Go is allowed for preview only, see [[EXPO_GO_PREVIEW]]): `pnpm --filter @ongod/mobile android` (Android Studio) or `eas build --profile development --platform android`. Then `pnpm dev:mobile` starts Metro for the dev client.
+2. iPhone at zero cost: Expo Go, gate A only ([[EXPO_GO_PREVIEW]], [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]]). Native dev build (gate B; iPhone needs the Apple Developer Program, [[R-ios-device-install]]): `pnpm --filter @ongod/mobile android` (Android Studio) or `eas build --profile development --platform android`. Then `pnpm dev:mobile` starts Metro for the dev client.
 3. Browser preview of the screens (no Google/Apple, no SecureStore): `pnpm dev:mobile:web`.
 
 ## Builds

@@ -7,7 +7,7 @@ tags: [index]
 # Онгод: project home
 
 **Phase:** Build, before the 30% demo
-**Next milestone:** 30% milestone, the week-4 Android demo: login, episode list, locked-screen playback, admin upload + approve ([[approvals]]). Gate: native smoke test on a real Android device ([[ADR-0015-local-first-android-smoke-test|ADR-0015]]).
+**Next milestone:** 30% milestone, the week-4 Android demo: login, episode list, locked-screen playback, admin upload + approve ([[approvals]]). Gate: iPhone first at zero cost ([[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]]): gate A in Expo Go unlocks phase 3; gate B (native build: locked-screen audio) before the demo.
 
 ## Specs
 
@@ -36,7 +36,7 @@ tags: [index]
 | ADR-0012 | [[ADR-0012-design-dark-theme-inspiration-only]]      | accepted |
 | ADR-0013 | [[ADR-0013-fonts-lora-inter]]                        | accepted |
 | ADR-0014 | [[ADR-0014-admin-light-theme]]                       | accepted |
-| ADR-0015 | [[ADR-0015-local-first-android-smoke-test]]          | accepted |
+| ADR-0015 | [[ADR-0015-local-first-android-smoke-test]]          | superseded by ADR-0034 |
 | ADR-0016 | [[ADR-0016-monitoring-logs-alert-emails]]            | accepted |
 | ADR-0017 | [[ADR-0017-toolchain-version-pins]]                  | accepted |
 | ADR-0018 | [[ADR-0018-auth-implementation-details]]             | accepted |
@@ -55,6 +55,7 @@ tags: [index]
 | ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]         | accepted |
 | ADR-0032 | [[ADR-0032-audio-expo-audio-instead-of-track-player]] | accepted |
 | ADR-0033 | [[ADR-0033-expo-go-preview-only]] | accepted |
+| ADR-0034 | [[ADR-0034-ios-first-zero-cost-device-gate]] | accepted |
 
 ## Research
 
