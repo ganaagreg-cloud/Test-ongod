@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-09
+updated: 2026-10-17
 tags: [index]
 ---
 
@@ -12,6 +12,7 @@ tags: [index]
 ## Specs
 
 - [[SPEC]]: product, workflows, data model, acceptance tests
+- Latest audit: [[AUDIT-2026-10-17]] (state, iOS route, test plan)
 - [[DESIGN]]: tokens, components, screens (v2) · [[DESIGN-v2-aurora]] · mockups `docs/design/v2-screens/` · screenshots `docs/screens/`
 - [[glossary]]
 - [[open-questions]]
@@ -81,6 +82,7 @@ tags: [index]
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
 | [[R-hosting-limits]]               | TO-VERIFY  | —             |
+| [[R-ios-device-install]]           | TO-VERIFY  | 2027-01-15    |
 | [[R-motion-libs-sdk-57]]           | VERIFIED   | 2026-12-08    |
 | [[R-mysql-skip-locked-claim]]      | VERIFIED   | —             |
 | [[R-otplib-13-totp]]               | VERIFIED   | 2026-12-07    |
@@ -93,6 +95,7 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-10-17]]
 - [[2026-10-09]]
 - [[2026-10-08]]
 - [[2026-10-05]]
