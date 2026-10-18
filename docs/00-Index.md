@@ -32,7 +32,7 @@ tags: [index]
 | ADR-0008 | [[ADR-0008-auth-primitives-two-devices]]              | accepted               |
 | ADR-0009 | [[ADR-0009-social-login-feature-flag]]                | accepted               |
 | ADR-0010 | [[ADR-0010-reliability-jobs-cron-idempotency]]        | accepted               |
-| ADR-0011 | [[ADR-0011-audio-first-media-asset]]                  | accepted               |
+| ADR-0011 | [[ADR-0011-audio-first-media-asset]]                  | superseded by ADR-0038 |
 | ADR-0012 | [[ADR-0012-design-dark-theme-inspiration-only]]       | accepted               |
 | ADR-0013 | [[ADR-0013-fonts-lora-inter]]                         | accepted               |
 | ADR-0014 | [[ADR-0014-admin-light-theme]]                        | accepted               |
@@ -59,7 +59,7 @@ tags: [index]
 | ADR-0035 | [[ADR-0035-episode-pictures-16x9-files]]              | accepted               |
 | ADR-0036 | [[ADR-0036-ci-github-actions]]                        | accepted               |
 | ADR-0037 | [[ADR-0037-unverified-signup-can-be-replaced]]        | accepted               |
-| ADR-0038 | [[ADR-0038-video-episodes-bunny-stream]]              | proposed               |
+| ADR-0038 | [[ADR-0038-video-episodes-bunny-stream]]              | accepted               |
 
 ## Research
 

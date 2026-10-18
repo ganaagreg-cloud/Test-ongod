@@ -1,7 +1,7 @@
 ---
 id: ADR-0011
 title: Audio-first content with a MediaAsset table for later video
-status: accepted
+status: superseded by [[ADR-0038-video-episodes-bunny-stream|ADR-0038]]
 date: 2026-10-08
 tags: [adr, area/media, area/design]
 ---

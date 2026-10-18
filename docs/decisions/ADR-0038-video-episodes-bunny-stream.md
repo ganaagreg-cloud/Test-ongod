@@ -1,7 +1,7 @@
 ---
 id: ADR-0038
 title: 'Video episodes: one media file per episode, Bunny Stream for video'
-status: proposed
+status: accepted
 date: 2026-10-18
 supersedes: [ADR-0011 "audio-first" (only once this ADR is accepted)]
 tags: [adr, area/media, area/backend, area/mobile]

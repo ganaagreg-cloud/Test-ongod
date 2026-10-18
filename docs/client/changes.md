@@ -42,7 +42,7 @@ Every client request that changes scope is recorded here before any code. Templa
   - **Option B, video MVP now:** upload, processing, in-app playback with fullscreen; video pauses when the app goes to the background; no picture-in-picture, no lock-screen controls for video. About 6–7 days ≈ **800,000 ₮**. The rest later as a small add-on (~2.5–4.5 days ≈ 300,000–550,000 ₮).
   - **Option C, no extra charge:** stay inside the 3M ₮ budget; about 9–11 days of planned work moves out of scope (the client picks what) or the schedule moves by about two weeks.
   - In every option the **Bunny bills are separate** and run on the owner's account ([[ADR-0005-bunny-dev-zone-env-switch|ADR-0005]]): delivery for 100 members watching every episode is about $12–119 a month at 1–10 videos a week, vs $0.4–3.7 for audio (TO-VERIFY, [[VIDEO-2026-10-18]]).
-- **Status:** proposed
+- **Status:** accepted: **option A, 1,200,000 ₮** (Ganaa, 2026-10-18: agreed with the client). Written confirmation still to be added to [[approvals]]. [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] accepted and the SPEC / DESIGN wording applied the same day
 - **Notes:** no code until the client accepts an option and Ganaa accepts ADR-0038 and the SPEC / DESIGN wording. Questions: [[open-questions]] #16–#25. The apps still show no prices ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]]).
 
 Dates are when the entries were logged; the requests came from earlier planning chats.

@@ -7,7 +7,7 @@ tags: [design]
 
 Decisions: [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]] · [[ADR-0028-cream-library-and-16x9-artwork|ADR-0028]] (replace [[ADR-0012-design-dark-theme-inspiration-only|ADR-0012]]) · Full v2 spec: [[DESIGN-v2-aurora]] · Mockups: `docs/design/v2-screens/*.dc.html` · Home: [[00-Index]]
 
-Audio-first, calm, premium, Mongolian heritage without kitsch. Main color is Aurora Forest #053931; the whole app reads green, not black. Two surfaces in the app: listening screens are dark forest (Welcome, Home, Player, No-access, Profile), browsing screens are cream (Сан first). The tab bar is always the dark green glass pill. Artwork is the hero; motion is purposeful (springs, staggered entrances) and always respects reduce-motion. At most one gold element per screen region. Generous spacing, large readable text.
+Audio and video, calm, premium, Mongolian heritage without kitsch. Main color is Aurora Forest #053931; the whole app reads green, not black. Two surfaces in the app: listening screens are dark forest (Welcome, Home, Player, No-access, Profile), browsing screens are cream (Сан first). The tab bar is always the dark green glass pill. Artwork is the hero; motion is purposeful (springs, staggered entrances) and always respects reduce-motion. At most one gold element per screen region. Generous spacing, large readable text.
 
 # Tokens (packages/tokens)
 
@@ -60,7 +60,7 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 
 - Нүүр (dark): greeting + bell; HeroCarousel of the latest 3 episodes; "Үргэлжлүүлэх" card with animated progress; "Шинэ" horizontal list; "Сэдвээр сонсох" category cards; "Энэ 7 хоногт" next-release card with countdown; the header collapses into a glass bar after 70 pt of scroll.
 - Сан (CREAM): search (forest focus ring), ChipRow, sort Segmented (Шинэ / Хуучин / Урт), 4:3 EpisodeRows, 650 ms skeleton on filter change, infinite scroll.
-- Player (dark, opens as a sheet, drag down to close): replaces the old Episode detail. 16:9 artwork on top (slow Ken Burns while playing, play overlay on pause), scrubber with times, title (display) and meta, one control row (speed chip that cycles 1x/1.25x/1.5x/2x, −15, gold play/pause, +30, sleep timer sheet 15/30/45 min or end of episode), collapsible "Тайлбар" card, "Дараагийн" list. For video assets later: the picture area becomes the video.
+- Player (dark, opens as a sheet, drag down to close): replaces the old Episode detail. 16:9 artwork on top (slow Ken Burns while playing, play overlay on pause), scrubber with times, title (display) and meta, one control row (speed chip that cycles 1x/1.25x/1.5x/2x, −15, gold play/pause, +30, sleep timer sheet 15/30/45 min or end of episode), collapsible "Тайлбар" card, "Дараагийн" list. For a video episode the picture area is the video (16:9, radius hero) with a fullscreen button; fullscreen turns to landscape. Background playback and the sleep timer for video follow open question #17.
 - Хадгалсан: saved list; empty state = bookmark dropping onto the mountain line.
 - Профайл (dark): name, @username, access card (gold sheen, days-left ring, "Идэвхтэй · 2027.10.08 хүртэл" or "Идэвхгүй"), NumberTicker stats (episodes finished, hours), menu: Тохиргоо, Төхөөрөмжүүд, Мэдэгдэл, Тусламж, Үйлчилгээний нөхцөл, Нууцлалын бодлого; notification switch.
 - Тохиргоо: username, phone, email, password change, "Бүртгэл устгах" (destructive, double confirm), "Гарах".

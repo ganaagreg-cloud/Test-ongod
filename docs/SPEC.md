@@ -5,9 +5,9 @@ tags: [spec]
 
 # Product
 
-Decisions: [[ADR-0011-audio-first-media-asset|ADR-0011]] · Home: [[00-Index]]
+Decisions: [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] (replaces [[ADR-0011-audio-first-media-asset|ADR-0011]]) · Home: [[00-Index]]
 
-Paid yearly access to a library of episodes (now: audio over a cover image, 20–40 min; later: video, max 720p). The catalog is visible to logged-in users; playback requires active access.
+Paid yearly access to a library of episodes. Each episode has one media file: audio over the episode picture, or video (max 720p). Episodes are usually 40 minutes or longer, 1 to 10 a week. The catalog is visible to logged-in users; playback requires active access.
 
 # Surfaces
 
@@ -33,7 +33,7 @@ E. Admin approval: queue of PAYMENT_SUBMITTED, searchable by referenceCode, user
 
 F. Access ends: 14 days before -> push + email, once. At expiry -> playback is refused; the app shows the no-access state.
 
-G. Content: an admin creates an episode (title, description, category, cover, audio file via resumable upload), with an optional scheduled time. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push to all active users on publish.
+G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push to all active users on publish.
 
 H. Account: change password, change email (re-verify), forgot password (email code), delete account (soft delete, revoke sessions, anonymize personal data, keep payment records).
 
