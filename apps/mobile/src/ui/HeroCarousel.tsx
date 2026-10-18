@@ -54,6 +54,13 @@ export interface HeroItem {
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<HeroItem>);
 
 /**
+ * Dot colors, made once here: the dot style runs on the UI thread, where a plain function such
+ * as `withAlpha` cannot be called (it crashed /dev/ui on the iPhone; test/worklets.test.ts).
+ */
+const DOT_IDLE = withAlpha(themes.dark.textPrimary, 0.25);
+const DOT_ACTIVE = themes.dark.accent;
+
+/**
  * Paged hero banner for the latest episodes. The active slide's picture eases from 1.14 to 1
  * (Ken Burns), the dots stretch with the scroll, and it advances every 4.8 s unless a finger is
  * on it. Always dark.
@@ -167,7 +174,6 @@ function Dot({
   label: string;
   onPress: () => void;
 }) {
-  const dark = themes.dark;
   const style = useAnimatedStyle(() => {
     const range = [(index - 1) * step, index * step, (index + 1) * step];
     return {
@@ -177,11 +183,7 @@ function Dot({
         [layout.dotSize, layout.dotActiveWidth, layout.dotSize],
         'clamp',
       ),
-      backgroundColor: interpolateColor(scrollX.value, range, [
-        withAlpha(dark.textPrimary, 0.25),
-        dark.accent,
-        withAlpha(dark.textPrimary, 0.25),
-      ]),
+      backgroundColor: interpolateColor(scrollX.value, range, [DOT_IDLE, DOT_ACTIVE, DOT_IDLE]),
     };
   });
   return (
