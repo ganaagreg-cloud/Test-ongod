@@ -59,6 +59,7 @@ tags: [index]
 | ADR-0035 | [[ADR-0035-episode-pictures-16x9-files]]              | accepted               |
 | ADR-0036 | [[ADR-0036-ci-github-actions]]                        | accepted               |
 | ADR-0037 | [[ADR-0037-unverified-signup-can-be-replaced]]        | accepted               |
+| ADR-0038 | [[ADR-0038-video-episodes-bunny-stream]]              | proposed               |
 
 ## Research
 
@@ -71,6 +72,7 @@ tags: [index]
 | [[R-apple-no-payment-ui]]          | ASSUMPTION | —             |
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
+| [[R-bunny-stream]]                 | TO-VERIFY  | 2027-01-16    |
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
 | [[R-claude-code-commands]]         | VERIFIED   | 2026-12-07    |
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |
@@ -79,6 +81,7 @@ tags: [index]
 | [[R-expo-audio-sdk57]]             | VERIFIED   | 2026-12-08    |
 | [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
+| [[R-expo-video-sdk57]]             | VERIFIED   | 2026-12-17    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |
 | [[R-google-id-token-verification]] | TO-VERIFY  | 2026-12-07    |
