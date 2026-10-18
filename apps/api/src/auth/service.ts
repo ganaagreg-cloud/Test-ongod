@@ -287,19 +287,34 @@ export function createAuthService(deps: { db: Db; env: Env }) {
       if (username.includes('@') && username !== input.email) {
         throw new AppError(400, 'VALIDATION_ERROR');
       }
-      const clash = await db.user.findFirst({
+      const clashes = await db.user.findMany({
         where: { OR: [{ email: input.email }, { username: input.email }, { username }] },
-        select: { email: true, username: true },
+        select: { id: true, email: true, username: true, emailVerifiedAt: true, role: true },
       });
-      if (clash) {
-        throw clash.email === input.email || clash.username === input.email
-          ? new AppError(409, 'EMAIL_TAKEN')
-          : new AppError(409, 'USERNAME_TAKEN');
+      const ownsEmail = (c: (typeof clashes)[number]) =>
+        c.email === input.email || c.username === input.email;
+      if (clashes.some((c) => !ownsEmail(c))) throw new AppError(409, 'USERNAME_TAKEN');
+      // ADR-0037: an unverified sign-up never proved the mailbox, so a new sign-up replaces it.
+      const stale = clashes.filter(ownsEmail);
+      if (stale.some((c) => c.emailVerifiedAt || c.role !== 'USER')) {
+        throw new AppError(409, 'EMAIL_TAKEN');
       }
 
       const passwordHash = await hashPassword(input.password);
       try {
         const user = await db.$transaction(async (tx) => {
+          if (stale.length > 0) {
+            // Status precondition: still unverified, still a plain user, nothing to keep.
+            const gone = await tx.user.deleteMany({
+              where: {
+                id: { in: stale.map((c) => c.id) },
+                emailVerifiedAt: null,
+                role: 'USER',
+                subscriptions: { none: {} },
+              },
+            });
+            if (gone.count !== stale.length) throw new AppError(409, 'EMAIL_TAKEN');
+          }
           const created = await tx.user.create({
             data: {
               username,

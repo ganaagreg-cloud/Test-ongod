@@ -21,7 +21,7 @@ Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fast
 
 Decisions: auth [[ADR-0008-auth-primitives-two-devices|ADR-0008]] · social login [[ADR-0009-social-login-feature-flag|ADR-0009]] · payments [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[ADR-0007-access-model-reference-codes|ADR-0007]] · jobs and cron [[ADR-0010-reliability-jobs-cron-idempotency|ADR-0010]] · media [[ADR-0004-media-bunny-token-auth|ADR-0004]]
 
-A. Register (app or portal): last name, first name, phone (not verified), email, username (optional; default = email; unique, case-insensitive, 3–30 chars [a-z0-9._] or an email), password (min 8). A 6-digit code is emailed (10 min expiry, 5 attempts, 60 s resend cooldown). Unverified users can log in but cannot apply for a subscription.
+A. Register (app or portal): last name, first name, phone (not verified), email, username (optional; default = email; unique, case-insensitive, 3–30 chars [a-z0-9._] or an email), password (min 8). A 6-digit code is emailed (10 min expiry, 5 attempts, 60 s resend cooldown). Unverified users can log in but cannot apply for a subscription. A new sign-up with the email of an unverified account replaces that account ([[ADR-0037-unverified-signup-can-be-replaced]]).
 
 B. Login: identifier (username OR email) + password + deviceId. Max 2 devices per user; the 3rd gets DEVICE_LIMIT with the device list, and the user can remove one (password required).
 

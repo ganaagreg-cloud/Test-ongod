@@ -62,12 +62,46 @@ describe('SPEC A: register', () => {
   it('rejects duplicate email and username regardless of case', async () => {
     const app = await authApp();
     await register(app, { username: 'bat.erdene' });
+    await testDb.user.updateMany({ data: { emailVerifiedAt: new Date() } });
     const dupEmail = await register(app, { email: 'BAT@example.com', username: 'other.name' });
     expect(dupEmail.statusCode).toBe(409);
     expect(dupEmail.json().error.code).toBe('EMAIL_TAKEN');
     const dupName = await register(app, { email: 'x@example.com', username: 'Bat.Erdene' });
     expect(dupName.statusCode).toBe(409);
     expect(dupName.json().error.code).toBe('USERNAME_TAKEN');
+  });
+
+  it('lets a new sign-up replace an unverified account with the same email (ADR-0037)', async () => {
+    const app = await authApp();
+    await register(app, { firstName: 'Old' });
+    const oldUser = await testDb.user.findUniqueOrThrow({ where: { email: EMAIL } });
+    const again = await register(app, { firstName: 'New' });
+    expect(again.statusCode).toBe(201);
+    expect(await testDb.user.findUnique({ where: { id: oldUser.id } })).toBeNull();
+    const fresh = await testDb.user.findUniqueOrThrow({ where: { email: EMAIL } });
+    expect(fresh.firstName).toBe('New');
+    expect(fresh.emailVerifiedAt).toBeNull();
+    expect(await testDb.emailCode.count({ where: { userId: oldUser.id } })).toBe(0);
+    const code = await lastCode(EMAIL);
+    const verify = await post(app, '/v1/auth/verify-email', { email: EMAIL, code });
+    expect(verify.statusCode).toBe(204);
+  });
+
+  it('never replaces a verified account or an admin', async () => {
+    const app = await authApp();
+    await register(app);
+    const user = await testDb.user.findUniqueOrThrow({ where: { email: EMAIL } });
+    await testDb.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
+    const asAdmin = await register(app);
+    expect(asAdmin.statusCode).toBe(409);
+    expect(asAdmin.json().error.code).toBe('EMAIL_TAKEN');
+    await testDb.user.update({
+      where: { id: user.id },
+      data: { role: 'USER', emailVerifiedAt: new Date() },
+    });
+    const verified = await register(app);
+    expect(verified.statusCode).toBe(409);
+    expect(await testDb.user.count({ where: { id: user.id } })).toBe(1);
   });
 
   it('handles registrations at the same moment (no deadlock, every user gets a code)', async () => {
@@ -599,7 +633,7 @@ describe('rate limits', () => {
     const reg2 = [];
     for (let i = 0; i < 3; i++)
       reg2.push((await register(app, { email: 'r@example.com' })).statusCode);
-    expect(reg2).toEqual([201, 409, 429]);
+    expect(reg2).toEqual([201, 201, 429]); // 2nd replaces the unverified 1st (ADR-0037)
   });
 
   it('WindowCounter resets after the window', () => {
