@@ -59,7 +59,10 @@ const columns = [
     header: mn.episodes.columns.audio,
     cell: ({ row }) =>
       row.original.media ? (
-        <MediaBadge status={row.original.media.status} />
+        <span className="admin-media-cell">
+          {mn.episodes.audio.kind[row.original.media.kind]}
+          <MediaBadge status={row.original.media.status} />
+        </span>
       ) : (
         <span className="admin-hint">{mn.episodes.noAudio}</span>
       ),

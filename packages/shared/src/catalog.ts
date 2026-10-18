@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mediaKindSchema } from './admin-content';
 
 // Request/response schemas for the catalog, playback, progress and saved endpoints (SPEC G).
 // Nothing here carries a price or plan: the apps never show them.
@@ -36,8 +37,10 @@ export const episodeItemSchema = z.object({
   /** Signed Bunny URLs; null only if Bunny is not configured. */
   coverUrl: z.string().nullable(),
   thumbUrl: z.string().nullable(),
-  /** From the READY audio file; null when there is none. */
+  /** From the READY media file; null when there is none. */
   durationSec: z.number().int().nonnegative().nullable(),
+  /** AUDIO or VIDEO (ADR-0038); null until the episode has a READY media file. */
+  mediaKind: mediaKindSchema.nullable(),
   publishedAt: z.iso.datetime(),
   /** This user's progress, or null if never played. */
   progress: z
@@ -104,7 +107,11 @@ export type HomeResponse = z.infer<typeof homeResponseSchema>;
 // ---- POST /v1/episodes/:id/play ----
 
 export const playResponseSchema = z.object({
-  /** Bunny token-authenticated URL for the audio file. */
+  kind: mediaKindSchema,
+  /**
+   * Bunny token-authenticated URL: the audio file, or for VIDEO the HLS playlist (`.m3u8`) with
+   * the token in its path, so the segments it lists are covered too (ADR-0038).
+   */
   url: z.string(),
   /** ISO time the URL stops working. Never later than the end of the user's access. */
   expiresAt: z.iso.datetime(),

@@ -16,6 +16,10 @@ import { createHmac } from 'node:crypto';
  *                   `key=value` joined by `&`. `token` and `expires` are not part of it.
  * - base64url     = base64 with + -> -, / -> _ and the = padding removed.
  *
+ * HLS video (ADR-0038) uses the path form: the token sits in the URL path
+ * (`/bcdn_token=<token>&token_path=...&expires=<e>/<path>`), so the player's relative segment
+ * URLs carry it too. The signature is the same; only where it is written differs.
+ *
  * There is deliberately no IP parameter (ADR-0020): mobile clients change IP mid-playback.
  * With no IP the reference code adds nothing between `expires` and `signingData`.
  */
@@ -35,6 +39,11 @@ export interface SignUrlInput {
   tokenPath?: string;
   /** Extra query parameters; they are signed, so they cannot be changed afterwards. ASCII only. */
   query?: Record<string, string>;
+  /**
+   * Put the token in the path (Bunny's "directory" URL form, needed for HLS) instead of the
+   * query string. Use together with `tokenPath`.
+   */
+  inPath?: boolean;
 }
 
 const PATH_ASCII = /^[\x21-\x7e]+$/;
@@ -62,7 +71,10 @@ export function createBunnySigner(cfg: BunnyTokenConfig) {
   if (!cfg.tokenKey) throw new Error('Bunny token key must not be empty');
   if (!HOST.test(cfg.host)) throw new Error('Bunny pull zone host must be a bare hostname');
 
-  /** Full signed URL: https://<host><path>?token=...[&token_path=...]&expires=... */
+  /**
+   * Full signed URL: https://<host><path>?token=...[&token_path=...]&expires=...
+   * or, with `inPath`, https://<host>/bcdn_token=...[&token_path=...]&expires=...<path>
+   */
   function signUrl(input: SignUrlInput): string {
     assertPath(input.path, 'path');
     if (input.tokenPath !== undefined) assertPath(input.tokenPath, 'tokenPath');
@@ -94,7 +106,10 @@ export function createBunnySigner(cfg: BunnyTokenConfig) {
       .digest();
     const token = `HS256-${base64url(digest)}`;
 
-    return `https://${cfg.host}${pathname}?token=${token}${urlData ? `&${urlData}` : ''}&expires=${expires}`;
+    const tail = urlData ? `&${urlData}` : '';
+    return input.inPath
+      ? `https://${cfg.host}/bcdn_token=${token}${tail}&expires=${expires}${pathname}`
+      : `https://${cfg.host}${pathname}?token=${token}${tail}&expires=${expires}`;
   }
 
   return { signUrl };

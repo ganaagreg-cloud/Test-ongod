@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { createBunnySigner } from '../src/lib/bunnyToken';
 import { BUNNY_TEST, testApp, testDb, testEnv } from './helpers';
@@ -11,6 +12,12 @@ export const DAY = 24 * HOUR;
 export const testSigner = createBunnySigner({
   host: BUNNY_TEST.BUNNY_PULL_ZONE_HOST,
   tokenKey: BUNNY_TEST.BUNNY_CDN_TOKEN_KEY,
+});
+
+/** The video library's signer (ADR-0038), to recompute expected HLS URLs. */
+export const testStreamSigner = createBunnySigner({
+  host: BUNNY_TEST.BUNNY_STREAM_CDN_HOSTNAME,
+  tokenKey: BUNNY_TEST.BUNNY_STREAM_TOKEN_KEY,
 });
 
 /**
@@ -47,6 +54,8 @@ export async function makeEpisode(
     scheduledFor?: Date | null;
     durationSec?: number;
     media?: MediaState;
+    /** AUDIO (default) on Bunny Storage, or VIDEO on Bunny Stream with a random video id. */
+    kind?: 'AUDIO' | 'VIDEO';
     coverPath?: string;
   } = {},
 ) {
@@ -70,12 +79,13 @@ export async function makeEpisode(
   });
   const media = over.media ?? 'READY';
   if (media !== 'NONE') {
+    const video = over.kind === 'VIDEO';
     await testDb.mediaAsset.create({
       data: {
         episodeId: episode.id,
-        kind: 'AUDIO',
-        provider: 'BUNNY_STORAGE',
-        path: `audio/${episode.id}/audio.mp3`,
+        kind: video ? 'VIDEO' : 'AUDIO',
+        provider: video ? 'BUNNY_STREAM' : 'BUNNY_STORAGE',
+        path: video ? randomUUID() : `audio/${episode.id}/audio.mp3`,
         status: media,
         durationSec: media === 'READY' ? (over.durationSec ?? 1800) : null,
         failReason: media === 'FAILED' ? 'test failure' : null,

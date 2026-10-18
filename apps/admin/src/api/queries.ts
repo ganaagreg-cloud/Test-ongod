@@ -111,15 +111,16 @@ export const episodesQuery = (filter: EpisodesFilter) =>
     placeholderData: keepPreviousData,
   });
 
-/** Refreshes by itself while the server is still working on the audio. */
+/** Refreshes by itself while the server is still working on the file (video: Bunny encodes for minutes). */
 export const episodeQuery = (id: string) =>
   queryOptions({
     queryKey: ['episode', id],
     queryFn: ({ signal }) =>
       api(`/admin/episodes/${id}`, { schema: adminEpisodeResponseSchema, signal }),
     refetchInterval: (query) => {
-      const status = query.state.data?.episode.media?.status;
-      return status === 'UPLOADING' || status === 'PROCESSING' ? 3000 : false;
+      const media = query.state.data?.episode.media;
+      if (media?.status !== 'UPLOADING' && media?.status !== 'PROCESSING') return false;
+      return media.kind === 'VIDEO' && media.status === 'PROCESSING' ? 10_000 : 3000;
     },
   });
 

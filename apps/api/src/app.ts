@@ -19,7 +19,7 @@ import { createMediaUrls, type MediaUrls } from './catalog/media';
 import { createCatalogService } from './catalog/service';
 import { cleanupAbandonedUploads, cronTasks, type CronTask } from './cron/tasks';
 import type { Db } from './db';
-import { missingBunnyKeys, requireBunny, type Env } from './env';
+import { missingBunnyKeys, missingStreamKeys, requireBunny, requireStream, type Env } from './env';
 import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
 import { mn } from './i18n/mn';
 import type { JobWorker } from './jobs/worker';
@@ -68,11 +68,20 @@ export interface AppDeps {
 
 const REQUEST_ID = /^[\w-]{1,64}$/;
 
-/** Signed-URL maker from the BUNNY_* env; without them covers are null and playback is a 503. */
+/**
+ * Signed-URL maker from the BUNNY_* env; without them covers are null and playback is a 503.
+ * Video needs the BUNNY_STREAM_* settings too (ADR-0038).
+ */
 function mediaFromEnv(env: Env): MediaUrls {
   if (missingBunnyKeys(env).length > 0) return createMediaUrls(undefined);
   const bunny = requireBunny(env);
-  return createMediaUrls(createBunnySigner({ host: bunny.pullZoneHost, tokenKey: bunny.tokenKey }));
+  const signer = createBunnySigner({ host: bunny.pullZoneHost, tokenKey: bunny.tokenKey });
+  if (missingStreamKeys(env).length > 0) return createMediaUrls(signer);
+  const stream = requireStream(env);
+  return createMediaUrls(
+    signer,
+    createBunnySigner({ host: stream.cdnHost, tokenKey: stream.tokenKey }),
+  );
 }
 
 export async function buildApp(deps: AppDeps) {

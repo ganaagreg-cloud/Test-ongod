@@ -263,7 +263,7 @@ test('episodes: create, cover, and an audio upload that resumes after a page ref
   await expect(page.getByRole('button', { name: mn.episodes.publish.now })).toBeDisabled();
   await expect(
     page.getByText(
-      mn.episodes.missing.text(`${mn.episodes.missing.cover}, ${mn.episodes.missing.audio}`),
+      mn.episodes.missing.text(`${mn.episodes.missing.cover}, ${mn.episodes.missing.media}`),
     ),
   ).toBeVisible();
 

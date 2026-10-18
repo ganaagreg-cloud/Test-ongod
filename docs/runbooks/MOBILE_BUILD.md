@@ -42,4 +42,5 @@ Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-
 ## Not yet done
 
 - No build has run on a real device or in EAS. Google and Apple sign-in, SecureStore, the keyboard and the Sentry plugin are untested on hardware ([[open-questions]] #12).
+- Video ([[ADR-0038-video-episodes-bunny-stream|ADR-0038]]) added two native modules, `expo-video` (plugin: background playback on, picture in picture off) and `expo-screen-orientation` (iOS starts portrait). A dev build made before 2026-10-18 does not contain them: build again before the video rows of [[DEVICE_SMOKE]].
 - Google Cloud console and Apple developer setup (client IDs, signing fingerprints, Sign in with Apple identifier) are the owner's steps; none are recorded as verified.

@@ -1,8 +1,11 @@
+import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import type { FastifyInstance } from 'fastify';
 import sharp from 'sharp';
 import { testDb, testEnv, testMediaRuntime } from './helpers';
 import { buildApp } from '../src/app';
 import { createMediaJobs } from '../src/media/jobs';
+import { BunnyStreamError, type StreamClient } from '../src/lib/bunnyStream';
 import type { MediaRuntime, MediaStorage } from '../src/media/storage';
 import { JobRegistry } from '../src/jobs/registry';
 import { JobWorker } from '../src/jobs/worker';
@@ -90,13 +93,72 @@ export function tusClient(base: string, token: string) {
   };
 }
 
-/** Runs the queued media jobs against `storage` (not the one in the app, so tests can swap it). */
+/**
+ * Runs the queued media jobs against `storage` (not the one in the app, so tests can swap it).
+ * Video status checks re-queue themselves at once here instead of after 30 s.
+ */
 export async function runMediaJobs(runtime: MediaRuntime, storage: MediaStorage = runtime.storage) {
   const registry = new JobRegistry().register(
-    ...createMediaJobs({ db: testDb, storage, dirs: runtime.dirs }),
+    ...createMediaJobs({
+      db: testDb,
+      storage,
+      dirs: runtime.dirs,
+      stream: runtime.stream,
+      videoPollMs: 0,
+    }),
   );
   const worker = new JobWorker(testDb, registry, pino({ level: 'silent' }), { pollIntervalMs: 50 });
   return worker.drain(8000);
 }
 
 export type App = FastifyInstance;
+
+/**
+ * In-memory Bunny Stream (ADR-0038). A video reports "processing" for `pollsUntilDone` reads after
+ * its upload, then `outcome`. `failUploads` makes that many uploads throw like an HTTP 500.
+ */
+export function fakeStream(
+  opts: { pollsUntilDone?: number; outcome?: 'ready' | 'failed'; lengthSec?: number } = {},
+) {
+  const videos = new Map<string, { title: string; data: Buffer | null; reads: number }>();
+  const deleted: string[] = [];
+  const state = {
+    pollsUntilDone: opts.pollsUntilDone ?? 1,
+    outcome: opts.outcome ?? ('ready' as 'ready' | 'failed'),
+    lengthSec: opts.lengthSec ?? 2410.6,
+    failUploads: 0,
+  };
+  const client: StreamClient = {
+    async createVideo(title) {
+      const guid = randomUUID();
+      videos.set(guid, { title, data: null, reads: 0 });
+      return guid;
+    },
+    async uploadVideo(guid, localFile) {
+      if (state.failUploads > 0) {
+        state.failUploads--;
+        throw new BunnyStreamError(500, 'upload');
+      }
+      const video = videos.get(guid);
+      if (!video) throw new BunnyStreamError(404, 'upload');
+      video.data = readFileSync(localFile);
+    },
+    async getVideo(guid) {
+      const video = videos.get(guid);
+      if (!video) return null;
+      if (!video.data) return { guid, status: 0, encodeProgress: 0, length: 0 };
+      video.reads++;
+      if (video.reads <= state.pollsUntilDone) {
+        return { guid, status: 3, encodeProgress: 50, length: 0 };
+      }
+      return state.outcome === 'ready'
+        ? { guid, status: 4, encodeProgress: 100, length: state.lengthSec }
+        : { guid, status: 5, encodeProgress: 0, length: 0 };
+    },
+    async deleteVideo(guid) {
+      deleted.push(guid);
+      videos.delete(guid);
+    },
+  };
+  return { client, videos, deleted, state };
+}

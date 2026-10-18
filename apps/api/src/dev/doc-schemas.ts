@@ -284,11 +284,15 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     responses: { 200: episodeDetailResponseSchema },
   }),
   'GET /v1/home': user('catalog', 'Home rows', { responses: { 200: homeResponseSchema } }),
-  'POST /v1/episodes/:id/play': user('catalog', 'Signed audio URL; needs active access', {
-    description:
-      'Without access: 403 NO_ACCESS. Needs a registered device (the one you logged in on).',
-    responses: { 200: playResponseSchema },
-  }),
+  'POST /v1/episodes/:id/play': user(
+    'catalog',
+    'Signed audio URL or HLS video playlist (kind); needs active access',
+    {
+      description:
+        'Without access: 403 NO_ACCESS. Needs a registered device (the one you logged in on).',
+      responses: { 200: playResponseSchema },
+    },
+  ),
   'PUT /v1/progress/:episodeId': user('catalog', 'Save the listening position', {
     body: saveProgressRequestSchema,
     responses: { 204: noContent },
@@ -459,9 +463,12 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     multipart: { fields: z.object({}), file: 'cover' },
     responses: { 202: adminEpisodeResponseSchema },
   }),
-  'POST /v1/admin/episodes/:id/publish': admin('Publish now (needs a cover and READY audio)', {
-    responses: { 200: adminEpisodeResponseSchema },
-  }),
+  'POST /v1/admin/episodes/:id/publish': admin(
+    'Publish now (needs a cover and a READY audio or video file)',
+    {
+      responses: { 200: adminEpisodeResponseSchema },
+    },
+  ),
   'POST /v1/admin/episodes/:id/schedule': admin(
     'Schedule a publish time (with offset, e.g. +08:00)',
     {
@@ -478,7 +485,7 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'POST /v1/admin/episodes/:id/restore': admin('Archived episode back to draft', {
     responses: { 200: adminEpisodeResponseSchema },
   }),
-  'POST /v1/admin/episodes/:id/media/retry': admin('Retry a FAILED audio upload', {
+  'POST /v1/admin/episodes/:id/media/retry': admin('Retry a FAILED audio or video upload', {
     responses: { 200: adminEpisodeResponseSchema },
   }),
   'DELETE /v1/admin/users/:id/devices/:deviceId': admin(

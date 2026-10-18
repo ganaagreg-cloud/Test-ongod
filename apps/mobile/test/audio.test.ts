@@ -5,6 +5,7 @@ import {
   SKIP_BACK_SEC,
   SKIP_FORWARD_SEC,
   URL_REFRESH_MARGIN_MS,
+  VIDEO_UNSUPPORTED,
   createPlayerController,
   type PlayInfo,
 } from '../src/audio/controller';
@@ -21,6 +22,7 @@ import {
 
 // The rules around the audio engine (ADR-0032), without a phone: speeds, sleep timer, progress
 // saving (ADR-0021) and the controller that ties the engine, the signed URL and the API together.
+// Video episodes (ADR-0038) use a second engine behind the same controller; see "video:" tests.
 
 // ---- helpers ----
 
@@ -271,6 +273,26 @@ test('progress: one request at a time, the newest position goes last, a failure 
   await retry;
 });
 
+test('progress: a save asked for right after the previous one finished is not lost', async () => {
+  // Every moment between the request finishing and the saver tidying up afterwards.
+  for (let ticks = 0; ticks < 6; ticks++) {
+    const sent: ProgressBody[] = [];
+    const saver = createProgressSaver(async (_id, body) => void sent.push(body));
+    saver.track('ep1', 600, 0);
+    saver.update(130, false);
+    void saver.flush('seek');
+    for (let i = 0; i < ticks; i++) await Promise.resolve();
+    saver.update(400, false);
+    void saver.flush('sleep');
+    await flush();
+    assert.deepEqual(
+      sent.map((body) => body.positionSec),
+      [130, 400],
+      `after ${ticks} microtasks`,
+    );
+  }
+});
+
 test('progress: a flush for another episode is finished before the new one starts', async () => {
   const sent: Array<[string, number]> = [];
   const saver = createProgressSaver(async (id, body) => void sent.push([id, body.positionSec]));
@@ -454,6 +476,147 @@ test('controller: close() saves, unloads (lock-screen controls go) and forgets t
   assert.equal(fake.calls.at(-1), 'unload');
   assert.equal(controller.getState().episodeId, null);
   assert.equal(controller.getState().sleep.mode, null);
+});
+
+// ---- video episodes (ADR-0038) ----
+
+const videoPlay = (clock = fakeClock()): PlayInfo => ({
+  kind: 'VIDEO',
+  url: 'https://vz.example.test/bcdn_token=SECRET&expires=1&token_path=%2Fv%2F/v/playlist.m3u8',
+  expiresAt: new Date(clock.now() + 3_600_000).toISOString(),
+  durationSec: 2_700,
+});
+
+/** A controller with an audio and a video engine; `kinds` says what each episode id is. */
+function setupMixed(kinds: Record<string, 'AUDIO' | 'VIDEO'>, withVideo = true) {
+  const clock = fakeClock();
+  const audio = fakeEngine();
+  const video = fakeEngine();
+  const saved: Array<[string, ProgressBody]> = [];
+  const controller = createPlayerController({
+    engine: audio.engine,
+    ...(withVideo ? { videoEngine: video.engine } : {}),
+    fetchPlay: async (id) => (kinds[id] === 'VIDEO' ? videoPlay(clock) : play({}, clock)),
+    saveProgress: async (id, body) => void saved.push([id, body]),
+    now: clock.now,
+    sleepDeps: clock.deps,
+  });
+  return { clock, audio, video, saved, controller };
+}
+
+test('video: a VIDEO play URL plays through the video engine, the audio engine is not touched', async () => {
+  const { controller, audio, video } = setupMixed({ v1: 'VIDEO' });
+  assert.equal(controller.getState().kind, null, 'nothing loaded yet');
+  await controller.open({
+    id: 'v1',
+    title: 'Видео дугаар',
+    artist: 'Онгод',
+    artworkUrl: 'https://cdn.example.test/art.jpg',
+    startAtSec: 90,
+  });
+  assert.deepEqual(audio.calls, []);
+  assert.deepEqual(video.calls, ['rate:1', 'load', 'play'], 'the speed chip carries over');
+  const load = video.loads[0]!;
+  assert.match(load.track.url, /playlist\.m3u8$/);
+  assert.equal(load.startAtSec, 90, 'resumes where it was');
+  assert.equal(load.track.title, 'Видео дугаар');
+  assert.equal(load.track.artworkUrl, 'https://cdn.example.test/art.jpg', 'lock-screen picture');
+  const state = controller.getState();
+  assert.equal(state.kind, 'VIDEO');
+  assert.equal(state.status, 'playing');
+  assert.doesNotMatch(JSON.stringify(state), /SECRET|bcdn_token/, 'the signed URL stays out');
+});
+
+test('video: a play URL without a kind is audio', async () => {
+  const { controller, audio, video } = setupMixed({});
+  await controller.open({ id: 'a1', title: 'x' });
+  assert.equal(controller.getState().kind, 'AUDIO');
+  assert.deepEqual(audio.calls, ['load', 'play']);
+  assert.deepEqual(video.calls, []);
+});
+
+test('video: switching kinds unloads the other engine first and keeps the speed', async () => {
+  const { controller, audio, video, saved } = setupMixed({ a1: 'AUDIO', v1: 'VIDEO' });
+  await controller.open({ id: 'a1', title: 'audio' });
+  controller.cycleRate();
+  audio.push({ positionSec: 30 });
+  await controller.open({ id: 'v1', title: 'video' });
+  assert.deepEqual(saved[0], ['a1', { positionSec: 30, completed: false }], 'audio saved first');
+  assert.equal(audio.calls.at(-1), 'unload', 'one player owns the lock screen');
+  assert.deepEqual(video.calls, ['rate:1.25', 'load', 'play']);
+  assert.equal(controller.getState().kind, 'VIDEO');
+  assert.equal(controller.getState().rate, 1.25);
+
+  await controller.open({ id: 'a1', title: 'audio again' });
+  assert.equal(video.calls.at(-1), 'unload');
+  assert.deepEqual(audio.calls.slice(-3), ['rate:1.25', 'load', 'play']);
+  assert.equal(controller.getState().kind, 'AUDIO');
+});
+
+test('video: the idle engine cannot change the state or the saved progress', async () => {
+  const { controller, audio, video, saved } = setupMixed({ v1: 'VIDEO' });
+  await controller.open({ id: 'v1', title: 'video' });
+  video.push({ positionSec: 500 });
+  audio.push({ status: 'ended', positionSec: 0 });
+  await flush();
+  assert.equal(controller.getState().status, 'playing');
+  assert.equal(controller.getState().positionSec, 500);
+  assert.ok(!saved.some(([, body]) => body.completed), 'not marked heard by the idle engine');
+});
+
+test('video: progress, speed, skip and the sleep timer work the same as audio', async () => {
+  const { controller, video, saved, clock } = setupMixed({ v1: 'VIDEO' });
+  await controller.open({ id: 'v1', title: 'video' });
+  video.push({ positionSec: 100 });
+  await controller.skipForward();
+  assert.equal(video.engine.getState().positionSec, 130);
+  assert.equal(controller.cycleRate(), 1.25);
+  assert.equal(video.engine.getState().rate, 1.25);
+
+  controller.startSleep(15);
+  video.push({ positionSec: 400 });
+  clock.advance(15 * 60_000);
+  await flush();
+  await flush(); // the save after the skip goes first (one request at a time)
+  assert.equal(video.engine.getState().status, 'paused', 'sleep timer pauses the video');
+  assert.deepEqual(saved.at(-1), ['v1', { positionSec: 400, completed: false }]);
+
+  await controller.play();
+  controller.startSleep('end');
+  video.push({ status: 'ended', positionSec: 600 });
+  await flush();
+  assert.deepEqual(saved.at(-1), ['v1', { positionSec: 600, completed: true }]);
+  assert.equal(controller.getState().sleep.mode, null);
+});
+
+test('video: an expiring URL is replaced on the same video engine', async () => {
+  const { controller, audio, video, clock } = setupMixed({ v1: 'VIDEO' });
+  await controller.open({ id: 'v1', title: 'video' });
+  controller.pause();
+  video.push({ positionSec: 1_234 });
+  clock.advance(3_600_000 - URL_REFRESH_MARGIN_MS + 1_000);
+  await controller.play();
+  assert.equal(video.loads.length, 2);
+  assert.equal(video.loads[1]!.startAtSec, 1_234);
+  assert.ok(!video.calls.includes('unload'), 'no switch for the same kind');
+  assert.deepEqual(audio.calls, []);
+});
+
+test('video: close() unloads the video and forgets the kind', async () => {
+  const { controller, video } = setupMixed({ v1: 'VIDEO' });
+  await controller.open({ id: 'v1', title: 'video' });
+  await controller.close();
+  assert.equal(video.calls.at(-1), 'unload');
+  assert.equal(controller.getState().kind, null);
+  assert.equal(controller.getState().episodeId, null);
+});
+
+test('video: without a video engine a video episode reports an error and nothing plays', async () => {
+  const { controller, audio } = setupMixed({ v1: 'VIDEO' }, false);
+  await assert.rejects(controller.open({ id: 'v1', title: 'video' }), { code: VIDEO_UNSUPPORTED });
+  assert.deepEqual(audio.calls, []);
+  assert.equal(controller.getState().error?.code, VIDEO_UNSUPPORTED);
+  assert.equal(controller.getState().kind, null);
 });
 
 test('the app calls POST /episodes/:id/play and PUT /progress/:id', async () => {

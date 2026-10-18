@@ -6,15 +6,23 @@ import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
 import { isUniqueViolation, lockUser } from '../auth/service';
 import { escapeLike } from '../lib/like';
-import { enqueueAudioUpload, enqueueCoverUpload, enqueueStorageDelete } from '../media/jobs';
+import {
+  enqueueCoverUpload,
+  enqueueMediaUpload,
+  enqueueStorageDelete,
+  enqueueStreamDelete,
+  PENDING_PATH,
+  splitStored,
+} from '../media/jobs';
 import { coverFiles, processCover } from '../media/cover';
 import type { UploadDirs } from '../media/storage';
 import { audit } from './audit';
 
 const episodeInclude = {
   category: { select: { id: true, name: true } },
-  // The newest audio file decides what the admin sees (a re-upload replaces the older one).
-  mediaAssets: { where: { kind: 'AUDIO' }, orderBy: { id: 'desc' }, take: 1 },
+  // The newest media file, audio or video, decides what the admin sees (a re-upload replaces
+  // the older one, ADR-0038).
+  mediaAssets: { orderBy: { id: 'desc' }, take: 1 },
 } satisfies Prisma.EpisodeInclude;
 type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof episodeInclude }>;
 
@@ -37,7 +45,7 @@ export function createContentService(deps: {
     const covers = row.coverPath ? media.cover(row.coverPath, now()) : null;
     const missing: AdminEpisodeDto['missing'] = [];
     if (!row.coverPath) missing.push('cover');
-    if (asset?.status !== 'READY') missing.push('audio');
+    if (asset?.status !== 'READY') missing.push('media');
     return {
       id: row.id,
       title: row.title,
@@ -52,6 +60,7 @@ export function createContentService(deps: {
       createdAt: row.createdAt.toISOString(),
       media: asset && {
         id: asset.id,
+        kind: asset.kind,
         status: asset.status,
         failReason: asset.failReason,
         sizeBytes: asset.sizeBytes === null ? null : Number(asset.sizeBytes),
@@ -324,30 +333,40 @@ export function createContentService(deps: {
       await db.$transaction(async (tx) => {
         const row = await tx.episode.findUnique({
           where: { id },
-          include: { mediaAssets: { select: { id: true, path: true } } },
+          include: { mediaAssets: { select: { id: true, provider: true, path: true } } },
         });
         if (!row) throw new AppError(404, 'NOT_FOUND');
         if (row.status !== 'DRAFT') throw new AppError(409, 'EPISODE_STATE');
-        const paths = row.mediaAssets.map((a) => a.path);
+        const { paths, videoIds } = splitStored(row.mediaAssets);
         if (row.coverPath) paths.push(row.coverPath, thumbPathOf(row.coverPath));
         await tx.episode.delete({ where: { id } });
         await enqueueStorageDelete(tx, paths);
+        await enqueueStreamDelete(tx, videoIds);
         await audit(tx, actor.id, 'episode.delete', 'Episode', id, { title: row.title });
       });
     },
 
-    /** FAILED -> PROCESSING again, with the same file that is still waiting on our disk. */
+    /**
+     * FAILED -> PROCESSING again, with the same file that is still waiting on our disk. A video
+     * that reached Bunny gets a fresh Stream video (the failed one is deleted by a job).
+     */
     async retryMedia(actor: User, id: string) {
       const row = await loadEpisode(id);
       const asset = row.mediaAssets[0];
       if (!asset || asset.status !== 'FAILED') throw new AppError(409, 'EPISODE_STATE');
       await db.$transaction(async (tx) => {
+        const freshVideo = asset.provider === 'BUNNY_STREAM' && asset.path !== PENDING_PATH;
         const done = await tx.mediaAsset.updateMany({
           where: { id: asset.id, status: 'FAILED' },
-          data: { status: 'PROCESSING', failReason: null },
+          data: {
+            status: 'PROCESSING',
+            failReason: null,
+            ...(freshVideo ? { path: PENDING_PATH } : {}),
+          },
         });
         if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
-        await enqueueAudioUpload(tx, asset.id);
+        if (freshVideo) await enqueueStreamDelete(tx, [asset.path]);
+        await enqueueMediaUpload(tx, asset.kind, asset.id);
         await audit(tx, actor.id, 'episode.media_retry', 'Episode', id, { assetId: asset.id });
       });
       return this.getEpisode(id);

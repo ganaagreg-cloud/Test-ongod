@@ -48,14 +48,33 @@ export const episodeStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'A
 export type EpisodeStatus = z.infer<typeof episodeStatusSchema>;
 export const mediaStatusSchema = z.enum(['UPLOADING', 'PROCESSING', 'READY', 'FAILED']);
 
+/** One media file per episode, audio or video (ADR-0038). */
+export const mediaKindSchema = z.enum(['AUDIO', 'VIDEO']);
+export type MediaKind = z.infer<typeof mediaKindSchema>;
+
 export const ALLOWED_AUDIO_EXTENSIONS = ['mp3', 'm4a', 'aac', 'wav'] as const;
 export const MAX_AUDIO_BYTES = 512 * 1024 * 1024;
+export const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v'] as const;
+/** A 40-minute 720p export is about 0.5–1.5 GB (ASSUMPTION, docs/reports/VIDEO-2026-10-18.md). */
+export const MAX_VIDEO_BYTES = 4 * 1024 * 1024 * 1024;
+
+/** AUDIO or VIDEO from a file name's extension; null when neither is allowed. */
+export function mediaKindOfFile(filename: string): MediaKind | null {
+  const extension = filename.split('.').pop()?.toLowerCase() ?? '';
+  if ((ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(extension)) return 'AUDIO';
+  if ((ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(extension)) return 'VIDEO';
+  return null;
+}
+
+export const maxBytesOf = (kind: MediaKind) =>
+  kind === 'VIDEO' ? MAX_VIDEO_BYTES : MAX_AUDIO_BYTES;
 export const MAX_COVER_BYTES = 10 * 1024 * 1024;
 
 export const adminMediaSchema = z.object({
   id: z.string(),
+  kind: mediaKindSchema,
   status: mediaStatusSchema,
-  /** Why the file could not be stored (status FAILED). */
+  /** Why the file could not be stored or processed (status FAILED). */
   failReason: z.string().nullable(),
   sizeBytes: z.number().int().nullable(),
   durationSec: z.number().int().nullable(),
@@ -75,8 +94,8 @@ export const adminEpisodeSchema = z.object({
   publishedAt: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
   media: adminMediaSchema.nullable(),
-  /** What is still missing before the episode can be published: cover and/or ready audio. */
-  missing: z.array(z.enum(['cover', 'audio'])),
+  /** What is still missing before the episode can be published: cover and/or a ready media file. */
+  missing: z.array(z.enum(['cover', 'media'])),
 });
 export type AdminEpisodeDto = z.infer<typeof adminEpisodeSchema>;
 export const adminEpisodeResponseSchema = z.object({ episode: adminEpisodeSchema });

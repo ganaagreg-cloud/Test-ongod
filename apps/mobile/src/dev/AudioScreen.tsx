@@ -1,8 +1,9 @@
-﻿// DEV ONLY: a bare audio test bench for the device gate (docs/runbooks/DEVICE_SMOKE.md). Reached
+﻿// DEV ONLY: a bare player test bench for the device gate (docs/runbooks/DEVICE_SMOKE.md). Reached
 // through app/dev/audio.tsx, which only loads this file when __DEV__ is true. It is NOT the player
 // screen (that is phase 3): it opens a real episode through the signed URL and exposes every
 // control of the engine, so lock-screen, background, speed, sleep timer and progress can be tested
-// on a phone. Needs a signed-in user with active access and at least one published episode.
+// on a phone. Video episodes (ADR-0038) show the video above the controls, with fullscreen.
+// Needs a signed-in user with active access and at least one published episode.
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, layout, nativeTextStyle, spacing } from '@ongod/tokens';
@@ -13,6 +14,7 @@ import { SLEEP_MINUTES } from '../audio/sleepTimer';
 import { rateLabel } from '../audio/rates';
 import { player, usePlayerState } from '../audio/player';
 import { Button } from '../ui';
+import { VideoSurface } from '../video/VideoSurface';
 
 const clock = (seconds: number) => {
   const s = Math.max(0, Math.floor(seconds));
@@ -45,8 +47,12 @@ export default function AudioScreen() {
       <AudioWebNotice />
       {problem ? <Text style={styles.error}>{problem}</Text> : null}
 
+      {state.kind === 'VIDEO' ? <VideoSurface /> : null}
+
       <View style={styles.panel}>
-        <Text style={styles.line}>episode: {state.episodeId ?? '-'}</Text>
+        <Text style={styles.line}>
+          episode: {state.episodeId ?? '-'} · {state.kind ?? '-'}
+        </Text>
         <Text style={styles.line}>
           status: {state.status}
           {state.buffering ? ' (buffering)' : ''} · rate {rateLabel(state.rate)}
@@ -100,7 +106,7 @@ export default function AudioScreen() {
       {episodes.map((episode) => (
         <Button
           key={episode.id}
-          label={`${episode.title} · ${clock(episode.durationSec ?? 0)}${episode.progress ? ` · saved ${clock(episode.progress.positionSec)}` : ''}`}
+          label={`${episode.mediaKind === 'VIDEO' ? '[video] ' : ''}${episode.title} · ${clock(episode.durationSec ?? 0)}${episode.progress ? ` · saved ${clock(episode.progress.positionSec)}` : ''}`}
           variant="secondary"
           fullWidth
           onPress={() =>

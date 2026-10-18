@@ -25,6 +25,17 @@ const BUNNY_KEYS = [
 export const missingBunnyKeys = (env: Partial<Record<(typeof BUNNY_KEYS)[number], unknown>>) =>
   BUNNY_KEYS.filter((k) => !env[k]);
 
+// Bunny Stream: video episodes (ADR-0038). Separate from the storage keys above.
+const STREAM_KEYS = [
+  'BUNNY_STREAM_LIBRARY_ID',
+  'BUNNY_STREAM_API_KEY',
+  'BUNNY_STREAM_CDN_HOSTNAME',
+  'BUNNY_STREAM_TOKEN_KEY',
+] as const;
+
+export const missingStreamKeys = (env: Partial<Record<(typeof STREAM_KEYS)[number], unknown>>) =>
+  STREAM_KEYS.filter((k) => !env[k]);
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -83,6 +94,19 @@ export const envSchema = z
         .optional(),
     ),
     BUNNY_CDN_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    /** Stream video library id (a number in the dashboard). */
+    BUNNY_STREAM_LIBRARY_ID: z.preprocess(emptyToUndefined, z.string().regex(/^\d+$/).optional()),
+    BUNNY_STREAM_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    /** The library's CDN hostname without scheme, e.g. vz-abc123.b-cdn.net. */
+    BUNNY_STREAM_CDN_HOSTNAME: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, 'hostname only, no scheme or path')
+        .optional(),
+    ),
+    /** Token Authentication key of the library's pull zone (signed HLS URLs). */
+    BUNNY_STREAM_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
     // Bank transfer details shown in the portal (SPEC D). Required in production.
     BANK_NAME: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -115,7 +139,7 @@ export const envSchema = z
   .superRefine((env, ctx) => {
     // Without Bunny there are no covers and no playback: refuse to start in production.
     if (env.NODE_ENV === 'production') {
-      for (const key of missingBunnyKeys(env)) {
+      for (const key of [...missingBunnyKeys(env), ...missingStreamKeys(env)]) {
         ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
       }
       for (const key of ['BANK_NAME', 'BANK_ACCOUNT', 'BANK_ACCOUNT_HOLDER'] as const) {
@@ -149,6 +173,18 @@ export function requireBunny(env: Env) {
     storageRegion: env.BUNNY_STORAGE_REGION ?? 'de',
     pullZoneHost: env.BUNNY_PULL_ZONE_HOST!,
     tokenKey: env.BUNNY_CDN_TOKEN_KEY!,
+  };
+}
+
+/** The Bunny Stream settings video needs; throws naming the missing keys (never values). */
+export function requireStream(env: Env) {
+  const missing = missingStreamKeys(env);
+  if (missing.length > 0) throw new Error(`Missing Bunny Stream env: ${missing.join(', ')}`);
+  return {
+    libraryId: env.BUNNY_STREAM_LIBRARY_ID!,
+    apiKey: env.BUNNY_STREAM_API_KEY!,
+    cdnHost: env.BUNNY_STREAM_CDN_HOSTNAME!,
+    tokenKey: env.BUNNY_STREAM_TOKEN_KEY!,
   };
 }
 

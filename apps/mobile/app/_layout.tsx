@@ -16,10 +16,13 @@ import { mn } from '../src/i18n/mn';
 import { initMonitoring, wrapRoot } from '../src/monitoring/sentry';
 import { queryClient, watchAppState } from '../src/query';
 import { ToastProvider } from '../src/ui';
+import { lockPortrait } from '../src/video/orientation';
 
 // Crash reports start before anything renders (only when EXPO_PUBLIC_SENTRY_DSN is set).
 initMonitoring();
 SplashScreen.preventAutoHideAsync();
+// Every screen is portrait; only a fullscreen video turns (ADR-0038).
+void lockPortrait();
 
 export { AppErrorBoundary as ErrorBoundary };
 

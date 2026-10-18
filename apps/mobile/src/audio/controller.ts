@@ -8,8 +8,13 @@ import {
 } from './sleepTimer';
 import type { AudioEngine, EngineState } from './types';
 
+/** What an episode's one media file is (ADR-0038). */
+export type MediaKind = 'AUDIO' | 'VIDEO';
+
 /** The answer of POST /v1/episodes/:id/play (packages/shared `playResponseSchema`). */
 export interface PlayInfo {
+  /** AUDIO: a signed file URL; VIDEO: a signed HLS playlist. Missing means AUDIO. */
+  kind?: MediaKind | undefined;
   url: string;
   /** ISO time; the URL is refused after it. */
   expiresAt: string;
@@ -28,13 +33,18 @@ export interface EpisodeToPlay {
 
 export interface PlayerState extends EngineState {
   episodeId: string | null;
+  /** What is loaded: VIDEO shows <VideoSurface />. null before the first play URL. */
+  kind: MediaKind | null;
   sleep: SleepState;
   /** Set when asking for the play URL failed (e.g. NO_ACCESS): the screen shows the no-access sheet. */
   error: { code: string | undefined; message: string } | null;
 }
 
 export interface ControllerDeps {
+  /** Plays AUDIO episodes. */
   engine: AudioEngine;
+  /** Plays VIDEO episodes (expo-video). Without it a video episode reports an error. */
+  videoEngine?: AudioEngine | undefined;
   fetchPlay: (episodeId: string) => Promise<PlayInfo>;
   saveProgress: (episodeId: string, body: ProgressBody) => Promise<void>;
   now?: () => number;
@@ -47,14 +57,24 @@ export const URL_REFRESH_MARGIN_MS = 60_000;
 export const SKIP_BACK_SEC = 15;
 export const SKIP_FORWARD_SEC = 30;
 
+/** Error code when a video episode reaches a player without a video engine. */
+export const VIDEO_UNSUPPORTED = 'VIDEO_UNSUPPORTED';
+
 /**
  * The one player of the app: loads an episode through the signed URL, keeps it fresh, saves progress,
- * runs the speed and the sleep timer. Platform-free (the engine, the API and the clock come in),
+ * runs the speed and the sleep timer. Platform-free (the engines, the API and the clock come in),
  * so the rules are tested without a phone.
+ *
+ * Audio and video episodes use different engines (ADR-0038); only one is loaded at a time. The play
+ * URL says which kind the episode is, and switching kinds unloads the other engine first, so one
+ * player owns the lock screen. Progress, speed and the sleep timer work the same for both.
  */
 export function createPlayerController(deps: ControllerDeps) {
-  const { engine, fetchPlay, saveProgress } = deps;
+  const { engine: audioEngine, videoEngine, fetchPlay, saveProgress } = deps;
   const now = deps.now ?? (() => Date.now());
+  /** The engine that holds (or last held) the current episode; the other one is idle. */
+  let engine: AudioEngine = audioEngine;
+  let kind: MediaKind | null = null;
 
   const saver = createProgressSaver(saveProgress);
   let episode: EpisodeToPlay | undefined;
@@ -72,6 +92,7 @@ export function createPlayerController(deps: ControllerDeps) {
   const state = (): PlayerState => ({
     ...engine.getState(),
     episodeId: episode?.id ?? null,
+    kind,
     sleep: sleep.getState(),
     error,
   });
@@ -80,17 +101,38 @@ export function createPlayerController(deps: ControllerDeps) {
     for (const listener of listeners) listener(snapshot);
   };
 
-  engine.onChange((s) => {
-    saver.setDuration(s.durationSec);
-    saver.update(s.positionSec, s.status === 'playing');
-    if (s.status === 'ended' && lastStatus !== 'ended') {
-      void saver.flush('ended');
-      sleep.episodeEnded();
-    }
-    lastStatus = s.status;
-    emit();
-  });
+  const watch = (source: AudioEngine) =>
+    source.onChange((s) => {
+      // The idle engine's changes (its unload after a switch) are not the current episode's.
+      if (source !== engine) return;
+      saver.setDuration(s.durationSec);
+      saver.update(s.positionSec, s.status === 'playing');
+      if (s.status === 'ended' && lastStatus !== 'ended') {
+        void saver.flush('ended');
+        sleep.episodeEnded();
+      }
+      lastStatus = s.status;
+      emit();
+    });
+  watch(audioEngine);
+  if (videoEngine && videoEngine !== audioEngine) watch(videoEngine);
   sleep.onChange(emit);
+
+  /** Make `next` the engine; the old one is unloaded and the speed carries over. */
+  function switchEngine(next: AudioEngine) {
+    if (next === engine) return;
+    const previous = engine;
+    const { rate } = previous.getState();
+    engine = next;
+    if (previous.getState().status !== 'idle') previous.unload();
+    next.setRate(rate);
+    lastStatus = next.getState().status;
+  }
+
+  const fail = (code: string | undefined, message: string) => {
+    error = { code, message };
+    emit();
+  };
 
   async function loadFresh(position: number, token: number): Promise<boolean> {
     if (!episode) return false;
@@ -100,14 +142,24 @@ export function createPlayerController(deps: ControllerDeps) {
     } catch (cause) {
       if (token !== openToken) return false;
       const code = (cause as { code?: unknown }).code;
-      error = {
-        code: typeof code === 'string' ? code : undefined,
-        message: cause instanceof Error ? cause.message : String(cause),
-      };
-      emit();
+      fail(
+        typeof code === 'string' ? code : undefined,
+        cause instanceof Error ? cause.message : String(cause),
+      );
       throw cause;
     }
     if (token !== openToken) return false;
+    const nextKind = info.kind ?? 'AUDIO';
+    const next = nextKind === 'VIDEO' ? videoEngine : audioEngine;
+    if (!next) {
+      const cause = Object.assign(new Error('video playback is not available'), {
+        code: VIDEO_UNSUPPORTED,
+      });
+      fail(VIDEO_UNSUPPORTED, cause.message);
+      throw cause;
+    }
+    switchEngine(next);
+    kind = nextKind;
     error = null;
     expiresAtMs = Date.parse(info.expiresAt);
     saver.setDuration(info.durationSec ?? 0);
@@ -198,6 +250,7 @@ export function createPlayerController(deps: ControllerDeps) {
       saver.clear();
       engine.unload();
       episode = undefined;
+      kind = null;
       expiresAtMs = 0;
       error = null;
       emit();

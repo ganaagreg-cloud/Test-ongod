@@ -14,7 +14,7 @@ import {
   ulaanbaatarInputToDate,
 } from '../lib/format';
 import { mn } from '../i18n/mn';
-import { AudioUploader } from '../upload/AudioUploader';
+import { MediaUploader } from '../upload/MediaUploader';
 
 const t = mn.episodes;
 
@@ -121,7 +121,7 @@ function EpisodeScreen({ episode, refetch }: { episode: AdminEpisodeDto; refetch
         <h2 id="ep-audio" className="admin-card__title">
           {t.audio.title}
         </h2>
-        <AudioUploader episode={episode} />
+        <MediaUploader episode={episode} />
       </section>
 
       <section className="admin-card" aria-labelledby="ep-publish">

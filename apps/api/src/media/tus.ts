@@ -1,13 +1,13 @@
-import { mkdir, rename } from 'node:fs/promises';
+import { mkdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES } from '@ongod/shared';
+import { MAX_VIDEO_BYTES, maxBytesOf, mediaKindOfFile } from '@ongod/shared';
 import { FileStore } from '@tus/file-store';
 import { Server } from '@tus/server';
 import { audit } from '../admin/audit';
 import type { Db } from '../db';
 import type { Env } from '../env';
 import { mn } from '../i18n/mn';
-import { enqueueAudioUpload } from './jobs';
+import { enqueueMediaUpload, enqueueStreamDelete, PENDING_PATH, splitStored } from './jobs';
 import type { UploadDirs } from './storage';
 
 /** Where the resumable upload endpoint lives (behind the admin guard, see routes/admin-content.ts). */
@@ -20,11 +20,13 @@ const EXPIRY_MS = 7 * 24 * 60 * 60_000;
 const reject = (body: string, status_code = 400) => ({ status_code, body });
 
 /**
- * Resumable audio uploads (tus 1.0, ADR-0010). The browser sends the file in chunks and can
- * continue after a refresh or a dropped connection. The flow:
- *   create    -> a MediaAsset row in UPLOADING (validates the episode, file type and size)
- *   finished  -> the file is moved to <uploads>/audio/<assetId>, the asset becomes PROCESSING and
- *                the media.audio-upload job (read length, send to storage, READY or FAILED) is queued
+ * Resumable media uploads, audio or video (tus 1.0, ADR-0010, ADR-0038). The browser sends the
+ * file in chunks and can continue after a refresh or a dropped connection. The flow:
+ *   create    -> a MediaAsset row in UPLOADING (validates the episode, file type and size; the
+ *                kind comes from the extension)
+ *   finished  -> the file is moved to <uploads>/audio|video/<assetId>, the asset becomes PROCESSING
+ *                and its job is queued: media.audio-upload (read length, send to storage) or
+ *                media.video-upload (send to Bunny Stream, then follow processing)
  */
 export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env, 'TRUST_PROXY'> }) {
   const { db, dirs } = deps;
@@ -33,19 +35,20 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
   const server = new Server({
     path: UPLOAD_PATH,
     datastore: store,
-    maxSize: MAX_AUDIO_BYTES,
+    maxSize: MAX_VIDEO_BYTES,
     // A relative Location works behind any proxy and in the Vite dev server.
     relativeLocation: true,
     respectForwardedHeaders: deps.env.TRUST_PROXY,
 
     async onUploadCreate(req, upload) {
       const { episodeId, filename } = upload.metadata ?? {};
-      const extension = filename?.split('.').pop()?.toLowerCase() ?? '';
       if (!episodeId || !filename) throw reject(mn.errors.UPLOAD_REJECTED);
-      if (!(ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(extension)) {
-        throw reject(mn.media.failUnreadable);
-      }
-      if (!upload.size || upload.size > MAX_AUDIO_BYTES) throw reject(mn.errors.UPLOAD_REJECTED);
+      const kind = mediaKindOfFile(filename);
+      if (!kind) throw reject(mn.media.unsupportedFile);
+      const extension = filename.split('.').pop()!.toLowerCase();
+      if (!upload.size) throw reject(mn.errors.UPLOAD_REJECTED);
+      // Same answer as tus's own limit (413): the per-kind limit is lower for audio.
+      if (upload.size > maxBytesOf(kind)) throw reject(mn.errors.UPLOAD_REJECTED, 413);
 
       const episode = await db.episode.findUnique({
         where: { id: episodeId },
@@ -53,32 +56,47 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
       });
       if (!episode) throw reject(mn.errors.NOT_FOUND, 404);
 
-      // One audio file at a time: a file still being stored blocks a second upload.
+      // One file at a time: a file still being stored or processed blocks a second upload.
       const busy = await db.mediaAsset.count({ where: { episodeId, status: 'PROCESSING' } });
       if (busy > 0) throw reject(mn.errors.EPISODE_STATE, 409);
-      // Earlier uploads that never finished are abandoned: this one replaces them.
-      await db.mediaAsset.deleteMany({
+      // Earlier uploads that never finished are abandoned: this one replaces them. A failed video
+      // that already reached Bunny Stream is deleted there by a job.
+      const abandoned = await db.mediaAsset.findMany({
         where: { episodeId, status: { in: ['UPLOADING', 'FAILED'] } },
+        select: { id: true, provider: true, path: true },
       });
+      await db.$transaction(async (tx) => {
+        await tx.mediaAsset.deleteMany({ where: { id: { in: abandoned.map((a) => a.id) } } });
+        await enqueueStreamDelete(tx, splitStored(abandoned).videoIds);
+      });
+      for (const old of abandoned) {
+        await rm(join(dirs.audio, old.id), { force: true });
+        await rm(join(dirs.video, old.id), { force: true });
+      }
 
       const asset = await db.mediaAsset.create({
         data: {
           episodeId,
-          kind: 'AUDIO',
-          provider: 'BUNNY_STORAGE',
-          path: 'pending',
+          kind,
+          provider: kind === 'VIDEO' ? 'BUNNY_STREAM' : 'BUNNY_STORAGE',
+          path: PENDING_PATH,
           status: 'UPLOADING',
         },
       });
-      // Ids only in the storage path: file names may be Mongolian and the signer wants ASCII.
-      await db.mediaAsset.update({
-        where: { id: asset.id },
-        data: { path: `audio/${episodeId}/${asset.id}.${extension}` },
-      });
+      // Audio: ids only in the storage path (file names may be Mongolian, the signer wants ASCII).
+      // Video: the job stores the Stream video id once Bunny has created it.
+      if (kind === 'AUDIO') {
+        await db.mediaAsset.update({
+          where: { id: asset.id },
+          data: { path: `audio/${episodeId}/${asset.id}.${extension}` },
+        });
+      }
 
       const actor = req.headers.get(ADMIN_HEADER);
       if (actor) {
-        await audit(db, actor, 'episode.audio_upload_start', 'Episode', episodeId, {
+        const action =
+          kind === 'VIDEO' ? 'episode.video_upload_start' : 'episode.audio_upload_start';
+        await audit(db, actor, action, 'Episode', episodeId, {
           assetId: asset.id,
           sizeBytes: upload.size,
         });
@@ -91,8 +109,9 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
       const asset = assetId ? await db.mediaAsset.findUnique({ where: { id: assetId } }) : null;
       if (!asset) throw reject(mn.errors.UPLOAD_REJECTED);
 
-      await mkdir(dirs.audio, { recursive: true });
-      await rename(join(dirs.tus, upload.id), join(dirs.audio, asset.id));
+      const folder = asset.kind === 'VIDEO' ? dirs.video : dirs.audio;
+      await mkdir(folder, { recursive: true });
+      await rename(join(dirs.tus, upload.id), join(folder, asset.id));
       await store.configstore.delete(upload.id);
 
       await db.$transaction(async (tx) => {
@@ -100,10 +119,12 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
           where: { id: asset.id },
           data: { status: 'PROCESSING', failReason: null, sizeBytes: BigInt(upload.size ?? 0) },
         });
-        await enqueueAudioUpload(tx, asset.id);
+        await enqueueMediaUpload(tx, asset.kind, asset.id);
         const actor = req.headers.get(ADMIN_HEADER);
         if (actor) {
-          await audit(tx, actor, 'episode.audio_uploaded', 'Episode', asset.episodeId, {
+          const action =
+            asset.kind === 'VIDEO' ? 'episode.video_uploaded' : 'episode.audio_uploaded';
+          await audit(tx, actor, action, 'Episode', asset.episodeId, {
             assetId: asset.id,
             sizeBytes: upload.size ?? 0,
           });

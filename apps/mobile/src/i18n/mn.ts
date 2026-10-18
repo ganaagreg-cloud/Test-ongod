@@ -7,6 +7,8 @@ export const mn = {
   close: 'Хаах',
   back: 'Буцах',
   audioWebOnly: 'Аудио зөвхөн утсан дээр тоглоно',
+  /** Screen-reader name of the video area (video episodes, ADR-0038). */
+  videoLabel: 'Видео',
 
   common: {
     loading: 'Ачаалж байна',

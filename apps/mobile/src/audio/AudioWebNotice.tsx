@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, nativeTextStyle, radius, spacing } from '@ongod/tokens';
+import { colors, layout, nativeTextStyle, radius, spacing } from '@ongod/tokens';
 import { mn } from '../i18n/mn';
 import { audioAvailable } from './engine';
 
@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
   box: {
     backgroundColor: colors.surface,
     borderColor: colors.hairline,
-    borderWidth: 1,
+    borderWidth: layout.borderWidth,
     borderRadius: radius.card,
     padding: spacing.md,
   },

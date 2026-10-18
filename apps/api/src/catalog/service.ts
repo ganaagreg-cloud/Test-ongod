@@ -19,17 +19,17 @@ const DAY_MS = 24 * 60 * 60_000;
 const HOME_ROW = 10;
 const NEXT_ROW = 5;
 
-/** The READY audio file of an episode (SPEC G: media status Ready). */
-const readyAudio = {
-  where: { kind: 'AUDIO', status: 'READY' },
-  select: { path: true, durationSec: true },
-  orderBy: { id: 'asc' },
+/** The READY media file of an episode, audio or video (SPEC G: media status Ready; ADR-0038). */
+const readyMedia = {
+  where: { status: 'READY' },
+  select: { path: true, durationSec: true, kind: true },
+  orderBy: { id: 'desc' },
   take: 1,
 } as const;
 
 const itemInclude = {
   category: { select: { id: true, name: true, slug: true } },
-  mediaAssets: readyAudio,
+  mediaAssets: readyMedia,
 } satisfies Prisma.EpisodeInclude;
 
 type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof itemInclude }>;
@@ -66,7 +66,7 @@ export function createCatalogService(deps: CatalogDeps) {
   ): Promise<Array<Entry & { publishedAt: number }>> {
     const rows = await db.episode.findMany({
       where: { AND: [publishedWhere(now), where] },
-      select: { id: true, publishedAt: true, mediaAssets: readyAudio },
+      select: { id: true, publishedAt: true, mediaAssets: readyMedia },
     });
     return rows.map((r) => {
       const publishedAt = r.publishedAt?.getTime() ?? 0;
@@ -122,6 +122,7 @@ export function createCatalogService(deps: CatalogDeps) {
       category: ep.category,
       ...media.cover(ep.coverPath, now),
       durationSec: ep.mediaAssets[0]?.durationSec ?? null,
+      mediaKind: ep.mediaAssets[0]?.kind ?? null,
       publishedAt: (ep.publishedAt ?? ep.createdAt).toISOString(),
       progress,
       saved,
@@ -272,18 +273,26 @@ export function createCatalogService(deps: CatalogDeps) {
 
       const ep = await db.episode.findFirst({
         where: { AND: [publishedWhere(now), { id: episodeId }] },
-        select: { id: true, mediaAssets: readyAudio },
+        select: { id: true, mediaAssets: readyMedia },
       });
       if (!ep) throw new AppError(404, 'NOT_FOUND');
       const asset = ep.mediaAssets[0];
       if (!asset) throw new AppError(409, 'MEDIA_NOT_READY');
+      // Video needs Bunny Stream on top of the storage pull zone.
+      if (asset.kind === 'VIDEO' && !media.videoEnabled) {
+        throw new AppError(503, 'SERVICE_UNAVAILABLE');
+      }
 
       const expiresAt = new Date(
         Math.min(now.getTime() + PLAY_URL_TTL_MS, user.accessUntil.getTime()),
       );
       await db.device.update({ where: { id: device.id }, data: { lastSeenAt: now } });
       return {
-        url: media.audio(asset.path, expiresAt),
+        kind: asset.kind,
+        url:
+          asset.kind === 'VIDEO'
+            ? media.video(asset.path, expiresAt)
+            : media.audio(asset.path, expiresAt),
         expiresAt: expiresAt.toISOString(),
         durationSec: asset.durationSec,
       };

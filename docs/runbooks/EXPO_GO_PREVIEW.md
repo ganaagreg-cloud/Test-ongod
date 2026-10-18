@@ -55,12 +55,14 @@ Costs nothing: no Apple Developer Program, no Mac. Not valid here (gate B, nativ
 | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | Every screen built so far, email login / register / code / reset / device limit, fonts, motion, haptics, blur (iPhone), SecureStore | Google and Apple buttons (hidden in Expo Go)                                 |
 | Foreground audio through Bunny: play, seek, speed, sleep timer, progress, NO_ACCESS                                                 | Locked-screen / background audio, lock-screen controls, headphones-out pause |
+| Foreground video (if Expo Go contains `expo-video`, TO-VERIFY): picture, controls, fullscreen landscape                             | Video sound in the background and on the lock screen (needs the plugin)      |
 |                                                                                                                                     | Push notifications; Sentry (errors go to the console)                        |
 
 ## Checked so far
 
 - 2026-10-09: Metro serves the Android bundle with `--go` (HTTP 200).
 - 2026-10-17 (from the cloud session, no phone): native module versions match SDK 57 (0 mismatches); `expo export --platform ios` builds the dev and release bundles; the dev buttons are absent from the release bundle.
+- 2026-10-18 (cloud session, no phone): with `expo-video` and `expo-screen-orientation` added, `expo export` builds the iOS and web bundles.
 
 | Screen / module                                                 | Android Expo Go | iOS Expo Go |
 | --------------------------------------------------------------- | --------------- | ----------- |

@@ -33,6 +33,8 @@ export function createProgressSaver(
   /** What the server last accepted for this episode. */
   let saved: ProgressBody | undefined;
   let inFlight: Promise<void> | undefined;
+  /** The send loop is running and will still pick up `wantSend`. */
+  let running = false;
   let wantSend = false;
   let wantEnded = false;
 
@@ -48,29 +50,36 @@ export function createProgressSaver(
     if (!episodeId) return Promise.resolve();
     wantSend = true;
     wantEnded ||= ended;
-    if (inFlight) return inFlight;
+    if (running && inFlight) return inFlight;
+    running = true;
     const run = async () => {
-      while (wantSend && episodeId) {
-        wantSend = false;
-        const wasEnded = wantEnded;
-        wantEnded = false;
-        const id = episodeId;
-        const body = current(wasEnded);
-        if (same(saved, body)) continue;
-        try {
-          await save(id, body);
-          if (id === episodeId) saved = body;
-        } catch {
-          // Offline or a server hiccup: the next trigger sends the then-current position.
+      try {
+        while (wantSend && episodeId) {
+          wantSend = false;
+          const wasEnded = wantEnded;
+          wantEnded = false;
+          const id = episodeId;
+          const body = current(wasEnded);
+          if (same(saved, body)) continue;
+          try {
+            await save(id, body);
+            if (id === episodeId) saved = body;
+          } catch {
+            // Offline or a server hiccup: the next trigger sends the then-current position.
+          }
         }
+      } finally {
+        // In the same step as the last look at `wantSend`: a save asked for after this point
+        // starts a new loop instead of joining one that has already stopped (it would be lost).
+        running = false;
       }
     };
-    // `finally` runs in a later tick, so it always clears the promise that was stored just below
-    // (an `inFlight = undefined` inside `run` would be overwritten when nothing had to be sent).
-    inFlight = run().finally(() => {
-      inFlight = undefined;
+    // `finally` runs in a later tick; it only clears the promise if no newer loop replaced it.
+    const pending = run().finally(() => {
+      if (inFlight === pending) inFlight = undefined;
     });
-    return inFlight;
+    inFlight = pending;
+    return pending;
   }
 
   return {

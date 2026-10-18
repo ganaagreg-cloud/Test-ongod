@@ -7,10 +7,11 @@ import { mn } from '../i18n/mn';
 import { enqueue, type JobWriter } from '../jobs/queue';
 import { defineJob, PermanentJobError, type JobDefinition } from '../jobs/registry';
 import { thumbPathOf } from '../catalog/media';
+import { classifyStreamVideo, type StreamClient } from '../lib/bunnyStream';
 import { coverFiles } from './cover';
 import type { MediaStorage, UploadDirs } from './storage';
 
-// Slow media work runs as jobs, never inside a request (CLAUDE.md). All three are idempotent: a
+// Slow media work runs as jobs, never inside a request (CLAUDE.md). All of them are idempotent: a
 // job that runs again after a crash finds the work done or does it again without harm.
 
 const AUDIO_MIME: Record<string, string> = {
@@ -37,6 +38,29 @@ export const storageDeleteSpec = {
   schema: z.object({ paths: z.array(z.string().min(1)).min(1).max(50) }),
   maxAttempts: 5,
 };
+/** Video (ADR-0038): create the Stream video and send the file. */
+export const videoUploadSpec = {
+  type: 'media.video-upload',
+  schema: z.object({ assetId: z.string().min(1) }),
+  maxAttempts: 3,
+};
+/** Video: follow Bunny's processing until READY or FAILED; re-queues itself while it runs. */
+export const videoStatusSpec = {
+  type: 'media.video-status',
+  schema: z.object({ assetId: z.string().min(1), startedAt: z.iso.datetime() }),
+  maxAttempts: 5,
+};
+export const streamDeleteSpec = {
+  type: 'media.delete-stream-videos',
+  schema: z.object({ videoIds: z.array(z.string().min(1)).min(1).max(50) }),
+  maxAttempts: 5,
+};
+
+/** How often processing is checked, and when it is given up. */
+export const VIDEO_POLL_MS = 30_000;
+export const VIDEO_PROCESSING_LIMIT_MS = 6 * 60 * 60_000;
+/** A Stream video object not created yet (the job creates it and stores its id here). */
+export const PENDING_PATH = 'pending';
 
 export const enqueueAudioUpload = (db: JobWriter, assetId: string) =>
   enqueue(db, audioUploadSpec, { assetId });
@@ -44,6 +68,27 @@ export const enqueueCoverUpload = (db: JobWriter, episodeId: string, coverId: st
   enqueue(db, coverUploadSpec, { episodeId, coverId });
 export const enqueueStorageDelete = (db: JobWriter, paths: string[]) =>
   paths.length > 0 ? enqueue(db, storageDeleteSpec, { paths }) : undefined;
+export const enqueueVideoUpload = (db: JobWriter, assetId: string) =>
+  enqueue(db, videoUploadSpec, { assetId });
+export const enqueueStreamDelete = (db: JobWriter, videoIds: string[]) =>
+  videoIds.length > 0 ? enqueue(db, streamDeleteSpec, { videoIds }) : undefined;
+
+/** The upload job a media kind needs (Retry and tus use it). */
+export const enqueueMediaUpload = (db: JobWriter, kind: 'AUDIO' | 'VIDEO', assetId: string) =>
+  kind === 'VIDEO' ? enqueueVideoUpload(db, assetId) : enqueueAudioUpload(db, assetId);
+
+/** Where a media asset's stored copy lives, for deletion: Bunny Storage path or Stream video id. */
+export function splitStored(
+  assets: Array<{ provider: 'BUNNY_STORAGE' | 'BUNNY_STREAM'; path: string }>,
+) {
+  const paths: string[] = [];
+  const videoIds: string[] = [];
+  for (const a of assets) {
+    if (a.path === PENDING_PATH) continue;
+    (a.provider === 'BUNNY_STREAM' ? videoIds : paths).push(a.path);
+  }
+  return { paths, videoIds };
+}
 
 const exists = (path: string) =>
   access(path).then(
@@ -57,8 +102,47 @@ function failReasonFor(err: unknown): string {
   return mn.media.failStorage;
 }
 
-export function createMediaJobs(deps: { db: Db; storage: MediaStorage; dirs: UploadDirs }) {
-  const { db, storage, dirs } = deps;
+export function createMediaJobs(deps: {
+  db: Db;
+  storage: MediaStorage;
+  dirs: UploadDirs;
+  /** Bunny Stream; without it video uploads fail with a reason the admin can read. */
+  stream?: StreamClient | undefined;
+  /** Tests make the status checks immediate. */
+  videoPollMs?: number;
+  now?: () => Date;
+}) {
+  const { db, storage, dirs, stream } = deps;
+  const pollMs = deps.videoPollMs ?? VIDEO_POLL_MS;
+  const now = deps.now ?? (() => new Date());
+
+  /**
+   * After a new file is READY the episode's other files go (one media file per episode,
+   * ADR-0038): their rows in the same transaction as the switch, then the stored copies wherever
+   * they live, and any local copies.
+   */
+  async function removeReplaced(
+    replaced: Array<{ id: string; provider: 'BUNNY_STORAGE' | 'BUNNY_STREAM'; path: string }>,
+    log: { warn: (obj: object, msg: string) => void },
+  ) {
+    const { paths, videoIds } = splitStored(replaced);
+    for (const path of paths) {
+      await storage.delete(path).catch((err) => log.warn({ err }, 'old media file not deleted'));
+    }
+    for (const id of videoIds) {
+      if (!stream) {
+        log.warn({}, 'old Stream video not deleted: Bunny Stream is not configured');
+        continue;
+      }
+      await stream
+        .deleteVideo(id)
+        .catch((err) => log.warn({ err }, 'old Stream video not deleted'));
+    }
+    for (const old of replaced) {
+      await rm(join(dirs.audio, old.id), { force: true });
+      await rm(join(dirs.video, old.id), { force: true });
+    }
+  }
 
   /**
    * Stored audio: read the length, send the file to storage, mark the asset READY, drop older
@@ -90,7 +174,7 @@ export function createMediaJobs(deps: { db: Db; storage: MediaStorage; dirs: Upl
 
         const others = await db.mediaAsset.findMany({
           where: { episodeId: asset.episodeId, id: { not: assetId } },
-          select: { id: true, path: true },
+          select: { id: true, provider: true, path: true },
         });
         await db.$transaction([
           db.mediaAsset.updateMany({
@@ -100,10 +184,7 @@ export function createMediaJobs(deps: { db: Db; storage: MediaStorage; dirs: Upl
           db.mediaAsset.deleteMany({ where: { id: { in: others.map((o) => o.id) } } }),
         ]);
         // The replaced files (stored copy and any leftover local copy) go away after the switch.
-        for (const old of others) {
-          await storage.delete(old.path).catch((err) => log.warn({ err }, 'old audio not deleted'));
-          await rm(join(dirs.audio, old.id), { force: true });
-        }
+        await removeReplaced(others, log);
         await rm(local, { force: true });
       } catch (err) {
         const unfixable = err instanceof PermanentJobError;
@@ -156,5 +237,131 @@ export function createMediaJobs(deps: { db: Db; storage: MediaStorage; dirs: Upl
     },
   });
 
-  return [audioUpload, coverUpload, deleteFiles] as unknown as JobDefinition[];
+  /** Marks a video FAILED with a reason; only from a state where that still makes sense. */
+  const failVideo = (assetId: string, reason: string) =>
+    db.mediaAsset.updateMany({
+      where: { id: assetId, status: { in: ['PROCESSING', 'UPLOADING'] } },
+      data: { status: 'FAILED', failReason: reason },
+    });
+
+  /**
+   * Video: create the Stream video (its id is stored at once, so a retry reuses it), send the
+   * file, then hand over to the status job. The local file stays until the video is READY, so a
+   * processing failure can be retried without a new upload.
+   */
+  const videoUpload = defineJob({
+    ...videoUploadSpec,
+    async handle({ assetId }, { attempt }) {
+      const asset = await db.mediaAsset.findUnique({
+        where: { id: assetId },
+        include: { episode: { select: { title: true } } },
+      });
+      if (!asset || asset.status !== 'PROCESSING') return;
+
+      const local = join(dirs.video, assetId);
+      try {
+        if (!stream) throw new PermanentJobError(mn.media.failStreamNotConfigured);
+        if (!(await exists(local))) throw new PermanentJobError(mn.media.failMissingFile);
+
+        let videoId = asset.path;
+        if (videoId === PENDING_PATH) {
+          videoId = await stream.createVideo(asset.episode.title || assetId);
+          await db.mediaAsset.updateMany({
+            where: { id: assetId, path: PENDING_PATH },
+            data: { path: videoId },
+          });
+        }
+        await stream.uploadVideo(videoId, local);
+        await enqueue(
+          db,
+          videoStatusSpec,
+          { assetId, startedAt: now().toISOString() },
+          {
+            runAt: new Date(now().getTime() + pollMs),
+          },
+        );
+      } catch (err) {
+        const unfixable = err instanceof PermanentJobError;
+        if (unfixable || attempt >= videoUploadSpec.maxAttempts) {
+          await failVideo(assetId, failReasonFor(err));
+        }
+        if (!unfixable) throw err;
+      }
+    },
+  });
+
+  /**
+   * Video: ask Bunny how processing goes. READY: length saved, older media of the episode
+   * removed, local file deleted. Bunny's error, a deleted video or six hours without a result:
+   * FAILED with a reason (Retry sends the kept file again). Otherwise: check again later.
+   */
+  const videoStatus = defineJob({
+    ...videoStatusSpec,
+    async handle({ assetId, startedAt }, { log }) {
+      const asset = await db.mediaAsset.findUnique({ where: { id: assetId } });
+      if (!asset || asset.status !== 'PROCESSING' || asset.path === PENDING_PATH) return;
+      if (!stream) {
+        await failVideo(assetId, mn.media.failStreamNotConfigured);
+        return;
+      }
+
+      const video = await stream.getVideo(asset.path);
+      if (!video) {
+        await failVideo(assetId, mn.media.failVideoGone);
+        return;
+      }
+      const state = classifyStreamVideo(video);
+      if (state === 'failed') {
+        await failVideo(assetId, mn.media.failVideoProcessing);
+        return;
+      }
+      if (state === 'processing') {
+        if (now().getTime() - new Date(startedAt).getTime() > VIDEO_PROCESSING_LIMIT_MS) {
+          await failVideo(assetId, mn.media.failVideoTimeout);
+          return;
+        }
+        await enqueue(
+          db,
+          videoStatusSpec,
+          { assetId, startedAt },
+          {
+            runAt: new Date(now().getTime() + pollMs),
+          },
+        );
+        return;
+      }
+
+      const others = await db.mediaAsset.findMany({
+        where: { episodeId: asset.episodeId, id: { not: assetId } },
+        select: { id: true, provider: true, path: true },
+      });
+      const [switched] = await db.$transaction([
+        db.mediaAsset.updateMany({
+          where: { id: assetId, status: 'PROCESSING' },
+          data: { status: 'READY', failReason: null, durationSec: Math.round(video.length) },
+        }),
+        db.mediaAsset.deleteMany({ where: { id: { in: others.map((o) => o.id) } } }),
+      ]);
+      if (switched.count !== 1) return;
+      await removeReplaced(others, log);
+      await rm(join(dirs.video, assetId), { force: true });
+    },
+  });
+
+  const deleteStreamVideos = defineJob({
+    ...streamDeleteSpec,
+    async handle({ videoIds }) {
+      if (!stream) throw new PermanentJobError('Bunny Stream is not configured');
+      for (const id of videoIds) await stream.deleteVideo(id);
+    },
+  });
+
+  return [
+    audioUpload,
+    coverUpload,
+    deleteFiles,
+    videoUpload,
+    videoStatus,
+    deleteStreamVideos,
+  ] as unknown as JobDefinition[];
 }

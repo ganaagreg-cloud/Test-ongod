@@ -20,6 +20,12 @@ const plugins: NonNullable<ExpoConfig['plugins']> = [
     'expo-audio',
     { enableBackgroundPlayback: true, microphonePermission: false, recordAudioAndroid: false },
   ],
+  // Video episodes (ADR-0038, option A of open question #17): the sound keeps playing in the
+  // background with lock-screen controls. No picture in picture.
+  ['expo-video', { supportsBackgroundPlayback: true, supportsPictureInPicture: false }],
+  // Portrait from the first frame on iOS; src/video/orientation.ts keeps it portrait at runtime
+  // and turns a fullscreen video to landscape.
+  ['expo-screen-orientation', { initialOrientation: 'PORTRAIT_UP' }],
 ];
 if (googleIosScheme) {
   plugins.push(['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosScheme }]);
@@ -40,7 +46,9 @@ const config: ExpoConfig = {
   slug: 'ongod',
   scheme: 'ongod',
   version: '0.1.0',
-  orientation: 'portrait',
+  // 'default' so a fullscreen video can turn to landscape on iOS (R-expo-video-sdk57); every
+  // screen is locked to portrait at runtime (src/video/orientation.ts).
+  orientation: 'default',
   userInterfaceStyle: 'dark',
   backgroundColor: '#021512', // themes.dark.bg (app.config cannot import the workspace package)
   ios: {

@@ -267,6 +267,13 @@ kbd {
   gap: var(--space-sm);
 }
 
+/* Episode list: media kind (Аудио / Видео) next to its status badge. */
+.admin-media-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 .admin-thumb {
   flex: none;
   width: calc(var(--layout-episode-row-cover) * 0.75);

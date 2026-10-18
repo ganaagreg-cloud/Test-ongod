@@ -1,4 +1,10 @@
-import { ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES, type AdminEpisodeDto } from '@ongod/shared';
+import {
+  ALLOWED_AUDIO_EXTENSIONS,
+  ALLOWED_VIDEO_EXTENSIONS,
+  maxBytesOf,
+  mediaKindOfFile,
+  type AdminEpisodeDto,
+} from '@ongod/shared';
 import { Button, FileField, Notice, useToast } from '@ongod/ui-web';
 import { DetailedError, Upload } from 'tus-js-client';
 import { useEffect, useRef, useState } from 'react';
@@ -62,7 +68,10 @@ async function serverOffset(uploadUrl: string): Promise<number | undefined> {
   }
 }
 
-const extensionOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
+/** What the file picker offers: every audio and video type the API takes (ADR-0038). */
+const ACCEPT = [...ALLOWED_AUDIO_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS]
+  .map((ext) => `.${ext}`)
+  .join(',');
 
 function describe(err: Error): string {
   if (err instanceof DetailedError) {
@@ -73,7 +82,8 @@ function describe(err: Error): string {
   return err instanceof ApiError ? err.message : mn.episodes.audio.uploadFailed;
 }
 
-export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
+/** One media file per episode: audio (Bunny Storage) or video (Bunny Stream), ADR-0038. */
+export function MediaUploader({ episode }: { episode: AdminEpisodeDto }) {
   const t = mn.episodes.audio;
   const invalidate = useInvalidate();
   const upload = useRef<Upload>(undefined);
@@ -83,6 +93,8 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
   const [resumedFrom, setResumedFrom] = useState<number>();
   const [message, setMessage] = useState<{ tone: 'danger' | 'success'; text: string }>();
   const [cancelling, setCancelling] = useState(false);
+  // A file chosen while the episode already has a ready one waits for a confirmation.
+  const [replacing, setReplacing] = useState<File>();
   const [pickerKey, setPickerKey] = useState(0);
 
   const media = episode.media;
@@ -101,12 +113,13 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
   function begin(file: File) {
     setMessage(undefined);
     setResumedFrom(undefined);
-    if (!(ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(extensionOf(file.name))) {
+    const kind = mediaKindOfFile(file.name);
+    if (!kind) {
       setMessage({ tone: 'danger', text: t.invalidType });
       return;
     }
-    if (file.size > MAX_AUDIO_BYTES) {
-      setMessage({ tone: 'danger', text: t.tooLarge });
+    if (file.size > maxBytesOf(kind)) {
+      setMessage({ tone: 'danger', text: t.tooLarge(formatBytes(maxBytesOf(kind))) });
       return;
     }
 
@@ -169,6 +182,11 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
     });
   }
 
+  function choose(file: File) {
+    if (media?.status === 'READY') setReplacing(file);
+    else begin(file);
+  }
+
   function pause() {
     void upload.current?.abort();
     setPhase('paused');
@@ -198,6 +216,7 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
     <div className="admin-uploader">
       {media ? (
         <div className="admin-uploader__status">
+          <strong>{t.kind[media.kind]}</strong>
           <MediaBadge status={media.status} />
           {media.sizeBytes !== null ? (
             <span>
@@ -213,6 +232,9 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
       ) : null}
 
       {media?.status === 'FAILED' ? <FailedMedia episode={episode} /> : null}
+      {media?.kind === 'VIDEO' && media.status === 'PROCESSING' ? (
+        <Notice tone="info">{t.videoProcessing}</Notice>
+      ) : null}
 
       {pending ? <Notice tone="info">{t.resumeFound(pending.name)}</Notice> : null}
       {/* "stored, processing" must not stay on screen once processing has failed */}
@@ -248,10 +270,10 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
           key={pickerKey}
           label={t.choose}
           hint={media && media.status !== 'FAILED' ? `${t.hint} ${t.replaceNotice}` : t.hint}
-          accept={ALLOWED_AUDIO_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
+          accept={ACCEPT}
           onChange={(event) => {
             const file = event.target.files?.[0];
-            if (file) begin(file);
+            if (file) choose(file);
           }}
         />
       )}
@@ -264,6 +286,21 @@ export function AudioUploader({ episode }: { episode: AdminEpisodeDto }) {
         tone="destructive"
         onClose={() => setCancelling(false)}
         onConfirm={cancel}
+      />
+      <ConfirmDialog
+        open={replacing !== undefined}
+        title={t.replaceTitle}
+        text={replacing ? t.replaceConfirm(replacing.name) : ''}
+        confirmLabel={t.replace}
+        onClose={() => {
+          setReplacing(undefined);
+          setPickerKey((key) => key + 1);
+        }}
+        onConfirm={async () => {
+          const file = replacing;
+          setReplacing(undefined);
+          if (file) begin(file);
+        }}
       />
     </div>
   );

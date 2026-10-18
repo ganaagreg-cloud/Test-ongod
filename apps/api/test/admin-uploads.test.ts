@@ -200,7 +200,7 @@ describe('failed audio: the reason, and Retry', () => {
       status: 'FAILED',
       failReason: expect.stringContaining('уншиж'),
     });
-    expect(shown.missing).toContain('audio');
+    expect(shown.missing).toContain('media');
 
     const res = await retry();
     expect(res.statusCode).toBe(200);

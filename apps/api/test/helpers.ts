@@ -19,6 +19,10 @@ export const BUNNY_TEST = {
   BUNNY_STORAGE_API_KEY: 'test-storage-password',
   BUNNY_PULL_ZONE_HOST: 'test-zone.b-cdn.net',
   BUNNY_CDN_TOKEN_KEY: 'test-token-key-0123456789abcdef',
+  BUNNY_STREAM_LIBRARY_ID: '12345',
+  BUNNY_STREAM_API_KEY: 'test-stream-api-key',
+  BUNNY_STREAM_CDN_HOSTNAME: 'vz-test.b-cdn.net',
+  BUNNY_STREAM_TOKEN_KEY: 'test-stream-token-key-0123456789',
 };
 
 /** Fake bank account and a throw-away receipts folder (never the real ./data/receipts). */

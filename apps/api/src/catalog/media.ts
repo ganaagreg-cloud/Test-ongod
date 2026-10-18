@@ -22,12 +22,22 @@ const asUrlPath = (path: string) => `/${path.replace(/^\/+/, '')}`;
  */
 export interface MediaUrls {
   readonly enabled: boolean;
+  /** Bunny Stream is configured (video playback, ADR-0038). */
+  readonly videoEnabled: boolean;
   cover(coverPath: string, now: Date): { coverUrl: string | null; thumbUrl: string | null };
   /** Throws if the path cannot be signed (non-ASCII), which is a data error worth a 500 + alert. */
   audio(path: string, expiresAt: Date): string;
+  /**
+   * The HLS playlist of a Stream video, signed with a directory token over `/<videoId>/` written
+   * in the path, so the playlist and every segment it lists are covered (R-bunny-stream).
+   */
+  video(videoId: string, expiresAt: Date): string;
 }
 
-export function createMediaUrls(signer: BunnySigner | undefined): MediaUrls {
+export function createMediaUrls(
+  signer: BunnySigner | undefined,
+  streamSigner?: BunnySigner,
+): MediaUrls {
   const signCover = (path: string, now: Date): string | null => {
     if (!signer) return null;
     // Same expiry for everyone during a UTC day, so a cover URL stays identical (and cacheable)
@@ -42,6 +52,7 @@ export function createMediaUrls(signer: BunnySigner | undefined): MediaUrls {
 
   return {
     enabled: signer !== undefined,
+    videoEnabled: streamSigner !== undefined,
     cover: (coverPath, now) => ({
       coverUrl: signCover(coverPath, now),
       thumbUrl: signCover(thumbPathOf(coverPath), now),
@@ -49,6 +60,16 @@ export function createMediaUrls(signer: BunnySigner | undefined): MediaUrls {
     audio(path, expiresAt) {
       if (!signer) throw new Error('Bunny is not configured');
       return signer.signUrl({ path: asUrlPath(path), expiresAt });
+    },
+    video(videoId, expiresAt) {
+      if (!streamSigner) throw new Error('Bunny Stream is not configured');
+      if (!/^[0-9a-f-]{36}$/i.test(videoId)) throw new Error('invalid Stream video id');
+      return streamSigner.signUrl({
+        path: `/${videoId}/playlist.m3u8`,
+        tokenPath: `/${videoId}/`,
+        inPath: true,
+        expiresAt,
+      });
     },
   };
 }

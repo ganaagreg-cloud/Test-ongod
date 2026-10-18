@@ -1,13 +1,13 @@
 ---
 type: runbook
 status: draft
-updated: 2026-10-17
+updated: 2026-10-18
 tags: [runbook, area/mobile]
 ---
 
 # Device gate: iPhone first (gate A in Expo Go), then the native build (gate B)
 
-Decisions: [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (replaces the Android-first [[ADR-0015-local-first-android-smoke-test|ADR-0015]]), [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]], [[ADR-0031-mobile-ui-kit-v2-implementation|ADR-0031]], [[ADR-0032-audio-expo-audio-instead-of-track-player|ADR-0032]], [[ADR-0033-expo-go-preview-only|ADR-0033]] · Steps: [[EXPO_GO_PREVIEW]] (gate A), [[MOBILE_BUILD]] (gate B) · Facts: [[R-ios-device-install]], [[R-motion-libs-sdk-57]], [[R-expo-audio-sdk57]]
+Decisions: [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (replaces the Android-first [[ADR-0015-local-first-android-smoke-test|ADR-0015]]), [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]], [[ADR-0031-mobile-ui-kit-v2-implementation|ADR-0031]], [[ADR-0032-audio-expo-audio-instead-of-track-player|ADR-0032]], [[ADR-0033-expo-go-preview-only|ADR-0033]], [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] · Steps: [[EXPO_GO_PREVIEW]] (gate A), [[MOBILE_BUILD]] (gate B) · Facts: [[R-ios-device-install]], [[R-motion-libs-sdk-57]], [[R-expo-audio-sdk57]], [[R-expo-video-sdk57]]
 
 - **Gate A** (column "A"): the iPhone in **Expo Go**, zero cost. Passing every A row unlocks phase 3 (tabs, Нүүр, Сан, Player ...).
 - **Gate B** (column "B"): a **native build** of the app. Free on Android (Android Studio on Windows, or EAS); on iPhone only after joining the Apple Developer Program. Must pass before the 30% milestone demo and any store build.
@@ -23,6 +23,7 @@ Decisions: [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (replaces the A
 - The API reachable from the phone and the **Bunny dev zone** in the root `.env` ([[BUNNY_SWITCH]]); without Bunny the API gives no audio URL.
 - **A published episode whose audio is READY** (20 to 40 minutes is best): upload it in the admin on the PC (`http://localhost:5174/admin/`). The seeded episodes have no audio file.
 - Test accounts from the seed (password = `SEED_USER_PASSWORD` in `.env`): `demo` and `bat` have access, `tuya`'s access has ended, `saraa` has never paid.
+- Video rows: the **Bunny Stream** keys in `.env` too ([[BUNNY_SWITCH]] step 3) and **a published episode with a READY video** (upload an `.mp4` in the admin; it stays PROCESSING while Bunny encodes, usually minutes). In the bench a video episode is listed as `[video] …`.
 - Open the bench: sign in, then tap **/dev/audio** on the placeholder home screen (dev builds and Expo Go only). It lists episodes, opens one through the signed URL and shows status, position, speed and sleep timer. It is a test bench, not the player screen.
 
 ## 3. Checklist
@@ -68,6 +69,21 @@ Mark each row with the date, phone model, iOS / Android version, Expo Go or nati
 | 30  | B    | Another app playing music, then start an episode: the other app pauses (`doNotMix`); a phone call or an alarm interrupts and the episode can be resumed                                      |        |
 | 31  | B    | Android 13+: the background notification shows without a permission prompt; swipe the app away from recents while playing: note what happens                                                 |        |
 
+### Video (`/dev/audio`, a `[video]` episode)
+
+Option A of [[open-questions]] #17: the sound keeps playing in the background with lock-screen controls; no picture in picture. Background and lock-screen rows need the native build (Expo Go cannot add the `expo-video` plugin options).
+
+| #   | Gate | Check                                                                                                                                                                                                                | Result |
+| --- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 36  | A    | Open a video episode: the picture appears above the controls (16:9, rounded), plays within about 5 s on mobile data, sound and picture in sync, also with the ring/silent switch on silent; status line says `VIDEO` |        |
+| 37  | A    | The bench's play / pause, `-15` / `+30`, speed and sleep timer act on the video like on audio; saved progress resumes at the right second                                                                            |        |
+| 38  | A    | Fullscreen button: the video **turns to landscape**; leaving fullscreen turns the app back to portrait. Rotating the phone on any other screen keeps it portrait                                                     |        |
+| 39  | A    | Switch from a video episode to an audio one and back: only one plays at a time, the picture goes away for audio, the speed is kept                                                                                   |        |
+| 40  | A    | Quality: on Wi-Fi the picture gets sharp (720p) after a few seconds; on weak mobile data it drops to a lower quality instead of stopping                                                                             |        |
+| 41  | B    | **Lock the phone during a video for 10+ minutes**: the sound keeps playing; lock screen / notification shows title, category and picture with play / pause; note the time it ran                                     |        |
+| 42  | B    | App in the background (home button) while a video plays: the sound keeps going; back in the app the picture continues at the same position                                                                           |        |
+| 43  | B    | The sleep timer stops a video while the phone is locked, and the position is saved                                                                                                                                   |        |
+
 ### Social sign-in and push (gate B, only with `SOCIAL_LOGIN=true` and real client IDs)
 
 | #   | Gate | Check                                                                                                                                             | Result |
@@ -89,3 +105,4 @@ Mark each row with the date, phone model, iOS / Android version, Expo Go or nati
 - Expo Go only opens the newest SDK; if it stops opening this SDK 57 project, gate A needs an SDK upgrade ([[R-ios-device-install]]).
 - The OS may not crop a 16:9 lock-screen picture ([[R-expo-audio-sdk57]]); the bench passes the cover URL as it is.
 - Gestures inside React Native `Modal` need their own `GestureHandlerRootView` (built in `Sheet`, unverified on a device).
+- Video: whether Expo Go on the App Store contains `expo-video` and `expo-screen-orientation` is TO-VERIFY ([[R-expo-video-sdk57]]); if rows 36 to 40 fail with "native module not found", they move to gate B. The iOS landscape turn in fullscreen is a runtime orientation lock (`src/video/orientation.ts`), not yet seen on a device.

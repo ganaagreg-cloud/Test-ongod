@@ -1,7 +1,8 @@
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
 import { bunnyDeleteFile, bunnyPutLocalFile } from '../lib/bunnyStorage';
-import { missingBunnyKeys, requireBunny, type Env } from '../env';
+import { createBunnyStreamClient, type StreamClient } from '../lib/bunnyStream';
+import { missingBunnyKeys, missingStreamKeys, requireBunny, requireStream, type Env } from '../env';
 
 /** Where finished media ends up. Bunny in production; a local folder in development and tests. */
 export interface MediaStorage {
@@ -54,6 +55,8 @@ export interface UploadDirs {
   tus: string;
   /** Finished audio waiting for storage, one file per MediaAsset id. */
   audio: string;
+  /** Finished video waiting to be sent to Bunny Stream (kept until it is READY, for Retry). */
+  video: string;
   /** Resized covers waiting for storage: <coverId>-full.webp and <coverId>-thumb.webp. */
   covers: string;
   /** The "storage" of the local fallback. */
@@ -66,6 +69,7 @@ export const uploadDirs = (uploadsDir: string): UploadDirs => {
     root,
     tus: join(root, 'tus'),
     audio: join(root, 'audio'),
+    video: join(root, 'video'),
     covers: join(root, 'covers'),
     published: join(root, 'published'),
   };
@@ -74,6 +78,8 @@ export const uploadDirs = (uploadsDir: string): UploadDirs => {
 export interface MediaRuntime {
   storage: MediaStorage;
   dirs: UploadDirs;
+  /** Bunny Stream for video (ADR-0038); undefined when not configured (video uploads then fail with a reason). */
+  stream?: StreamClient | undefined;
 }
 
 /**
@@ -86,5 +92,12 @@ export function createMediaRuntime(env: Env): MediaRuntime {
     missingBunnyKeys(env).length === 0
       ? createBunnyMediaStorage(env)
       : createLocalMediaStorage(dirs.published);
-  return { storage, dirs };
+  const stream =
+    missingStreamKeys(env).length === 0
+      ? createBunnyStreamClient({
+          libraryId: requireStream(env).libraryId,
+          apiKey: requireStream(env).apiKey,
+        })
+      : undefined;
+  return { storage, dirs, stream };
 }

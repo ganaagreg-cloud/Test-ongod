@@ -115,6 +115,39 @@ describe('bunnyToken: oracle against Bunny reference token.js', () => {
     expect(withQuery).toBeGreaterThan(10);
   });
 
+  it('matches the reference in the path form used for HLS (isDirectory), 50 cases', () => {
+    const rnd = mulberry32(20261018);
+    const pick = (chars: string, min: number, max: number) =>
+      Array.from(
+        { length: min + Math.floor(rnd() * (max - min + 1)) },
+        () => chars[Math.floor(rnd() * chars.length)],
+      ).join('');
+    for (let i = 0; i < 50; i++) {
+      const dir = `/${pick(SEGMENT_CHARS, 1, 12)}/`;
+      const path = `${dir}${rnd() < 0.5 ? 'playlist.m3u8' : pick(SEGMENT_CHARS, 1, 12)}`;
+      const expiresAtSec = 1_700_000_000 + Math.floor(rnd() * 400_000_000);
+      const expected = reference.signUrl(
+        `https://${HOST}${path}`,
+        KEY,
+        0,
+        '',
+        true,
+        dir,
+        '',
+        '',
+        false,
+        expiresAtSec,
+      );
+      const actual = signer.signUrl({
+        path,
+        expiresAt: new Date(expiresAtSec * 1000),
+        tokenPath: dir,
+        inPath: true,
+      });
+      expect(actual, `case ${i}: path=${path}`).toBe(expected);
+    }
+  });
+
   it('drops fractional seconds like the reference (expires is whole seconds)', () => {
     const expected = reference.signUrl(
       `https://${HOST}/a/b.mp3`,
