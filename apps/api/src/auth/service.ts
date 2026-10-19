@@ -4,6 +4,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
   type TokenPair,
+  type UpdateProfileRequest,
   type UserDto,
 } from '@ongod/shared';
 import type { Db, Prisma } from '../db';
@@ -503,6 +504,11 @@ export function createAuthService(deps: { db: Db; env: Env }) {
         await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
         await revokeUserSessions(tx, user.id, sessionId);
       });
+    },
+
+    /** PATCH /v1/me (ADR-0039): first name, last name, phone. */
+    async updateProfile(user: User, data: UpdateProfileRequest): Promise<UserDto> {
+      return toUserDto(await db.user.update({ where: { id: user.id }, data }));
     },
 
     async requestEmailChange(user: User, newEmail: string, password: string): Promise<void> {

@@ -22,6 +22,7 @@ const NEW_PASSWORD = 'brand-new-pass-2';
 describe('access rules: every /me route needs a signed-in user', () => {
   it.each([
     ['GET', '/v1/me'],
+    ['PATCH', '/v1/me'],
     ['POST', '/v1/me/change-password'],
     ['POST', '/v1/me/change-email'],
     ['POST', '/v1/me/change-email/verify'],
@@ -74,6 +75,72 @@ describe('GET /v1/me', () => {
     const res = await send(app, 'GET', '/v1/me', s.accessToken);
     expect(res.statusCode).toBe(403);
     expect(res.json().error.code).toBe('ACCOUNT_DISABLED');
+  });
+});
+
+describe('PATCH /v1/me: personal information (ADR-0039)', () => {
+  it('changes first name, last name and phone, trimmed; username and email stay', async () => {
+    const app = await authApp();
+    const s = await signedIn(app);
+    const res = await send(app, 'PATCH', '/v1/me', s.accessToken, {
+      firstName: '  Болд ',
+      lastName: 'Дорж',
+      phone: '+976 8811-2233',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().user).toMatchObject({
+      firstName: 'Болд',
+      lastName: 'Дорж',
+      phone: '+976 8811-2233',
+      username: EMAIL,
+      email: EMAIL,
+    });
+    const me = await send(app, 'GET', '/v1/me', s.accessToken);
+    expect(me.json().user.firstName).toBe('Болд');
+  });
+
+  it('changes only the fields sent', async () => {
+    const app = await authApp();
+    const s = await signedIn(app);
+    const res = await send(app, 'PATCH', '/v1/me', s.accessToken, { phone: '88112233' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().user).toMatchObject({
+      firstName: 'Эрдэнэ',
+      lastName: 'Бат',
+      phone: '88112233',
+    });
+  });
+
+  it.each([
+    ['an empty body', {}],
+    ['an empty name', { firstName: '   ' }],
+    ['a bad phone', { phone: 'call me' }],
+    ['the username (read-only in the app)', { username: 'someone' }],
+    ['the email (has its own code flow)', { email: 'new@example.com' }],
+    ['access (never from the client)', { firstName: 'А', accessUntil: '2099-01-01T00:00:00.000Z' }],
+  ])('refuses %s with VALIDATION_ERROR and changes nothing', async (_name, body) => {
+    const app = await authApp();
+    const s = await signedIn(app);
+    const res = await send(app, 'PATCH', '/v1/me', s.accessToken, body);
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_ERROR');
+    const user = await testDb.user.findUniqueOrThrow({ where: { id: s.userId } });
+    expect(user).toMatchObject({
+      firstName: 'Эрдэнэ',
+      lastName: 'Бат',
+      phone: '99112233',
+      username: EMAIL,
+      accessUntil: null,
+    });
+  });
+
+  it('is refused while the profile is incomplete (complete-profile first)', async () => {
+    const app = await authApp();
+    const s = await signedIn(app);
+    await testDb.user.update({ where: { id: s.userId }, data: { status: 'PENDING_PROFILE' } });
+    const res = await send(app, 'PATCH', '/v1/me', s.accessToken, { firstName: 'Болд' });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('PROFILE_INCOMPLETE');
   });
 });
 

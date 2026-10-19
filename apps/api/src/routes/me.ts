@@ -7,6 +7,7 @@ import {
   devicesResponseSchema,
   meResponseSchema,
   removeDeviceRequestSchema,
+  updateProfileRequestSchema,
 } from '@ongod/shared';
 import { authOf, type createAuthGuard } from '../auth/guard';
 import type { AuthLimiter } from '../auth/rate-limit';
@@ -29,6 +30,12 @@ export async function meRoutes(
   app.get('/me', { config: { allowPending: true } }, async (req) =>
     meResponseSchema.parse({ user: toUserDto(authOf(req).user) }),
   );
+
+  app.patch('/me', async (req) => {
+    const { user } = authOf(req);
+    const body = updateProfileRequestSchema.parse(req.body);
+    return meResponseSchema.parse({ user: await auth.updateProfile(user, body) });
+  });
 
   app.post('/me/change-password', async (req, reply) => {
     const { user, session } = authOf(req);

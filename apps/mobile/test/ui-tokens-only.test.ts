@@ -3,11 +3,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 // CLAUDE.md: no hardcoded colors, sizes or fonts outside packages/tokens. Every UI file must take
-// them from @ongod/tokens: the kit (src/ui), the shared components (src/components), the player
-// views (src/audio, src/video), the dev benches (src/dev) and every screen (app/).
+// them from @ongod/tokens: the kit (src/ui), the shared components (src/components), the screen
+// parts (src/screens), the player views (src/audio, src/video), the dev benches (src/dev) and
+// every screen (app/).
 const roots = [
   '../src/ui/',
   '../src/components/',
+  '../src/screens/',
   '../src/audio/',
   '../src/video/',
   '../src/dev/',

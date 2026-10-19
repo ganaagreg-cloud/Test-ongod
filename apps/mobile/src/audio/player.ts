@@ -2,7 +2,7 @@
 import { api } from '../api';
 import { createPlayerController, type PlayerState } from './controller';
 import { engine } from './engine';
-import { videoEngine } from '../video/engine';
+import { videoAvailable, videoEngine } from '../video/engine';
 
 /**
  * The one player of the app (the OS gives the lock screen to one player only, ADR-0032): the
@@ -12,7 +12,8 @@ import { videoEngine } from '../video/engine';
  */
 export const player = createPlayerController({
   engine,
-  videoEngine,
+  // Without the native video module a video episode reports VIDEO_UNSUPPORTED instead of failing.
+  ...(videoAvailable ? { videoEngine } : {}),
   fetchPlay: (episodeId) => api.playEpisode(episodeId),
   saveProgress: (episodeId, body) => api.saveProgress(episodeId, body),
 });

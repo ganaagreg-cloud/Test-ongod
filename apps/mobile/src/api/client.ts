@@ -41,7 +41,7 @@ export interface ClientOptions {
 }
 
 export interface RequestOptions<T> {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** Validates and types the JSON answer. */
   schema?: z.ZodType<T>;

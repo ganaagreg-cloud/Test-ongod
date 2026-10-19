@@ -31,14 +31,18 @@ export function Icon({
   color,
 }: {
   name: IconName;
-  size?: 'regular' | 'small' | 'tab';
+  size?: 'regular' | 'small' | 'tab' | 'large';
   color?: string;
 }) {
   const { colors } = useSurface();
   const tint = color ?? colors.textPrimary;
   const { paths, filled } = iconPaths[name];
-  const px =
-    size === 'small' ? layout.iconSizeSmall : size === 'tab' ? layout.tabIconSize : layout.iconSize;
+  const px = {
+    regular: layout.iconSize,
+    small: layout.iconSizeSmall,
+    tab: layout.tabIconSize,
+    large: layout.iconSizeLarge,
+  }[size];
   return (
     <View aria-hidden>
       <Svg

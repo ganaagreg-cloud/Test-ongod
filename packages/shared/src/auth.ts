@@ -131,6 +131,17 @@ export const deviceLimitDetailsSchema = z.object({ devices: z.array(deviceSchema
 
 export const meResponseSchema = z.object({ user: userSchema });
 
+/**
+ * PATCH /v1/me: the personal details a member changes in the app, with the sign-up rules
+ * (ADR-0039). Username and email are not here: email has its own code flow, username is read-only.
+ */
+export const updateProfileRequestSchema = z
+  .object({ firstName: nameSchema, lastName: nameSchema, phone: phoneSchema })
+  .partial()
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: 'nothing to change' });
+export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;
+
 export const changePasswordRequestSchema = z.object({
   currentPassword: z.string().min(1).max(128),
   newPassword: passwordSchema,

@@ -159,6 +159,8 @@ function Tab({
       accessibilityRole="tab"
       accessibilityLabel={item.label}
       accessibilityState={{ selected }}
+      // The browser build reads only aria-* for the selected tab.
+      aria-selected={selected}
       onPress={onPress}
       style={styles.tab}
     >

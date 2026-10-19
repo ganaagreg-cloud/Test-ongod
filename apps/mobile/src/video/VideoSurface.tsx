@@ -3,10 +3,10 @@
 // sound keeps going when this view is gone, so the mini player and the lock screen still work.
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { VideoView } from 'expo-video';
 import { aspect, colors, radius } from '@ongod/tokens';
 import { mn } from '../i18n/mn';
 import { getVideoPlayer, onVideoPlayerCreated } from './engine';
+import { videoModule } from './native';
 import { allowFullscreenLandscape, lockPortrait } from './orientation';
 
 export function VideoSurface() {
@@ -21,7 +21,8 @@ export function VideoSurface() {
     [],
   );
 
-  if (!player) return null;
+  const VideoView = videoModule?.VideoView;
+  if (!player || !VideoView) return null;
   return (
     <View style={styles.frame}>
       <VideoView

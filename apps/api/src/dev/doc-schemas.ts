@@ -52,6 +52,7 @@ import {
   loginResponseSchema,
   logoutRequestSchema,
   meResponseSchema,
+  meStatsResponseSchema,
   plansResponseSchema,
   playResponseSchema,
   refreshRequestSchema,
@@ -68,6 +69,7 @@ import {
   totpSetupResponseSchema,
   totpStatusResponseSchema,
   totpVerifyRequestSchema,
+  updateProfileRequestSchema,
   verifyEmailRequestSchema,
 } from '@ongod/shared';
 import { z } from 'zod';
@@ -231,6 +233,13 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     auth: 'pending',
     responses: { 200: meResponseSchema },
   }),
+  'PATCH /v1/me': user('me', 'Change first name, last name or phone (ADR-0039)', {
+    body: updateProfileRequestSchema,
+    responses: { 200: meResponseSchema },
+  }),
+  'GET /v1/me/stats': user('me', 'Profile numbers: episodes finished, listening time (ADR-0039)', {
+    responses: { 200: meStatsResponseSchema },
+  }),
   'POST /v1/me/change-password': user('me', 'H. Change password', {
     body: changePasswordRequestSchema,
     responses: { 204: noContent },
@@ -283,7 +292,9 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'GET /v1/episodes/:id': user('catalog', 'One episode with the next one', {
     responses: { 200: episodeDetailResponseSchema },
   }),
-  'GET /v1/home': user('catalog', 'Home rows', { responses: { 200: homeResponseSchema } }),
+  'GET /v1/home': user('catalog', 'Home rows and the next release within 7 days', {
+    responses: { 200: homeResponseSchema },
+  }),
   'POST /v1/episodes/:id/play': user(
     'catalog',
     'Signed audio URL or HLS video playlist (kind); needs active access',

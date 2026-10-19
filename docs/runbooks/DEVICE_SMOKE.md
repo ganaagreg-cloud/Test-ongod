@@ -28,7 +28,7 @@ Decisions: [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (replaces the A
   2. Grant your own account in the admin: `http://localhost:5174/admin/`, sign in as `owner` (`SEED_OWNER_PASSWORD`, 2-step code from `pnpm dev:totp`), **Хэрэглэгчид** → search the username → open it → **Эрх олгох** → choose a plan → confirm.
   3. The real member path (also tests payment): on the portal `http://localhost:5173`, sign in, choose a plan, note the `ONG-XXXXX` reference, fill the **Төлсөн** form (no real transfer needed locally), then approve it in the admin under payments, or run `pnpm dev:approve ONG-XXXXX`.
 - Video rows: the **Bunny Stream** keys in `.env` too ([[BUNNY_SWITCH]] step 3) and **a published episode with a READY video** (upload an `.mp4` in the admin; it stays PROCESSING while Bunny encodes, usually minutes). In the bench a video episode is listed as `[video] …`.
-- Open the bench: sign in, then tap **/dev/audio** on the placeholder home screen (dev builds and Expo Go only). It lists episodes, opens one through the signed URL and shows status, position, speed and sleep timer. It is a test bench, not the player screen.
+- Open the bench: sign in, then tap **/dev/audio** at the bottom of the **Профайл** tab (dev builds and Expo Go only; `/dev/ui` is next to it). It lists episodes, opens one through the signed URL and shows status, position, speed and sleep timer. It is a test bench, not the player screen.
 
 ## 3. Checklist
 
@@ -87,6 +87,24 @@ Option A of [[open-questions]] #17: the sound keeps playing in the background wi
 | 41  | B    | **Lock the phone during a video for 10+ minutes**: the sound keeps playing; lock screen / notification shows title, category and picture with play / pause; note the time it ran                                     |        |
 | 42  | B    | App in the background (home button) while a video plays: the sound keeps going; back in the app the picture continues at the same position                                                                           |        |
 | 43  | B    | The sleep timer stops a video while the phone is locked, and the position is saved                                                                                                                                   |        |
+
+### Phase 3 screens ([[ADR-0039-phase-3-before-gate-a|ADR-0039]])
+
+Built in parallel with gate A. Needs the seeded catalog (`pnpm --filter @ongod/api db:seed`) and, for playing, an account with access (section 2).
+
+| #   | Gate | Check                                                                                                                                                                                                                                                           | Result |
+| --- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 44  | A    | Tabs: the pill slides between the four tabs; on Сан the bar turns brand green with a paper pill and the status-bar text turns dark (light again on the other tabs)                                                                                              |        |
+| 45  | A    | Нүүр: greeting for the time of day + first name; hero slides advance every 4.8 s and stop while touched; "Шинэ" scrolls sideways; a category card opens Сан filtered; "Энэ 7 хоногт" counts down every second; after scrolling the title moves into a glass bar |        |
+| 46  | A    | Player: an episode opens as a sheet (iPhone: drag down closes it); play starts from the saved position; dragging the bar seeks; -15 / +30, speed chip, sleep-timer sheet; "Тайлбар" opens and closes; a "Дараагийн" row opens that episode                      |        |
+| 47  | A    | Mini player: shows above the tab bar while an episode is loaded; play / pause works; tapping it opens the Player; after listening, "Үргэлжлүүлэх" on Нүүр resumes it                                                                                            |        |
+| 48  | A    | No access (new account): play shows only "Таны эрх идэвхгүй байна" + "Эрхээ шалгах", no price, no link; grant access in the admin, then "Эрхээ шалгах" turns green and "Тоглуулах" plays                                                                        |        |
+| 49  | A    | Сан: search filters a moment after typing; chips filter by category; Шинэ / Хуучин / Урт sort; skeleton rows on each change; more rows load at the end; pull down refreshes                                                                                     |        |
+| 50  | A    | Bookmark: saving in Сан or in the Player shows in Хадгалсан at once; removing the last one there shows the bookmark dropping onto the mountain line                                                                                                             |        |
+| 51  | A    | Профайл: access card ("Идэвхтэй · … хүртэл" with the days-left ring, or "Идэвхгүй"); the numbers roll; Тохиргоо and Төхөөрөмжүүд open                                                                                                                           |        |
+| 52  | A    | Тохиргоо: change name or phone and save (Профайл shows it); email change sends a code to the new address and the code finishes it; password change; devices list marks "Энэ төхөөрөмж"                                                                          |        |
+| 53  | A    | "Бүртгэл устгах" (throwaway account only): two confirmations, then Welcome; the same login is refused afterwards                                                                                                                                                |        |
+| 54  | A    | A video episode in the Player: the picture area is the video, fullscreen turns landscape (as rows 36–40)                                                                                                                                                        |        |
 
 ### Social sign-in and push (gate B, only with `SOCIAL_LOGIN=true` and real client IDs)
 

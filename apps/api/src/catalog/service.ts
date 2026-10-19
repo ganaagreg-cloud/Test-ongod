@@ -5,6 +5,7 @@ import type {
   EpisodesPage,
   HomeResponse,
   ListEpisodesQuery,
+  MeStats,
   PlayResponse,
   SaveProgressRequest,
 } from '@ongod/shared';
@@ -136,13 +137,20 @@ export function createCatalogService(deps: CatalogDeps) {
         id: true,
         name: true,
         slug: true,
+        coverPath: true,
         _count: { select: { episodes: { where: publishedWhere(now) } } },
       },
     });
     // A category with nothing published is not shown (it would reveal unpublished work).
     return rows
       .filter((r) => r._count.episodes > 0)
-      .map((r) => ({ id: r.id, name: r.name, slug: r.slug, episodeCount: r._count.episodes }));
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        slug: r.slug,
+        episodeCount: r._count.episodes,
+        coverUrl: r.coverPath ? media.cover(r.coverPath, now).coverUrl : null,
+      }));
   }
 
   async function requirePublished(episodeId: string, now: Date) {
@@ -218,7 +226,7 @@ export function createCatalogService(deps: CatalogDeps) {
 
     async home(userId: string): Promise<HomeResponse> {
       const now = clock();
-      const [recent, published, cats] = await Promise.all([
+      const [recent, published, cats, upcoming] = await Promise.all([
         db.playbackProgress.findMany({
           where: { userId, completed: false, positionSec: { gt: 0 }, episode: publishedWhere(now) },
           orderBy: { updatedAt: 'desc' },
@@ -227,6 +235,15 @@ export function createCatalogService(deps: CatalogDeps) {
         }),
         candidates({}, now),
         categories(now),
+        // "Энэ 7 хоногт": the next scheduled episode due within a week (ADR-0039).
+        db.episode.findFirst({
+          where: {
+            status: 'SCHEDULED',
+            scheduledFor: { gt: now, lte: new Date(now.getTime() + 7 * DAY_MS) },
+          },
+          orderBy: { scheduledFor: 'asc' },
+          select: { title: true, scheduledFor: true, category: itemInclude.category },
+        }),
       ]);
       const newest = pageAfter(published, 'desc', published.length || 1);
       const weekAgo = now.getTime() - 7 * DAY_MS;
@@ -250,7 +267,39 @@ export function createCatalogService(deps: CatalogDeps) {
           now,
         ),
       ]);
-      return { continueListening, latest, categories: cats, thisWeek };
+      const nextRelease =
+        upcoming?.scheduledFor != null
+          ? {
+              title: upcoming.title,
+              category: upcoming.category,
+              scheduledFor: upcoming.scheduledFor.toISOString(),
+            }
+          : null;
+      return { continueListening, latest, categories: cats, thisWeek, nextRelease };
+    },
+
+    /**
+     * Profile numbers (ADR-0039): finished episodes, and listening time = the duration of a
+     * finished episode (its saved position if the duration is unknown) or the saved position.
+     */
+    async stats(userId: string): Promise<MeStats> {
+      const rows = await db.playbackProgress.findMany({
+        where: { userId },
+        select: {
+          positionSec: true,
+          completed: true,
+          episode: { select: { mediaAssets: { ...readyMedia, select: { durationSec: true } } } },
+        },
+      });
+      let listenedSec = 0;
+      for (const row of rows) {
+        const duration = row.episode.mediaAssets[0]?.durationSec ?? null;
+        listenedSec += row.completed && duration !== null ? duration : row.positionSec;
+      }
+      return {
+        completedEpisodes: rows.filter((r) => r.completed).length,
+        listenedSec,
+      };
     },
 
     /**

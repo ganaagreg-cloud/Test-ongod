@@ -353,6 +353,8 @@ export const layout = {
   borderWidth: 1,
   iconSize: 24,
   iconSizeSmall: 16,
+  /** Player: the main play / pause and the skip arrows. */
+  iconSizeLarge: 28,
   /** Tab bar icons. */
   tabIconSize: 22,
   badgeHeight: 24,
@@ -404,6 +406,24 @@ export const layout = {
   auroraSmall: 260,
   /** Skeleton text line / duration badge. */
   durationBadgeHeight: 22,
+  /** Home "Шинэ" row: card width (the picture is 16:9). */
+  cardWidth: 220,
+  /** Player (Player.dc.html): the gold play button, -15 / +30, speed and sleep chips. */
+  playerPlayButton: 72,
+  playerControl: 52,
+  /** The round play button over a paused picture. */
+  playerOverlayButton: 64,
+  /** Scrubber: track thickness and thumb size (the touch row is touchTarget tall). */
+  scrubberTrack: 4,
+  scrubberThumb: 14,
+  /** "Дараагийн" rows: 16:9 picture width. */
+  nextThumbWidth: 128,
+  /** Profile access card: days-left ring and its stroke. */
+  accessRing: 64,
+  accessRingStroke: 4,
+  /** Home "Энэ 7 хоногт": the day tile. */
+  dayTileWidth: 56,
+  dayTileHeight: 64,
 } as const;
 
 export const tokens = {

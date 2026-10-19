@@ -19,6 +19,8 @@ export const categorySchema = z.object({
   slug: z.string(),
   /** Published episodes in the category. */
   episodeCount: z.number().int().nonnegative(),
+  /** Signed URL of the category photo (`coverPath`); null when there is none (or no Bunny). */
+  coverUrl: z.string().nullable(),
 });
 export type CategoryDto = z.infer<typeof categorySchema>;
 export const categoriesResponseSchema = z.object({ categories: z.array(categorySchema) });
@@ -96,11 +98,20 @@ export type EpisodesPage = z.infer<typeof episodesPageSchema>;
 
 // ---- GET /v1/home ----
 
+/** The next scheduled episode within 7 days ("Энэ 7 хоногт", ADR-0039). Not playable yet. */
+export const nextReleaseSchema = z.object({
+  title: z.string(),
+  category: episodeCategorySchema,
+  scheduledFor: z.iso.datetime(),
+});
+export type NextRelease = z.infer<typeof nextReleaseSchema>;
+
 export const homeResponseSchema = z.object({
   continueListening: z.array(episodeItemSchema),
   latest: z.array(episodeItemSchema),
   categories: z.array(categorySchema),
   thisWeek: z.array(episodeItemSchema),
+  nextRelease: nextReleaseSchema.nullable(),
 });
 export type HomeResponse = z.infer<typeof homeResponseSchema>;
 
@@ -118,6 +129,17 @@ export const playResponseSchema = z.object({
   durationSec: z.number().int().nonnegative().nullable(),
 });
 export type PlayResponse = z.infer<typeof playResponseSchema>;
+
+// ---- GET /v1/me/stats ----
+
+/** The numbers on the profile (ADR-0039). */
+export const meStatsResponseSchema = z.object({
+  /** Episodes this member has finished. */
+  completedEpisodes: z.number().int().nonnegative(),
+  /** Listening time: the duration of finished episodes plus the saved position of the others. */
+  listenedSec: z.number().int().nonnegative(),
+});
+export type MeStats = z.infer<typeof meStatsResponseSchema>;
 
 // ---- PUT /v1/progress/:episodeId ----
 

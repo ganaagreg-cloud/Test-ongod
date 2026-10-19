@@ -20,6 +20,8 @@ export { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';
 export { springs, timing, useAmbientActive, useEnterStyle } from './motion';
 export { NumberTicker } from './NumberTicker';
 export { Screen } from './Screen';
+export { Scrubber } from './Scrubber';
+export { SearchField } from './SearchField';
 export { Segmented, type SegmentItem } from './Segmented';
 export { Sheet, type SheetProps } from './Sheet';
 export { EpisodeRowSkeleton, Skeleton } from './Skeleton';

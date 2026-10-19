@@ -84,6 +84,17 @@ async function openLogin(page: Page) {
   await page.getByRole('button', { name: mn.welcome.login }).click();
 }
 
+/** Signed in: Нүүр shows the member's first name as its title. */
+const home = (page: Page, firstName: string) =>
+  page.getByRole('heading', { name: firstName, exact: true });
+
+/** Профайл -> Тохиргоо -> Гарах. */
+async function logOut(page: Page) {
+  await page.getByRole('tab', { name: mn.tabs.profile }).click();
+  await page.getByRole('button', { name: mn.profile.settings }).click();
+  await page.getByRole('button', { name: mn.settings.logout }).click();
+}
+
 async function logIn(page: Page, identifier: string, password: string) {
   await page.getByLabel(mn.login.identifier, { exact: true }).fill(identifier);
   await page.getByLabel(mn.login.password, { exact: true }).fill(password);
@@ -174,7 +185,7 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveValue(user.email);
 
   await logIn(page, user.email, PASSWORD);
-  await expect(page.getByText(mn.home.greeting(user.firstName))).toBeVisible();
+  await expect(home(page, user.firstName)).toBeVisible();
   await expectNoPaymentText(page);
 
   // nothing sensitive in web storage (the preview keeps tokens in memory only)
@@ -184,7 +195,7 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
   await page.screenshot({ path: shot('home') });
 
   // logging out returns to the Welcome screen
-  await page.getByRole('button', { name: mn.home.logout }).click();
+  await logOut(page);
   await expect(page.getByRole('button', { name: mn.welcome.login })).toBeVisible();
 });
 
@@ -225,7 +236,7 @@ test('forgot password: code by email, new password, then log in with it', async 
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveCount(1);
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveValue(user.email);
   await logIn(page, user.username, NEW_PASSWORD);
-  await expect(page.getByText(mn.home.greeting(user.firstName))).toBeVisible();
+  await expect(home(page, user.firstName)).toBeVisible();
 });
 
 /** A user with a verified email and no devices yet, made through the API. */
@@ -265,7 +276,7 @@ test('device limit: the 3rd device sees the other two and can remove one', async
     for (const page of pages.slice(0, 2)) {
       await openLogin(page);
       await logIn(page, owner.email, PASSWORD);
-      await expect(page.getByText(mn.home.greeting(owner.firstName))).toBeVisible();
+      await expect(home(page, owner.firstName)).toBeVisible();
     }
     const third = pages[2]!;
     await openLogin(third);
@@ -279,7 +290,7 @@ test('device limit: the 3rd device sees the other two and can remove one', async
     await third.screenshot({ path: shot('device-limit') });
 
     await removeButtons.first().click();
-    await expect(third.getByText(mn.home.greeting(owner.firstName))).toBeVisible();
+    await expect(home(third, owner.firstName)).toBeVisible();
   } finally {
     await Promise.all(phones.map((context) => context.close()));
   }
@@ -376,7 +387,7 @@ test('complete profile: a locked social account must fill the form (answers mock
   await page.getByLabel(mn.completeProfile.phone, { exact: true }).fill('99112233');
   await page.getByLabel(mn.completeProfile.password, { exact: true }).fill('long-enough-1');
   await page.getByRole('button', { name: mn.completeProfile.submit, exact: true }).click();
-  await expect(page.getByText(mn.home.greeting('Саран'))).toBeVisible();
+  await expect(home(page, 'Саран')).toBeVisible();
   expect(posted).toEqual({
     username: 'social.person@example.com',
     password: 'long-enough-1',

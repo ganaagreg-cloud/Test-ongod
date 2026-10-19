@@ -6,7 +6,8 @@
 // it; the sound keeps playing when the screen locks or the app goes to the background, with
 // lock-screen controls (option A, open question #17). That needs the config plugin option
 // `supportsBackgroundPlayback`, so it works in a dev build, not in Expo Go.
-import { createVideoPlayer, type VideoPlayer } from 'expo-video';
+import type { VideoPlayer } from 'expo-video';
+import { videoModule } from './native';
 import {
   initialEngineState,
   type AudioEngine,
@@ -53,7 +54,8 @@ function settled(p: VideoPlayer): EngineState['status'] {
 
 function ensurePlayer(): VideoPlayer {
   if (player) return player;
-  const p = createVideoPlayer(null);
+  if (!videoModule) throw new Error('video playback is not available');
+  const p = videoModule.createVideoPlayer(null);
   p.timeUpdateEventInterval = UPDATE_INTERVAL_SEC;
   p.staysActiveInBackground = true;
   p.showNowPlayingNotification = true;
@@ -116,7 +118,8 @@ export function onVideoPlayerCreated(notify: () => void): () => void {
   };
 }
 
-export const videoAvailable = true;
+/** False when the native video module is missing (see native.ts). */
+export const videoAvailable = videoModule !== null;
 
 export const videoEngine: AudioEngine = {
   async load(track: AudioTrack, startAtSec = 0) {

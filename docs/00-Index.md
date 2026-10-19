@@ -7,7 +7,7 @@ tags: [index]
 # Онгод: project home
 
 **Phase:** Build, before the 30% demo
-**Next milestone:** 30% milestone, the week-4 Android demo: login, episode list, locked-screen playback, admin upload + approve ([[approvals]]). Gate: iPhone first at zero cost ([[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]]): gate A in Expo Go unlocks phase 3; gate B (native build: locked-screen audio) before the demo.
+**Next milestone:** 30% milestone, the week-4 Android demo: login, episode list, locked-screen playback, admin upload + approve ([[approvals]]). Gate: iPhone first at zero cost ([[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]]): gate A in Expo Go runs in parallel with phase 3 ([[ADR-0039-phase-3-before-gate-a|ADR-0039]]); gate B (native build: locked-screen audio) before the demo.
 
 ## Specs
 
@@ -60,6 +60,7 @@ tags: [index]
 | ADR-0036 | [[ADR-0036-ci-github-actions]]                        | accepted               |
 | ADR-0037 | [[ADR-0037-unverified-signup-can-be-replaced]]        | accepted               |
 | ADR-0038 | [[ADR-0038-video-episodes-bunny-stream]]              | accepted               |
+| ADR-0039 | [[ADR-0039-phase-3-before-gate-a]]                    | accepted               |
 
 ## Research
 

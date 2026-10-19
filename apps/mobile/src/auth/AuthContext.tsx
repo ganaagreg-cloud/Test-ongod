@@ -16,6 +16,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, ApiError, client, deviceInfo, onSessionLost } from '../api';
+import { player } from '../audio/player';
 import { setMonitoringUser } from '../monitoring/sentry';
 import { signInWithApple, signInWithGoogle } from './social';
 
@@ -42,6 +43,12 @@ interface AuthApi {
   register: (body: RegisterRequest) => Promise<void>;
   completeProfile: (body: Parameters<typeof api.completeProfile>[0]) => Promise<void>;
   logout: () => Promise<void>;
+  /** Deletes the account on the server (SPEC H), then signs out on this phone. */
+  deleteAccount: () => Promise<void>;
+  /** Reads the user again (e.g. "Эрхээ шалгах" after paying): the fresh user, or null if signed out. */
+  refreshUser: () => Promise<UserDto | null>;
+  /** Stores the user an API call returned (profile edit, email change). */
+  updateUser: (next: UserDto) => void;
   /** Tries to restore the session again (the "no connection" screen). */
   reload: () => void;
 }
@@ -67,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signedOut = useCallback(() => {
     if (!mounted.current) return;
+    // Nothing keeps playing for a signed-out phone (lock-screen controls go too).
+    void player.close();
     queryClient.clear();
     setUser(null);
     setDeviceLimit(null);
@@ -198,6 +207,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signedOut();
   }, [signedOut]);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount();
+    await client.endSession();
+    signedOut();
+  }, [signedOut]);
+
+  const refreshUser = useCallback(async () => {
+    const { user: me } = await api.me();
+    if (mounted.current) setUser(me);
+    return me;
+  }, []);
+
   const value = useMemo<AuthApi>(
     () => ({
       phase,
@@ -211,6 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       completeProfile,
       logout,
+      deleteAccount,
+      refreshUser,
+      updateUser: setUser,
       reload: () => {
         setPhase('loading');
         setAttempt((n) => n + 1);
@@ -227,6 +251,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       completeProfile,
       logout,
+      deleteAccount,
+      refreshUser,
     ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

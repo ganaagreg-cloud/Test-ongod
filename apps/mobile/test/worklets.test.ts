@@ -33,6 +33,7 @@ function allowedCallees(source: string, filename: string): Set<string> {
   });
   const allowed = new Set<string>();
   const isWorklet = (fn: unknown) => {
+    if (!fn) return false; // `let x;` has no initial value
     const body = (fn as { body?: { directives?: Array<{ value: { value: string } }> } }).body;
     return body?.directives?.some((d) => d.value.value === 'worklet') ?? false;
   };

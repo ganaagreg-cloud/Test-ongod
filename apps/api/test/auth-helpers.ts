@@ -30,7 +30,7 @@ export const post = (app: FastifyInstance, url: string, payload?: unknown, token
 
 export const send = (
   app: FastifyInstance,
-  method: 'GET' | 'DELETE' | 'POST',
+  method: 'GET' | 'DELETE' | 'POST' | 'PATCH',
   url: string,
   token?: string,
   payload?: unknown,

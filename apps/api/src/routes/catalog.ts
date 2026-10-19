@@ -8,6 +8,7 @@ import {
   homeResponseSchema,
   listEpisodesQuerySchema,
   listSavedQuerySchema,
+  meStatsResponseSchema,
   playResponseSchema,
   saveProgressRequestSchema,
 } from '@ongod/shared';
@@ -44,6 +45,11 @@ export async function catalogRoutes(
 
   app.get('/home', async (req) =>
     homeResponseSchema.parse(await catalog.home(authOf(req).user.id)),
+  );
+
+  // The profile numbers (ADR-0039); here because they come from the catalog's progress rows.
+  app.get('/me/stats', async (req) =>
+    meStatsResponseSchema.parse(await catalog.stats(authOf(req).user.id)),
   );
 
   app.post('/episodes/:id/play', async (req, reply) => {

@@ -27,7 +27,7 @@ const get = (url: string, token: string) => authed(app, 'GET', url, token);
 
 describe('catalog access', () => {
   it('needs a signed-in user, with the standard error shape', async () => {
-    for (const url of ['/v1/categories', '/v1/episodes', '/v1/home', '/v1/saved']) {
+    for (const url of ['/v1/categories', '/v1/episodes', '/v1/home', '/v1/saved', '/v1/me/stats']) {
       const res = await app.inject({ method: 'GET', url });
       expect(res.statusCode, url).toBe(401);
       expect(res.json()).toEqual({
@@ -73,10 +73,24 @@ describe('categories', () => {
     expect(res.statusCode).toBe(200);
     // Ordered by sortOrder: talks (1) before history (2).
     expect(res.json().categories).toEqual([
-      { id: talks.id, name: 'Ярилцлага', slug: 'talks', episodeCount: 1 },
-      { id: history.id, name: 'Түүх', slug: 'history', episodeCount: 2 },
+      { id: talks.id, name: 'Ярилцлага', slug: 'talks', episodeCount: 1, coverUrl: null },
+      { id: history.id, name: 'Түүх', slug: 'history', episodeCount: 2, coverUrl: null },
     ]);
     expect(JSON.stringify(res.json())).not.toContain(empty.id);
+  });
+
+  it('signs the category photo when there is one (Home category cards)', async () => {
+    const user = await memberOn(app);
+    const cat = await makeCategory();
+    await testDb.category.update({
+      where: { id: cat.id },
+      data: { coverPath: 'categories/psy/cover.webp' },
+    });
+    await makeEpisode(cat.id);
+    const [category] = (await get('/v1/categories', user.accessToken)).json().categories;
+    expect(category.coverUrl).toMatch(
+      /^https:\/\/[^/]+\/categories\/psy\/cover\.webp\?token=[\w-]+&expires=\d+$/,
+    );
   });
 });
 
@@ -382,7 +396,13 @@ describe('home', () => {
     const user = await memberOn(app);
     const res = await get('/v1/home', user.accessToken);
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ continueListening: [], latest: [], categories: [], thisWeek: [] });
+    expect(res.json()).toEqual({
+      continueListening: [],
+      latest: [],
+      categories: [],
+      thisWeek: [],
+      nextRelease: null,
+    });
   });
 
   it('limits latest to 10', async () => {
@@ -392,6 +412,63 @@ describe('home', () => {
     const home = (await get('/v1/home', user.accessToken)).json();
     expect(home.latest).toHaveLength(10);
     expect(home.thisWeek).toHaveLength(10);
+  });
+
+  it('nextRelease: the earliest scheduled episode due within 7 days, nothing playable', async () => {
+    const user = await memberOn(app);
+    const cat = await makeCategory({ name: 'Сэтгэл зүй' });
+    const at = (ms: number) => new Date(now.getTime() + ms);
+    await makeEpisode(cat.id, { status: 'SCHEDULED', scheduledFor: at(5 * DAY), title: 'Later' });
+    await makeEpisode(cat.id, { status: 'SCHEDULED', scheduledFor: at(2 * DAY), title: 'Soon' });
+    await makeEpisode(cat.id, { status: 'SCHEDULED', scheduledFor: at(8 * DAY), title: 'Too far' });
+    await makeEpisode(cat.id, { status: 'SCHEDULED', scheduledFor: at(-HOUR), title: 'Overdue' });
+    await makeEpisode(cat.id, { status: 'DRAFT', scheduledFor: at(DAY), title: 'Draft' });
+
+    const home = (await get('/v1/home', user.accessToken)).json();
+    expect(home.nextRelease).toEqual({
+      title: 'Soon',
+      category: { id: cat.id, name: 'Сэтгэл зүй', slug: cat.slug },
+      scheduledFor: at(2 * DAY).toISOString(),
+    });
+    expect(Object.keys(home.nextRelease)).not.toContain('id');
+  });
+
+  it('nextRelease is null when nothing is scheduled within 7 days', async () => {
+    const user = await memberOn(app);
+    const cat = await makeCategory();
+    await makeEpisode(cat.id, {
+      status: 'SCHEDULED',
+      scheduledFor: new Date(now.getTime() + 7 * DAY + MIN),
+    });
+    expect((await get('/v1/home', user.accessToken)).json().nextRelease).toBeNull();
+  });
+});
+
+describe('GET /v1/me/stats (ADR-0039)', () => {
+  it('counts finished episodes and listening time from the saved progress', async () => {
+    const user = await memberOn(app);
+    const other = await memberOn(app, { email: 'other@example.com' });
+    const cat = await makeCategory();
+    const finished = await makeEpisode(cat.id, { durationSec: 1800 });
+    const half = await makeEpisode(cat.id, { durationSec: 2400 });
+    const noMedia = await makeEpisode(cat.id, { media: 'NONE' });
+    const progress = (userId: string, episodeId: string, positionSec: number, completed: boolean) =>
+      testDb.playbackProgress.create({ data: { userId, episodeId, positionSec, completed } });
+    await progress(user.userId, finished.id, 1790, true); // finished: the full 1800 s
+    await progress(user.userId, half.id, 600, false);
+    await progress(user.userId, noMedia.id, 120, true); // no duration known: the position
+    await progress(other.userId, half.id, 2000, true); // someone else's
+
+    const res = await get('/v1/me/stats', user.accessToken);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ completedEpisodes: 2, listenedSec: 1800 + 600 + 120 });
+  });
+
+  it('is zero for a new member, and works without access (the profile shows it)', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const res = await get('/v1/me/stats', user.accessToken);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ completedEpisodes: 0, listenedSec: 0 });
   });
 });
 

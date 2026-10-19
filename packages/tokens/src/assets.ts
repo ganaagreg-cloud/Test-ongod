@@ -21,7 +21,15 @@ export type IconName =
   | 'bell'
   | 'search'
   | 'chevronLeft'
-  | 'mail';
+  | 'chevronDown'
+  | 'mail'
+  | 'moon'
+  | 'skipBack'
+  | 'skipForward'
+  | 'settings'
+  | 'device'
+  | 'doc'
+  | 'logout';
 
 /** Path data per icon; `filled` icons are painted solid instead of stroked. */
 export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: true }> = {
@@ -49,6 +57,21 @@ export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: tr
   bell: { paths: ['M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z', 'M10 20.5a2 2 0 0 0 4 0'] },
   search: { paths: ['M11 4.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13z', 'M16 16l4 4'] },
   chevronLeft: { paths: ['M15 5l-7 7 7 7'] },
+  // Player.dc.html: close the player, sleep timer, -15 / +30 (the number is drawn on top).
+  chevronDown: { paths: ['M6 9l6 6 6-6'] },
+  moon: { paths: ['M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'] },
+  skipBack: { paths: ['M4 12a8 8 0 1 0 2.6-5.9', 'M4 3.5v4h4'] },
+  skipForward: { paths: ['M20 12a8 8 0 1 1-2.6-5.9', 'M20 3.5v4h-4'] },
+  // Profile menu.
+  settings: { paths: ['M4 7h9', 'M17 7h3', 'M15 5v4', 'M4 17h3', 'M11 17h9', 'M9 15v4'] },
+  device: {
+    paths: [
+      'M8 3h8a1.5 1.5 0 0 1 1.5 1.5v15A1.5 1.5 0 0 1 16 21H8a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 8 3z',
+      'M11 18h2',
+    ],
+  },
+  doc: { paths: ['M7 3h7l4 4v14H7z', 'M14 3v4h4', 'M9.5 12h5', 'M9.5 15.5h5'] },
+  logout: { paths: ['M10 5H5v14h5', 'M14 8l4 4-4 4', 'M18 12H9'] },
   mail: {
     paths: [
       'M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z',

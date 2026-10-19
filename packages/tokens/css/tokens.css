@@ -105,6 +105,7 @@
   --layout-border-width: 1px;
   --layout-icon-size: 24px;
   --layout-icon-size-small: 16px;
+  --layout-icon-size-large: 28px;
   --layout-tab-icon-size: 22px;
   --layout-badge-height: 24px;
   --layout-progress-bar-height: 3px;
@@ -140,6 +141,17 @@
   --layout-aurora-medium: 300px;
   --layout-aurora-small: 260px;
   --layout-duration-badge-height: 22px;
+  --layout-card-width: 220px;
+  --layout-player-play-button: 72px;
+  --layout-player-control: 52px;
+  --layout-player-overlay-button: 64px;
+  --layout-scrubber-track: 4px;
+  --layout-scrubber-thumb: 14px;
+  --layout-next-thumb-width: 128px;
+  --layout-access-ring: 64px;
+  --layout-access-ring-stroke: 4px;
+  --layout-day-tile-width: 56px;
+  --layout-day-tile-height: 64px;
   --aspect-artwork: 1.7777777777777777;
   --aspect-thumbnail: 1.3333333333333333;
   --motion-duration: 200ms;

@@ -67,6 +67,8 @@ export function ChipRow({
               key={item.id}
               accessibilityRole="tab"
               accessibilityState={{ selected }}
+              // The browser build reads only aria-* for the selected chip.
+              aria-selected={selected}
               hitSlop={{ top: slop, bottom: slop }}
               onPress={() => onChange(item.id)}
               onLayout={(e) => {
