@@ -5,6 +5,7 @@ import {
   createSubscriptionResponseSchema,
   currentSubscriptionResponseSchema,
   MAX_RECEIPT_BYTES,
+  mockPaymentRequestSchema,
   plansResponseSchema,
   subscriptionParamsSchema,
   subscriptionSchema,
@@ -14,6 +15,7 @@ import { z } from 'zod';
 import { authOf, type createAuthGuard } from '../auth/guard';
 import { AppError } from '../errors';
 import { sniffImage, type ReceiptType } from '../subscriptions/receipts';
+import type { PaymentService } from '../payments/service';
 import type { SubscriptionService, SubmitInput } from '../subscriptions/service';
 
 const isMultipartError = (err: unknown, code: string) =>
@@ -61,9 +63,13 @@ async function readSubmission(req: FastifyRequest): Promise<SubmitInput> {
 /** /v1/plans and /v1/subscriptions: the portal side of SPEC D. Never called by the mobile apps. */
 export async function subscriptionRoutes(
   app: FastifyInstance,
-  opts: { subscriptions: SubscriptionService; requireAuth: ReturnType<typeof createAuthGuard> },
+  opts: {
+    subscriptions: SubscriptionService;
+    payments: PaymentService;
+    requireAuth: ReturnType<typeof createAuthGuard>;
+  },
 ) {
-  const { subscriptions } = opts;
+  const { subscriptions, payments } = opts;
 
   // Public: the landing page shows the plan and its price before anyone signs up. The mobile
   // apps never call it (ADR-0006), and /v1/app-config still carries no prices.
@@ -86,6 +92,14 @@ export async function subscriptionRoutes(
     authed.get('/subscriptions/current', async (req) =>
       currentSubscriptionResponseSchema.parse(await subscriptions.current(authOf(req).user)),
     );
+
+    // Development only (404 in production): the mock checkout's buttons, ADR-0041.
+    authed.post('/subscriptions/:id/mock', async (req) => {
+      const { id } = subscriptionParamsSchema.parse(req.params);
+      const { outcome } = mockPaymentRequestSchema.parse(req.body);
+      const subscription = await payments.mockOutcome(authOf(req).user, id, outcome);
+      return z.object({ subscription: subscriptionSchema }).parse({ subscription });
+    });
 
     authed.post('/subscriptions/:id/submitted', async (req) => {
       const { id } = subscriptionParamsSchema.parse(req.params);

@@ -45,6 +45,14 @@ enum SubscriptionStatus {
   REVOKED
 }
 
+/// Who takes the money for a subscription: Wire (QPay), the development mock, or NONE for the old
+/// manual bank-transfer requests (ADR-0041).
+enum PaymentProvider {
+  WIRE
+  MOCK
+  NONE
+}
+
 enum PaymentMethod {
   BANK_TRANSFER
   QPAY
@@ -213,6 +221,10 @@ model Subscription {
   rejectReason   String?            @db.Text
   /// Set once the "access ends in 14 days" reminder was queued (SPEC F).
   reminderSentAt DateTime?
+  paymentProvider PaymentProvider   @default(NONE)
+  /// Wire payment intent id (QPay checkout); one subscription per intent.
+  wirePaymentIntentId String?       @unique
+  checkoutUrl    String?            @db.Text
   createdAt      DateTime           @default(now())
 
   user      User      @relation("SubscriptionUser", fields: [userId], references: [id])
@@ -237,6 +249,13 @@ model Payment {
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@index([subscriptionId])
+}
+
+/// Wire event ids already handled, so a retried webhook does its work once (ADR-0041).
+model WebhookEvent {
+  id         String   @id
+  type       String
+  receivedAt DateTime @default(now())
 }
 
 model Category {

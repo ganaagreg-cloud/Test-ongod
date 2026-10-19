@@ -1,6 +1,6 @@
 import type { AdminSubscriptionDto } from '@ongod/shared';
 import { isUniqueViolation, lockUser } from '../auth/service';
-import type { Db, Prisma } from '../db';
+import type { Db } from '../db';
 import { enqueueEmail } from '../email';
 import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
@@ -8,28 +8,12 @@ import { ubDate } from '../lib/dates';
 import { mn } from '../i18n/mn';
 import { enqueuePush } from '../push';
 import { toAdminSubscriptionDto } from '../subscriptions/dto';
+import { latestActiveEnd, refreshAccessUntil } from '../subscriptions/access';
 import { computePeriod, generateReferenceCode } from '../subscriptions/period';
 import { audit } from './audit';
 
-type Tx = Prisma.TransactionClient;
-
 const CODE_RETRIES = 5;
 const include = { plan: true, user: true, decidedBy: true } as const;
-
-/** The end of the latest ACTIVE period: the single source the `User.accessUntil` cache is rebuilt from. */
-async function latestActiveEnd(tx: Tx, userId: string): Promise<Date | null> {
-  const agg = await tx.subscription.aggregate({
-    where: { userId, status: 'ACTIVE' },
-    _max: { endsAt: true },
-  });
-  return agg._max.endsAt;
-}
-
-async function refreshAccessUntil(tx: Tx, userId: string): Promise<Date | null> {
-  const accessUntil = await latestActiveEnd(tx, userId);
-  await tx.user.update({ where: { id: userId }, data: { accessUntil } });
-  return accessUntil;
-}
 
 /**
  * Every change that grants or removes access (CLAUDE.md): one transaction, the user row locked

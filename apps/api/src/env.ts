@@ -108,7 +108,15 @@ export const envSchema = z
     /** Token Authentication key of the library's pull zone (signed HLS URLs). */
     BUNNY_STREAM_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
-    // Bank transfer details shown in the portal (SPEC D). Required in production.
+    // QPay through Wire (ADR-0041). Without WIRE_API_KEY the portal uses a mock checkout, which
+    // is refused in production unless ALLOW_MOCK_PAYMENTS=1 (never set that on the live site).
+    WIRE_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+    WIRE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+    /** `sandbox` while testing with an sk_test key; the live operator id (e.g. qpay) in production. */
+    WIRE_ALLOWED_OPERATORS: csv.transform((v) => (v.length > 0 ? v : ['sandbox'])),
+    ALLOW_MOCK_PAYMENTS: bool.default(false),
+
+    // Old bank-transfer details (ADR-0006, replaced by ADR-0041). No longer shown or required.
     BANK_NAME: z.preprocess(emptyToUndefined, z.string().optional()),
     BANK_ACCOUNT: z.preprocess(emptyToUndefined, z.string().optional()),
     BANK_ACCOUNT_HOLDER: z.preprocess(emptyToUndefined, z.string().optional()),
@@ -121,8 +129,6 @@ export const envSchema = z
      * the "stored" files are kept under <UPLOADS_DIR>/published instead.
      */
     UPLOADS_DIR: z.string().min(1).default('./data/uploads'),
-    /** Name shown in the authenticator app for admin TOTP. */
-    TOTP_ISSUER: z.string().min(1).max(50).default('Ongod Admin'),
     /** Expo push access token; only needed if "enhanced push security" is on in the Expo project. */
     EXPO_ACCESS_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
 
@@ -141,11 +147,6 @@ export const envSchema = z
     if (env.NODE_ENV === 'production') {
       for (const key of [...missingBunnyKeys(env), ...missingStreamKeys(env)]) {
         ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
-      }
-      for (const key of ['BANK_NAME', 'BANK_ACCOUNT', 'BANK_ACCOUNT_HOLDER'] as const) {
-        if (!env[key]) {
-          ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
-        }
       }
     }
     // Apple 4.8: Google on iOS needs Sign in with Apple, so the flag needs both (ADR-0009).

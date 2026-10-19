@@ -71,7 +71,7 @@ describe('API docs (development only)', () => {
     expect(login.security).toBeUndefined();
 
     expect(spec.paths['/v1/me'].get.security).toEqual([{ bearerAuth: [] }]);
-    expect(spec.paths['/v1/admin/dashboard'].get.description).toMatch(/TOTP/);
+    expect(spec.paths['/v1/admin/dashboard'].get.description).toMatch(/ADMIN or OWNER/);
     expect(spec.components.securitySchemes.bearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',

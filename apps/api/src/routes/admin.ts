@@ -15,63 +15,31 @@ import {
   listUsersQuerySchema,
   rejectRequestSchema,
   revokeRequestSchema,
-  totpSetupResponseSchema,
-  totpStatusResponseSchema,
-  totpVerifyRequestSchema,
 } from '@ongod/shared';
 import type { AdminQueries } from '../admin/queries';
 import type { DecisionService } from '../admin/decisions';
 import type { AdminGuards } from '../admin/guard';
-import type { TotpService } from '../admin/totp';
 import { authOf } from '../auth/guard';
-import type { AuthLimiter } from '../auth/rate-limit';
 
 /**
- * /v1/admin/* (SPEC E). The TOTP routes need an ADMIN/OWNER session; everything else also needs
- * a session that passed the TOTP check. Admin responses are never cached.
+ * /v1/admin/* (SPEC E). Needs an ADMIN/OWNER session (password login only, ADR-0040).
+ * Admin responses are never cached.
  */
 export async function adminRoutes(
   app: FastifyInstance,
   opts: {
     guards: AdminGuards;
-    totp: TotpService;
     decisions: DecisionService;
     queries: AdminQueries;
-    limiter: AuthLimiter;
   },
 ) {
-  const { guards, totp, decisions, queries, limiter } = opts;
+  const { guards, decisions, queries } = opts;
   app.addHook('onSend', async (_req, reply) => {
     reply.header('cache-control', 'private, no-store');
   });
 
-  // ---- 2FA: reachable before the session is verified ----
-  await app.register(async (twoFactor) => {
-    twoFactor.addHook('preHandler', guards.requireAdmin);
-
-    twoFactor.get('/admin/totp', async (req) => {
-      const { user, session } = authOf(req);
-      return totpStatusResponseSchema.parse(totp.status(user, session));
-    });
-
-    twoFactor.post('/admin/totp/setup', async (req) => {
-      const { user } = authOf(req);
-      limiter.check(req, 'totp', user.id);
-      return totpSetupResponseSchema.parse(await totp.setup(user));
-    });
-
-    twoFactor.post('/admin/totp/verify', async (req, reply) => {
-      const { user, session } = authOf(req);
-      const body = totpVerifyRequestSchema.parse(req.body);
-      limiter.check(req, 'totp', user.id);
-      await totp.verify(user, session, body.code);
-      return reply.code(204).send();
-    });
-  });
-
-  // ---- Everything else: ADMIN/OWNER with a TOTP-verified session ----
   await app.register(async (admin) => {
-    admin.addHook('preHandler', guards.requireAdminTotp);
+    admin.addHook('preHandler', guards.requireAdmin);
 
     admin.get('/admin/dashboard', async () =>
       dashboardResponseSchema.parse(await queries.dashboard()),

@@ -62,23 +62,10 @@ export const mn = {
     deviceLimitTitle: 'Төхөөрөмжийн тоо дүүрсэн байна',
     deviceLimitText: 'Нэг төхөөрөмжийг хасаад нэвтэрнэ. Нууц үг баталгаажуулалт болно.',
     removeAndLogin: 'Хасаад нэвтрэх',
+    wrongAccount: 'Өөр бүртгэлээр нэвтрэх',
     device: (platform: string, model: string | null) =>
       model ? `${platform} · ${model}` : platform,
     lastSeen: (date: string) => `Сүүлд: ${date}`,
-  },
-
-  totp: {
-    setupTitle: 'Хоёр шатлалт баталгаажуулалт тохируулах',
-    setupText:
-      'Authenticator апп (Google Authenticator, Microsoft Authenticator гэх мэт)-аараа доорх QR кодыг уншуулна уу. Дараа нь апп-ын 6 оронтой кодыг оруулна.',
-    qrAlt: 'Authenticator апп-д зориулсан QR код',
-    manualKey: 'QR уншуулах боломжгүй бол энэ түлхүүрийг гараар оруулна:',
-    verifyTitle: 'Баталгаажуулах код',
-    verifyText: 'Authenticator апп-ын 6 оронтой кодыг оруулна уу.',
-    code: 'Код',
-    submit: 'Баталгаажуулах',
-    startSetup: 'QR код авах',
-    wrongAccount: 'Өөр бүртгэлээр нэвтрэх',
   },
 
   dashboard: {

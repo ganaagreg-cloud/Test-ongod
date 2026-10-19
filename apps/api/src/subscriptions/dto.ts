@@ -1,6 +1,4 @@
-import type { AdminSubscriptionDto, BankDetails, SubscriptionDto } from '@ongod/shared';
-import type { Env } from '../env';
-import { AppError } from '../errors';
+import type { AdminSubscriptionDto, SubscriptionDto } from '@ongod/shared';
 import type { Plan, Subscription, User } from '../generated/prisma/client';
 
 export type SubscriptionWithPlan = Subscription & { plan: Plan };
@@ -20,6 +18,8 @@ export const toSubscriptionDto = (s: SubscriptionWithPlan): SubscriptionDto => (
   startsAt: iso(s.startsAt),
   endsAt: iso(s.endsAt),
   rejectReason: s.rejectReason,
+  paymentProvider: s.paymentProvider,
+  checkoutUrl: s.status === 'PENDING_PAYMENT' ? s.checkoutUrl : null,
   createdAt: s.createdAt.toISOString(),
 });
 
@@ -41,15 +41,3 @@ export const toAdminSubscriptionDto = (
   decidedBy: s.decidedBy ? { id: s.decidedBy.id, username: s.decidedBy.username } : null,
   decidedAt: iso(s.decidedAt),
 });
-
-/** The bank account from env. A missing value is a configuration error, never shown as empty text. */
-export function bankDetails(env: Env): BankDetails {
-  if (!env.BANK_NAME || !env.BANK_ACCOUNT || !env.BANK_ACCOUNT_HOLDER) {
-    throw new AppError(503, 'SERVICE_UNAVAILABLE');
-  }
-  return {
-    bankName: env.BANK_NAME,
-    accountNumber: env.BANK_ACCOUNT,
-    accountHolder: env.BANK_ACCOUNT_HOLDER,
-  };
-}

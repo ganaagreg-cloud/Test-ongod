@@ -14,8 +14,8 @@ Paid yearly access to a library of episodes. Each episode has one media file: au
 Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fastify-prisma-mysql-single-process|ADR-0002]] · [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]] · [[ADR-0014-admin-light-theme|ADR-0014]]
 
 - Mobile app (iOS + Android): sign up, log in, browse, play, save, profile, settings, delete account. No payment UI.
-- Portal (web, mobile-first): sign up, log in, plans, bank transfer instructions, "Төлсөн" form, subscription status, privacy policy, terms, account deletion page.
-- Admin (web): payments queue, users, episodes, categories, uploads, dashboard, audit log. Roles OWNER and ADMIN. TOTP 2FA required.
+- Portal (web, mobile-first): sign up, log in, plans, pay with QPay (via Wire, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]), subscription status, privacy policy, terms, account deletion page.
+- Admin (web): payments queue, users, episodes, categories, uploads, dashboard, audit log. Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
 
 # Workflows
 
@@ -27,9 +27,9 @@ B. Login: identifier (username OR email) + password + deviceId. Max 2 devices pe
 
 C. Google / Apple (optional, behind feature flag SOCIAL_LOGIN): verify the ID token. Existing identity -> log in. Email belongs to an existing password user -> LINK_REQUIRED (log in with password once, then link). New -> user status PENDING_PROFILE, email marked verified, then the mandatory "complete profile" step: username (prefilled with email), password, last name, first name, phone. Everything else returns PROFILE_INCOMPLETE until this is done. If Google sign-in is offered on iOS, Sign in with Apple must also be offered on iOS.
 
-D. Subscribe (portal only): pick a plan -> Subscription PENDING_PAYMENT with amount and referenceCode (ONG-XXXXX, no ambiguous characters). The page shows bank name, account, holder, amount and transfer description = referenceCode, all with copy buttons, plus a note that writing the username also works. The user taps "Төлсөн" (optional payer note, transfer time, receipt image <= 5 MB) -> PAYMENT_SUBMITTED. One open request per user. PENDING_PAYMENT expires after 7 days.
+D. Subscribe (portal only): pick a plan -> Subscription PENDING_PAYMENT with amount and referenceCode (ONG-XXXXX, no ambiguous characters) and a Wire payment intent + hosted QPay checkout; the member is sent to the checkout and comes back to a status page that waits for the payment. A verified payment (Wire webhook, or the status poll) turns the Subscription ACTIVE at once: period as in E, Payment(QPAY), user.accessUntil, email + push, AuditLog; no admin step. Cancelled or failed payment -> CANCELLED. One open request per user. PENDING_PAYMENT expires after 7 days. Without Wire keys (development) a mock checkout stands in; it is refused in production. Old bank-transfer requests (PAYMENT_SUBMITTED) are still decided in the admin (E). Decision: [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]].
 
-E. Admin approval: queue of PAYMENT_SUBMITTED, searchable by referenceCode, username, email, phone or name. Approve -> the period starts at max(now, current access end) and ends after the plan's days; a Payment row is created; the user.accessUntil cache is updated; email + push to the user; AuditLog. Reject with a reason -> email. Manual grant (gift, store-reviewer demo account) and revoke (refund/fraud). Double approval must be impossible.
+E. Admin approval (old bank-transfer requests and manual grants only; QPay payments activate by themselves): queue of PAYMENT_SUBMITTED, searchable by referenceCode, username, email, phone or name. Approve -> the period starts at max(now, current access end) and ends after the plan's days; a Payment row is created; the user.accessUntil cache is updated; email + push to the user; AuditLog. Reject with a reason -> email. Manual grant (gift, store-reviewer demo account) and revoke (refund/fraud). Double approval must be impossible.
 
 F. Access ends: 14 days before -> push + email, once. At expiry -> playback is refused; the app shows the no-access state.
 
@@ -49,8 +49,9 @@ Session(id, userId, deviceId, refreshTokenHash, familyId, expiresAt, revokedAt?,
 Device(id, userId, deviceId, platform, model?, pushToken?, lastSeenAt; uniq(userId, deviceId))
 EmailCode(id, userId, purpose VERIFY|RESET|CHANGE_EMAIL, codeHash, newEmail?, expiresAt, attempts, usedAt?)
 Plan(id, name, durationDays, priceMnt, active)
-Subscription(id, userId, planId, status PENDING_PAYMENT|PAYMENT_SUBMITTED|ACTIVE|EXPIRED|REJECTED|CANCELLED|REVOKED, referenceCode uniq, amountMnt, payerNote?, transferAt?, proofImagePath?, submittedAt?, startsAt?, endsAt?, decidedById?, decidedAt?, rejectReason?, createdAt)
+Subscription(id, userId, planId, status PENDING_PAYMENT|PAYMENT_SUBMITTED|ACTIVE|EXPIRED|REJECTED|CANCELLED|REVOKED, referenceCode uniq, amountMnt, payerNote?, transferAt?, proofImagePath?, submittedAt?, startsAt?, endsAt?, decidedById?, decidedAt?, rejectReason?, paymentProvider WIRE|MOCK|NONE, wirePaymentIntentId? uniq, checkoutUrl?, createdAt)
 Payment(id, subscriptionId, method BANK_TRANSFER|QPAY|MANUAL_GRANT, amountMnt, providerRef?, status, createdAt)
+WebhookEvent(id, type, receivedAt) (Wire event ids, so a retried webhook is handled once)
 Category(id, name, slug uniq, sortOrder, coverPath?)
 Episode(id, categoryId, title, description, coverPath, status DRAFT|SCHEDULED|PUBLISHED|ARCHIVED, scheduledFor?, publishedAt?, createdAt)
 MediaAsset(id, episodeId, kind AUDIO|VIDEO, provider BUNNY_STORAGE|BUNNY_STREAM, path, status UPLOADING|PROCESSING|READY|FAILED, failReason?, sizeBytes?, durationSec?)
@@ -65,7 +66,7 @@ AppConfig(key, value)
 
 Requests: [[changes]]
 
-QPay, offline downloads, comments/social feed, free episodes, quizzes, live, multiple creators, bank CSV matching (unless agreed).
+Offline downloads, comments/social feed, free episodes, quizzes, live, multiple creators, bank CSV matching (unless agreed).
 
 # Acceptance tests (must pass before launch)
 

@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { PlanCard } from '../components/PlanCard';
 import { mn } from '../i18n/mn';
+import { openCheckout } from '../lib/checkout';
 import { useAsync } from '../lib/useAsync';
 import { usePage } from '../lib/usePage';
 
@@ -27,8 +28,9 @@ export default function Plans() {
     setError(undefined);
     setNeedsVerify(false);
     try {
-      await createSubscription(planId);
-      navigate('/pay');
+      const { subscription } = await createSubscription(planId);
+      if (subscription.checkoutUrl) openCheckout(subscription.checkoutUrl, navigate);
+      else navigate('/pay');
     } catch (err) {
       if (err instanceof ApiError && err.code === 'OPEN_SUBSCRIPTION_EXISTS') {
         navigate('/pay');

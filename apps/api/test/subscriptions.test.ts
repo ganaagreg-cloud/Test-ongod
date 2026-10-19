@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PAYMENT_TEST, testDb } from './helpers';
+import { testDb } from './helpers';
 import { DAY, call, jpeg, makeMember, makePlan, multipart, paymentApp, png } from './admin-helpers';
 
 let app: FastifyInstance;
@@ -61,7 +61,7 @@ describe('GET /v1/plans', () => {
 });
 
 describe('POST /v1/subscriptions', () => {
-  it('creates PENDING_PAYMENT with amount, an ONG- reference code and the bank details', async () => {
+  it('creates PENDING_PAYMENT with amount, an ONG- reference code and a QPay checkout (mock without Wire keys)', async () => {
     const plan = await makePlan({ priceMnt: 120_000 });
     const user = await makeMember(app);
 
@@ -76,11 +76,11 @@ describe('POST /v1/subscriptions', () => {
     });
     // No look-alike characters (0/O, 1/I/L) in the code people type into a bank app.
     expect(body.subscription.referenceCode).toMatch(/^ONG-[2-9A-HJKMNP-Z]{5}$/);
-    expect(body.bank).toEqual({
-      bankName: PAYMENT_TEST.BANK_NAME,
-      accountNumber: PAYMENT_TEST.BANK_ACCOUNT,
-      accountHolder: PAYMENT_TEST.BANK_ACCOUNT_HOLDER,
+    expect(body.subscription).toMatchObject({
+      paymentProvider: 'MOCK',
+      checkoutUrl: `/pay/mock/${body.subscription.id}`,
     });
+    expect(body.bank).toBeUndefined();
   });
 
   it('refuses an unverified email: EMAIL_NOT_VERIFIED, nothing is created', async () => {
@@ -93,7 +93,7 @@ describe('POST /v1/subscriptions', () => {
     expect(await testDb.subscription.count()).toBe(0);
   });
 
-  it('allows one open request per user, also under parallel requests', async () => {
+  it('allows one open request per user, also under parallel requests: the same plan returns the same request', async () => {
     const plan = await makePlan();
     const user = await makeMember(app);
 
@@ -102,11 +102,9 @@ describe('POST /v1/subscriptions', () => {
         call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id }),
       ),
     );
-    const codes = results.map((r) => r.statusCode).sort();
-    expect(codes).toEqual([201, 409, 409]);
-    expect(results.find((r) => r.statusCode === 409)!.json().error.code).toBe(
-      'OPEN_SUBSCRIPTION_EXISTS',
-    );
+    expect(results.map((r) => r.statusCode)).toEqual([201, 201, 201]);
+    const ids = new Set(results.map((r) => r.json().subscription.id as string));
+    expect(ids.size).toBe(1);
     expect(await testDb.subscription.count()).toBe(1);
   });
 
@@ -193,10 +191,10 @@ describe('GET /v1/subscriptions/current', () => {
   it('is empty for a user who never applied', async () => {
     const user = await makeMember(app);
     const res = await call(app, 'GET', '/v1/subscriptions/current', user.accessToken);
-    expect(res.json()).toEqual({ subscription: null, accessUntil: null, bank: null });
+    expect(res.json()).toEqual({ subscription: null, accessUntil: null });
   });
 
-  it('shows the open request with bank details only while payment is still due', async () => {
+  it('shows the open request, with the checkout link only while payment is still due', async () => {
     const plan = await makePlan();
     const user = await makeMember(app);
     const created = (
@@ -205,7 +203,8 @@ describe('GET /v1/subscriptions/current', () => {
 
     let res = (await call(app, 'GET', '/v1/subscriptions/current', user.accessToken)).json();
     expect(res.subscription.id).toBe(created.id);
-    expect(res.bank).not.toBeNull();
+    expect(res.subscription.checkoutUrl).toBe(created.checkoutUrl);
+    expect(res.subscription.checkoutUrl).not.toBeNull();
 
     await testDb.subscription.update({
       where: { id: created.id },
@@ -213,7 +212,7 @@ describe('GET /v1/subscriptions/current', () => {
     });
     res = (await call(app, 'GET', '/v1/subscriptions/current', user.accessToken)).json();
     expect(res.subscription.status).toBe('PAYMENT_SUBMITTED');
-    expect(res.bank).toBeNull();
+    expect(res.subscription.checkoutUrl).toBeNull();
   });
 
   it("never shows another user's subscription", async () => {
@@ -235,8 +234,24 @@ describe('POST /v1/subscriptions/:id/submitted', () => {
     const { subscription } = (
       await call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id })
     ).json();
+    // "Төлсөн" is the old bank-transfer path: make this an old-style request (ADR-0041).
+    await testDb.subscription.update({
+      where: { id: subscription.id },
+      data: { paymentProvider: 'NONE', checkoutUrl: null },
+    });
     return { user, subscription };
   }
+
+  it('refuses a QPay request: it is paid at the checkout, not with "Төлсөн"', async () => {
+    const plan = await makePlan();
+    const user = await makeMember(app);
+    const { subscription } = (
+      await call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id })
+    ).json();
+    const res = await submit(subscription.id, user.accessToken, { transferAt: transferAt() });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('SUBSCRIPTION_STATE');
+  });
 
   const submit = async (
     id: string,

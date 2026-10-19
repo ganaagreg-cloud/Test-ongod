@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
@@ -6,7 +5,6 @@ import type { mn as Mn } from '../src/i18n/mn';
 
 export const ORIGIN = process.env.ADMIN_E2E_URL ?? 'http://localhost:3000';
 export const MAILPIT = 'http://localhost:8025';
-const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 
 export const shot = (name: string) =>
   fileURLToPath(new URL(`../../../docs/screens/${name}.png`, import.meta.url));
@@ -22,18 +20,6 @@ export function ownerLogin(): { identifier: string; password: string } {
   );
   if (!env.SEED_OWNER_PASSWORD) throw new Error('SEED_OWNER_PASSWORD is not set in .env');
   return { identifier: 'owner', password: env.SEED_OWNER_PASSWORD };
-}
-
-/** The current admin TOTP code of the local owner (the same helper `pnpm dev:totp` uses). */
-export function totpCode(): string {
-  const out = execFileSync('npx', ['pnpm', '--silent', 'dev:totp'], {
-    cwd: repoRoot,
-    shell: true,
-    encoding: 'utf8',
-  });
-  const code = /\b(\d{6})\b/.exec(out)?.[1];
-  if (!code) throw new Error('dev:totp printed no code');
-  return code;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -134,7 +120,7 @@ export async function customerWithSubmittedPayment(tag: string): Promise<Custome
   };
 }
 
-/** Signs in as the owner: password, then the authenticator code (setting it up the first time). */
+/** Signs in as the owner with the password. */
 export async function signIn(page: Page, mn: typeof Mn) {
   const { identifier, password } = ownerLogin();
   await page.goto('');
@@ -142,21 +128,15 @@ export async function signIn(page: Page, mn: typeof Mn) {
   await page.getByLabel(mn.login.password).fill(password);
   await page.getByRole('button', { name: mn.login.submit }).click();
 
-  const codeField = page.getByLabel(mn.totp.code);
+  const ready = page.getByRole('navigation', { name: mn.nav.label });
   // Every run is a new browser, i.e. a new device. At the limit of two, use the login screen's
   // "remove one and sign in" button (this is also how an admin frees a slot).
   const full = page.getByText(mn.login.deviceLimitTitle);
-  await codeField.or(full).waitFor();
+  await ready.or(full).waitFor();
   if (await full.isVisible()) {
     await page.getByRole('button', { name: mn.login.removeAndLogin }).first().click();
   }
-  await codeField.waitFor();
-  // On the setup screen the secret is stored when the QR code is shown, so dev:totp can read it.
-  if (await page.getByRole('heading', { name: mn.totp.setupTitle }).isVisible()) {
-    await page.locator('.admin-auth__secret').waitFor();
-  }
-  await codeField.fill(totpCode());
-  await page.getByRole('button', { name: mn.totp.submit }).click();
+  await ready.waitFor();
 }
 
 /**

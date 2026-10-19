@@ -1,33 +1,24 @@
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  loginResponseSchema,
-  meResponseSchema,
-  totpSetupResponseSchema,
-  totpStatusResponseSchema,
-  type UserDto,
-} from '@ongod/shared';
+import { loginResponseSchema, meResponseSchema, type UserDto } from '@ongod/shared';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { api, deviceId, refreshSession, session } from '../api/client';
 
 /**
- * Where the admin is on the way in (SPEC: roles ADMIN and OWNER, TOTP 2FA required, ADR-0022):
- * password login -> role check -> authenticator setup (first time) or code -> the app.
+ * Where the admin is on the way in (SPEC: roles ADMIN and OWNER, password login only, ADR-0040):
+ * password login -> role check -> the app.
  */
 export type Gate =
   | { stage: 'loading' }
   | { stage: 'anonymous' }
   | { stage: 'forbidden'; user: UserDto }
-  | { stage: 'totp-setup'; user: UserDto }
-  | { stage: 'totp-verify'; user: UserDto }
   | { stage: 'ready'; user: UserDto };
 
 interface AuthApi {
@@ -38,11 +29,6 @@ interface AuthApi {
     removeDeviceId?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
-  /** Fetches the QR data for the first-time setup. */
-  startTotpSetup: () => Promise<{ secret: string; otpauthUri: string }>;
-  verifyTotp: (code: string) => Promise<void>;
-  /** Re-reads the 2FA state, e.g. after the API said TOTP_REQUIRED mid-session. */
-  recheck: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthApi | null>(null);
@@ -60,11 +46,9 @@ export function useAdmin(): UserDto {
   return gate.user;
 }
 
-async function gateFor(user: UserDto): Promise<Gate> {
+function gateFor(user: UserDto): Gate {
   if (user.role !== 'ADMIN' && user.role !== 'OWNER') return { stage: 'forbidden', user };
-  const status = await api('/admin/totp', { schema: totpStatusResponseSchema });
-  if (!status.enabled) return { stage: 'totp-setup', user };
-  return status.verified ? { stage: 'ready', user } : { stage: 'totp-verify', user };
+  return { stage: 'ready', user };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -87,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const { user } = await api('/me', { schema: meResponseSchema });
-      const next = await gateFor(user);
+      const next = gateFor(user);
       if (!cancelled) setGate(next);
     })().catch(() => {
       if (!cancelled) setGate({ stage: 'anonymous' });
@@ -113,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       auth: false,
     });
     session.start(res.accessToken);
-    setGate(await gateFor(res.user));
+    setGate(gateFor(res.user));
   }, []);
 
   const logout = useCallback(async () => {
@@ -125,40 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signedOut();
   }, [signedOut]);
 
-  // One setup request at a time: two calls would each replace the stored secret, and the QR code
-  // on screen would no longer match the one the server keeps.
-  const setupRequest = useRef<ReturnType<AuthApi['startTotpSetup']>>(undefined);
-  const startTotpSetup = useCallback(() => {
-    setupRequest.current ??= api('/admin/totp/setup', {
-      method: 'POST',
-      schema: totpSetupResponseSchema,
-    }).finally(() => {
-      setupRequest.current = undefined;
-    });
-    return setupRequest.current;
-  }, []);
-
-  const recheck = useCallback(async () => {
-    const { user } = await api('/me', { schema: meResponseSchema });
-    setGate(await gateFor(user));
-  }, []);
-
-  useEffect(() => {
-    session.onTotpNeeded(() => void recheck().catch(() => undefined));
-    return () => session.onTotpNeeded(undefined);
-  }, [recheck]);
-
-  const verifyTotp = useCallback(
-    async (code: string) => {
-      await api('/admin/totp/verify', { method: 'POST', body: { code } });
-      await recheck();
-    },
-    [recheck],
-  );
-
-  const value = useMemo<AuthApi>(
-    () => ({ gate, login, logout, startTotpSetup, verifyTotp, recheck }),
-    [gate, login, logout, startTotpSetup, verifyTotp, recheck],
-  );
+  const value = useMemo<AuthApi>(() => ({ gate, login, logout }), [gate, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

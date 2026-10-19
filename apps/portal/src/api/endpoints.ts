@@ -80,19 +80,10 @@ export const getCurrentSubscription = (signal?: AbortSignal) =>
     ...(signal ? { signal } : {}),
   });
 
-/** "Төлсөн": multipart with the optional receipt image. */
-export const submitPayment = (
-  id: string,
-  fields: { transferAt: string; payerNote?: string },
-  receipt?: File,
-) => {
-  const form = new FormData();
-  form.append('transferAt', fields.transferAt);
-  if (fields.payerNote) form.append('payerNote', fields.payerNote);
-  if (receipt) form.append('receipt', receipt);
-  return api(`/subscriptions/${id}/submitted`, {
+/** Development only: the mock checkout's two buttons (the API answers 404 in production). */
+export const mockPayment = (id: string, outcome: 'success' | 'cancel') =>
+  api(`/subscriptions/${id}/mock`, {
     method: 'POST',
-    form,
+    body: { outcome },
     schema: z.object({ subscription: subscriptionSchema }),
   });
-};

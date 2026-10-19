@@ -17,7 +17,7 @@ import {
 
 // The admin against the real API, database and Mailpit (the API must serve the admin build:
 // SERVE_STATIC=true after `pnpm build`). Creates two e2e customers, one category and one episode
-// in the dev database. One serial run with one session: a TOTP code works once per 30 s.
+// in the dev database. One serial run with one session.
 const up = async (url: string) =>
   fetch(url).then(
     (r) => r.ok,
@@ -306,7 +306,7 @@ test('episodes: create, cover, and an audio upload that resumes after a page ref
     .toBeLessThan(audio.size);
 
   await page.reload();
-  // Restoring the session takes a refresh + /me + /admin/totp round trip.
+  // Restoring the session takes a refresh + /me round trip.
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({
     timeout: 20_000,
   });

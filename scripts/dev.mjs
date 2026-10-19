@@ -157,6 +157,6 @@ for (const [name, url, note] of rows) {
 say(
   color(
     2,
-    `\n  Seeded logins: owner, bat, demo, saraa, tuya, temuujin (passwords: SEED_* in .env)\n  Admin 2FA code for /docs: pnpm dev:totp   ·   Stop: Ctrl+C   ·   Containers: pnpm dev:down\n`,
+    `\n  Seeded logins: owner, bat, demo, saraa, tuya, temuujin (passwords: SEED_* in .env)\n  Stop: Ctrl+C   ·   Containers: pnpm dev:down\n`,
   ),
 );

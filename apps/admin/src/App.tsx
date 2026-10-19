@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router';
 import { Skeleton } from '@ongod/ui-web';
 import { useAuth } from './auth/AuthContext';
 import { LoginPage } from './auth/LoginPage';
-import { TotpSetupPage, TotpVerifyPage } from './auth/TotpPage';
 import { Shell } from './layout/Shell';
 import { CategoriesPage } from './pages/Categories';
 import { DashboardPage } from './pages/Dashboard';
@@ -43,10 +42,6 @@ export function App() {
       return <LoginPage />;
     case 'forbidden':
       return <LoginPage forbidden={gate} />;
-    case 'totp-setup':
-      return <TotpSetupPage />;
-    case 'totp-verify':
-      return <TotpVerifyPage />;
     case 'ready':
       return (
         <Routes>

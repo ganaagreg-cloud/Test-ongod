@@ -101,7 +101,7 @@ describe('audio upload over tus (SPEC G, ADR-0010)', () => {
     expect((await audioAssets())[0]).toMatchObject({ status: 'READY', durationSec: 3 });
   });
 
-  it('is for admins with TOTP only', async () => {
+  it('is for admins only', async () => {
     const file = wavFile(1);
     expect((await tusClient(base, '').create(file.length, meta())).status).toBe(401);
 
@@ -110,9 +110,6 @@ describe('audio upload over tus (SPEC G, ADR-0010)', () => {
       403,
     );
 
-    const noTotp = await makeAdmin(app, { email: 'x@example.com', totp: 'enabled' });
-    const blocked = await tusClient(base, noTotp.accessToken).create(file.length, meta());
-    expect(blocked.status).toBe(403);
     expect(await audioAssets()).toHaveLength(0);
   });
 

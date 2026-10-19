@@ -82,6 +82,7 @@ export async function resetDb(db = testDb) {
     db.authIdentity.deleteMany(),
     db.user.deleteMany(),
     db.job.deleteMany(),
+    db.webhookEvent.deleteMany(),
     db.appConfig.deleteMany(),
   ]);
 }

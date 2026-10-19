@@ -298,48 +298,6 @@
 }
 
 /* ---------- Pay ---------- */
-.portal-copylist {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-}
-
-.portal-copy {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding-block: var(--space-xs);
-  border-bottom: var(--layout-border-width) solid var(--color-hairline);
-}
-
-.portal-copy__text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.portal-copy__label {
-  color: var(--color-text-secondary);
-  font: var(--text-small-weight) var(--text-small-size) / var(--text-small-line)
-    var(--text-small-font);
-}
-
-.portal-copy__value {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font: var(--text-body-weight) var(--text-body-size) / var(--text-body-line) var(--text-body-font);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.portal-copy--big .portal-copy__value {
-  color: var(--color-accent-text);
-  font: var(--text-display-weight) var(--text-display-size) / var(--text-display-line)
-    var(--text-display-font);
-  letter-spacing: var(--space-xxs);
-}
-
 /* ---------- Account ---------- */
 .portal-facts {
   display: flex;

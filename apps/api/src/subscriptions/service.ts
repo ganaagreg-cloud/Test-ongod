@@ -1,16 +1,11 @@
-import {
-  PENDING_PAYMENT_TTL_DAYS,
-  type BankDetails,
-  type PlanDto,
-  type SubscriptionDto,
-} from '@ongod/shared';
+import { PENDING_PAYMENT_TTL_DAYS, type PlanDto, type SubscriptionDto } from '@ongod/shared';
 import { isUniqueViolation, lockUser } from '../auth/service';
 import type { Db } from '../db';
-import type { Env } from '../env';
 import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
 import { DAY_MS } from '../lib/dates';
-import { bankDetails, toSubscriptionDto } from './dto';
+import type { PaymentService } from '../payments/service';
+import { toSubscriptionDto } from './dto';
 import { generateReferenceCode } from './period';
 import type { ReceiptStore, ReceiptType } from './receipts';
 
@@ -25,14 +20,14 @@ export interface SubmitInput {
   receipt?: { data: Buffer; type: ReceiptType } | undefined;
 }
 
-/** Portal side of SPEC D: plans, apply, status, "Төлсөн". */
+/** Portal side of SPEC D: plans, apply (QPay checkout), status. The old "Төлсөн" path stays for old requests. */
 export function createSubscriptionService(deps: {
   db: Db;
-  env: Env;
+  payments: PaymentService;
   receipts: ReceiptStore;
   now?: (() => Date) | undefined;
 }) {
-  const { db, env, receipts } = deps;
+  const { db, payments, receipts } = deps;
   const now = deps.now ?? (() => new Date());
   const pendingCutoff = (at: Date) => new Date(at.getTime() - PENDING_PAYMENT_TTL_DAYS * DAY_MS);
 
@@ -50,13 +45,13 @@ export function createSubscriptionService(deps: {
       }));
     },
 
-    /** SPEC D: verified email only, one open request per user. */
-    async create(
-      user: User,
-      planId: string,
-    ): Promise<{ subscription: SubscriptionDto; bank: BankDetails }> {
+    /**
+     * SPEC D: verified email only, one open request per user. Gives the request its QPay checkout
+     * (ADR-0041); asking again for the same plan returns the same request and checkout.
+     */
+    async create(user: User, planId: string): Promise<{ subscription: SubscriptionDto }> {
       if (!user.emailVerifiedAt) throw new AppError(403, 'EMAIL_NOT_VERIFIED');
-      const bank = bankDetails(env);
+      payments.mode(); // 503 now, before a request row exists, if no payment method is configured
       const plan = await db.plan.findFirst({ where: { id: planId, active: true } });
       if (!plan) throw new AppError(404, 'NOT_FOUND');
 
@@ -77,8 +72,17 @@ export function createSubscriptionService(deps: {
             });
             const open = await tx.subscription.findFirst({
               where: { userId: user.id, status: { in: [...OPEN_STATUSES] } },
+              include: { plan: true },
             });
             if (open) {
+              // A payment may already be running on it, so only the same unpaid request is reused.
+              if (
+                open.status === 'PENDING_PAYMENT' &&
+                open.paymentProvider !== 'NONE' &&
+                open.planId === plan.id
+              ) {
+                return open;
+              }
               throw new AppError(409, 'OPEN_SUBSCRIPTION_EXISTS', undefined, {
                 subscriptionId: open.id,
               });
@@ -89,12 +93,16 @@ export function createSubscriptionService(deps: {
                 planId: plan.id,
                 referenceCode: generateReferenceCode(),
                 amountMnt: plan.priceMnt,
+                // Set now, so a failed Wire call leaves a request the retry can pick up again.
+                paymentProvider: payments.mode(),
                 createdAt: at,
               },
               include: { plan: true },
             });
           });
-          return { subscription: toSubscriptionDto(subscription), bank };
+          // The Wire call is outside the transaction: it is slow and the member is waiting for it.
+          const ready = await payments.startCheckout(subscription);
+          return { subscription: toSubscriptionDto(ready) };
         } catch (err) {
           // Two users drew the same code: draw again.
           if (isUniqueViolation(err) && attempt < CODE_RETRIES) continue;
@@ -106,7 +114,7 @@ export function createSubscriptionService(deps: {
     /** The open request, else the latest subscription, plus the access end. */
     async current(user: User) {
       const include = { plan: true } as const;
-      const sub =
+      const find = async () =>
         (await db.subscription.findFirst({
           where: { userId: user.id, status: { in: [...OPEN_STATUSES] } },
           orderBy: { createdAt: 'desc' },
@@ -117,10 +125,23 @@ export function createSubscriptionService(deps: {
           orderBy: { createdAt: 'desc' },
           include,
         }));
+      let sub = await find();
+      let accessUntil = user.accessUntil;
+      if (sub?.status === 'PENDING_PAYMENT' && sub.paymentProvider === 'WIRE') {
+        // Ask Wire, so a paid request turns ACTIVE even before the webhook arrives.
+        await payments.sync(sub);
+        sub = await find();
+        if (sub?.status === 'ACTIVE') {
+          const fresh = await db.user.findUnique({
+            where: { id: user.id },
+            select: { accessUntil: true },
+          });
+          accessUntil = fresh?.accessUntil ?? null;
+        }
+      }
       return {
         subscription: sub ? toSubscriptionDto(sub) : null,
-        accessUntil: user.accessUntil?.toISOString() ?? null,
-        bank: sub?.status === 'PENDING_PAYMENT' ? bankDetails(env) : null,
+        accessUntil: accessUntil?.toISOString() ?? null,
       };
     },
 
@@ -134,7 +155,10 @@ export function createSubscriptionService(deps: {
 
       const found = await db.subscription.findFirst({ where: { id, userId: user.id } });
       if (!found) throw new AppError(404, 'NOT_FOUND');
-      if (found.status !== 'PENDING_PAYMENT') throw new AppError(409, 'SUBSCRIPTION_STATE');
+      // "Төлсөн" is only for old bank-transfer requests; a QPay request is paid at the checkout.
+      if (found.status !== 'PENDING_PAYMENT' || found.paymentProvider !== 'NONE') {
+        throw new AppError(409, 'SUBSCRIPTION_STATE');
+      }
       if (found.createdAt < pendingCutoff(at)) throw new AppError(409, 'SUBSCRIPTION_EXPIRED');
 
       const key = input.receipt

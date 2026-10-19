@@ -29,6 +29,7 @@ import {
   completeProfileResponseSchema,
   createSubscriptionRequestSchema,
   createSubscriptionResponseSchema,
+  mockPaymentRequestSchema,
   currentSubscriptionResponseSchema,
   dashboardResponseSchema,
   devicesResponseSchema,
@@ -66,15 +67,12 @@ import {
   saveProgressRequestSchema,
   subscriptionSchema,
   tokenPairSchema,
-  totpSetupResponseSchema,
-  totpStatusResponseSchema,
-  totpVerifyRequestSchema,
   updateProfileRequestSchema,
   verifyEmailRequestSchema,
 } from '@ongod/shared';
 import { z } from 'zod';
 
-export type DocAuth = 'none' | 'user' | 'pending' | 'admin' | 'adminTotp' | 'cron';
+export type DocAuth = 'none' | 'user' | 'pending' | 'admin' | 'cron';
 
 export interface RouteDoc {
   tag: string;
@@ -108,7 +106,7 @@ const admin = (
 ): RouteDoc => ({
   tag: 'admin',
   summary,
-  auth: 'adminTotp',
+  auth: 'admin',
   ...rest,
 });
 
@@ -326,7 +324,7 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   },
   'POST /v1/subscriptions': user(
     'portal',
-    'D. Apply for a plan (verified email, one open request)',
+    'D. Apply for a plan: gives the QPay checkout link (verified email, one open request)',
     {
       body: createSubscriptionRequestSchema,
       responses: { 201: createSubscriptionResponseSchema },
@@ -339,9 +337,25 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: currentSubscriptionResponseSchema },
     },
   ),
+  'POST /v1/subscriptions/:id/mock': user(
+    'portal',
+    'D. Development only: the mock checkout (success or cancel); 404 in production',
+    {
+      body: mockPaymentRequestSchema,
+      responses: { 200: z.object({ subscription: subscriptionSchema }) },
+    },
+  ),
+  'POST /v1/webhooks/wire': {
+    tag: 'portal',
+    summary: 'Wire tells us a QPay payment changed (signed; no login)',
+    description:
+      'Header `WirePayment-Signature` over the raw body. The intent is read again from Wire before access is granted. 503 without WIRE_WEBHOOK_SECRET, 400 for a bad signature.',
+    auth: 'none',
+    responses: { 200: z.object({ ok: z.boolean() }).passthrough() },
+  },
   'POST /v1/subscriptions/:id/submitted': user(
     'portal',
-    'D. "Төлсөн": payer note, transfer time, optional receipt',
+    'D. Old bank-transfer requests only: "Төлсөн" with payer note, transfer time, optional receipt',
     {
       description: 'multipart/form-data. `receipt`: JPEG, PNG or WebP, at most 5 MB.',
       multipart: { fields: submitFields, file: 'receipt' },
@@ -350,26 +364,6 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   ),
 
   // ---- admin (E) ----
-  'GET /v1/admin/totp': {
-    tag: 'admin',
-    summary: 'TOTP status of this account and session',
-    auth: 'admin',
-    responses: { 200: totpStatusResponseSchema },
-  },
-  'POST /v1/admin/totp/setup': {
-    tag: 'admin',
-    summary: 'Start TOTP setup: secret + otpauth URI for the authenticator app',
-    description: 'Dev shortcut for the current code: `pnpm dev:totp`.',
-    auth: 'admin',
-    responses: { 200: totpSetupResponseSchema },
-  },
-  'POST /v1/admin/totp/verify': {
-    tag: 'admin',
-    summary: 'Verify a code: enables TOTP the first time and unlocks this session',
-    auth: 'admin',
-    body: totpVerifyRequestSchema,
-    responses: { 204: noContent },
-  },
   'GET /v1/admin/dashboard': admin('Dashboard counts', {
     responses: { 200: dashboardResponseSchema },
   }),

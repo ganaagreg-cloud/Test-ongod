@@ -43,7 +43,7 @@ tags: [index]
 | ADR-0019 | [[ADR-0019-social-login-implementation]]              | accepted               |
 | ADR-0020 | [[ADR-0020-bunny-signed-urls-hs256-no-ip]]            | accepted               |
 | ADR-0021 | [[ADR-0021-catalog-and-playback-rules]]               | accepted               |
-| ADR-0022 | [[ADR-0022-admin-totp-session-proof]]                 | accepted               |
+| ADR-0022 | [[ADR-0022-admin-totp-session-proof]]                 | superseded by ADR-0040 |
 | ADR-0023 | [[ADR-0023-subscription-workflows-implementation]]    | accepted               |
 | ADR-0024 | [[ADR-0024-dev-preview-tooling]]                      | accepted               |
 | ADR-0025 | [[ADR-0025-ui-component-set]]                         | accepted               |
@@ -61,6 +61,8 @@ tags: [index]
 | ADR-0037 | [[ADR-0037-unverified-signup-can-be-replaced]]        | accepted               |
 | ADR-0038 | [[ADR-0038-video-episodes-bunny-stream]]              | accepted               |
 | ADR-0039 | [[ADR-0039-phase-3-before-gate-a]]                    | accepted               |
+| ADR-0040 | [[ADR-0040-admin-password-only-no-totp]]              | accepted               |
+| ADR-0041 | [[ADR-0041-qpay-via-wire-replaces-bank-transfer]]     | accepted               |
 
 ## Research
 
@@ -74,6 +76,7 @@ tags: [index]
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
 | [[R-bunny-stream]]                 | TO-VERIFY  | 2027-01-16    |
+| [[R-wire-qpay-gateway]]            | TO-VERIFY  | 2026-11-19    |
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
 | [[R-claude-code-commands]]         | VERIFIED   | 2026-12-07    |
 | [[R-eas-free-tier]]                | TO-VERIFY  | —             |

@@ -26,14 +26,6 @@ export const planSchema = z.object({
 export type PlanDto = z.infer<typeof planSchema>;
 export const plansResponseSchema = z.object({ plans: z.array(planSchema) });
 
-/** Where to send the money; shown in the portal only, with the amount and the reference code. */
-export const bankDetailsSchema = z.object({
-  bankName: z.string(),
-  accountNumber: z.string(),
-  accountHolder: z.string(),
-});
-export type BankDetails = z.infer<typeof bankDetailsSchema>;
-
 export const subscriptionSchema = z.object({
   id: z.string(),
   status: subscriptionStatusSchema,
@@ -48,22 +40,21 @@ export const subscriptionSchema = z.object({
   startsAt: z.iso.datetime().nullable(),
   endsAt: z.iso.datetime().nullable(),
   rejectReason: z.string().nullable(),
+  /** WIRE = QPay through Wire, MOCK = development checkout, NONE = an old bank-transfer request. */
+  paymentProvider: z.enum(['WIRE', 'MOCK', 'NONE']),
+  /** Where to pay; only while the request is PENDING_PAYMENT. */
+  checkoutUrl: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type SubscriptionDto = z.infer<typeof subscriptionSchema>;
 
 export const createSubscriptionRequestSchema = z.object({ planId: z.string().min(1).max(64) });
-export const createSubscriptionResponseSchema = z.object({
-  subscription: subscriptionSchema,
-  bank: bankDetailsSchema,
-});
+export const createSubscriptionResponseSchema = z.object({ subscription: subscriptionSchema });
 
 export const currentSubscriptionResponseSchema = z.object({
   /** The open request if there is one, else the latest subscription, else null. */
   subscription: subscriptionSchema.nullable(),
   accessUntil: z.iso.datetime().nullable(),
-  /** Only while the request is PENDING_PAYMENT (the user still has to pay). */
-  bank: bankDetailsSchema.nullable(),
 });
 
 export const subscriptionParamsSchema = z.object({ id: z.string().min(1).max(64) });
@@ -75,3 +66,6 @@ export const submitPaymentFieldsSchema = z.object({
   payerNote: z.preprocess(emptyToUndefined, z.string().trim().max(1000).optional()),
   transferAt: z.iso.datetime({ offset: true }),
 });
+
+/** POST /v1/subscriptions/:id/mock (development only): the mock checkout's two buttons. */
+export const mockPaymentRequestSchema = z.object({ outcome: z.enum(['success', 'cancel']) });

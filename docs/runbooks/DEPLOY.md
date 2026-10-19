@@ -18,8 +18,8 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 - SMTP provider values (`SMTP_*`, `MAIL_FROM`)
 - Monitoring: `LOG_FILE`, `ALERT_EMAILS` ([[ADR-0016-monitoring-logs-alert-emails|ADR-0016]])
 - Bunny: owner's account values ([[BUNNY_SWITCH]])
-- Payments: `BANK_NAME`, `BANK_ACCOUNT`, `BANK_ACCOUNT_HOLDER` (the API refuses to start in production without them); `RECEIPTS_DIR` on persistent disk and **in the backup** (receipt images are only there, [[ADR-0023-subscription-workflows-implementation|ADR-0023]]); optional `EXPO_ACCESS_TOKEN`
-- Admin 2FA: `TOTP_ISSUER`. After the first deploy the OWNER logs in once and sets up the authenticator before anyone else can ([[ADR-0022-admin-totp-session-proof|ADR-0022]])
+- Payments ([[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]): `WIRE_API_KEY` (`sk_live_...`), `WIRE_WEBHOOK_SECRET`, `WIRE_ALLOWED_OPERATORS` (the live operator id, e.g. `qpay`); leave `ALLOW_MOCK_PAYMENTS` unset. Without the Wire keys production answers 503 on "choose a plan" (there is no mock). Add the endpoint `<PUBLIC_BASE_URL>/v1/webhooks/wire` in the Wire dashboard for `payment_intent.succeeded`, `payment_intent.canceled` and `payment_intent.payment_failed`. **Before launch: one small real payment, and check the exact amount charged on the bank statement** ([[R-wire-qpay-gateway]]). `RECEIPTS_DIR` stays on persistent disk and in the backup (old bank-transfer receipts, [[ADR-0023-subscription-workflows-implementation|ADR-0023]]); optional `EXPO_ACCESS_TOKEN`
+- Admin login is password only ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]): set a long, unique `SEED_OWNER_PASSWORD` before the first deploy
 
 ## Steps
 

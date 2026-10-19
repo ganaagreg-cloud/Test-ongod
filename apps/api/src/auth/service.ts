@@ -163,10 +163,7 @@ export function createAuthService(deps: { db: Db; env: Env }) {
 
   // ---- sessions ----
 
-  async function createSession(
-    tx: Tx,
-    p: { userId: string; deviceId: string; familyId?: string; totpVerifiedAt?: Date | null },
-  ) {
+  async function createSession(tx: Tx, p: { userId: string; deviceId: string; familyId?: string }) {
     const refreshToken = newRefreshToken();
     const session = await tx.session.create({
       data: {
@@ -175,7 +172,6 @@ export function createAuthService(deps: { db: Db; env: Env }) {
         refreshTokenHash: hashRefreshToken(refreshToken),
         familyId: p.familyId ?? crypto.randomUUID(),
         expiresAt: new Date(Date.now() + refreshTtlMs),
-        totpVerifiedAt: p.totpVerifiedAt ?? null,
       },
     });
     return { session, refreshToken };
@@ -431,8 +427,6 @@ export function createAuthService(deps: { db: Db; env: Env }) {
           userId: session.userId,
           deviceId,
           familyId: session.familyId,
-          // A refreshed admin session stays TOTP-verified; a new login does not.
-          totpVerifiedAt: session.totpVerifiedAt,
         });
         return { kind: 'ok', userId: session.userId, ...next } as const;
       });

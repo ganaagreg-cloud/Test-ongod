@@ -46,3 +46,11 @@ Every client request that changes scope is recorded here before any code. Templa
 - **Notes:** no code until the client accepts an option and Ganaa accepts ADR-0038 and the SPEC / DESIGN wording. Questions: [[open-questions]] #16–#25. The apps still show no prices ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]]).
 
 Dates are when the entries were logged; the requests came from earlier planning chats.
+
+### 2026-10-19: QPay replaces manual bank transfer (web portal)
+
+- **Client asked** (relayed by Ganaa, 2026-10-19): pay with QPay instead of bank transfer. The QPay agreement is already made. First app-store release shows no payment of any kind in the mobile app; payment stays in the web portal.
+- **In scope:** no. [[SPEC#Out of scope (paid add-ons)]] lists QPay; [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]] chose manual bank transfer and deferred QPay as a paid add-on. This request replaces the bank-transfer flow and needs a superseding ADR before code.
+- **Price:** paid by the client (Ganaa confirmed on 2026-10-19 that the payment for QPay is received). Amount and written confirmation still to be added to [[approvals]].
+- **Status:** accepted as a paid add-on. Work not started. Needs first: QPay merchant credentials or sandbox access, a research note on the QPay API (`/research`) (TO-VERIFY), then an ADR.
+- **Notes:** [[open-questions]] #6 (individual merchant account). Payment UI in the mobile app stays out for the first release ([[R-apple-no-payment-ui]], [[R-google-play-payments]]). Turning in-app payment on in a later update is the owner's accepted risk (store rules, guideline 3.1.1) and gets its own ADR if it is ever built.

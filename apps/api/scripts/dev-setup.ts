@@ -1,5 +1,5 @@
 // DEV ONLY: run by `pnpm dev` after the migrations. Seeds the demo data once, when the database
-// has no users yet. Never re-seeds, so changes made while exploring (TOTP, approvals) stay.
+// has no users yet. Never re-seeds, so changes made while exploring (approvals) stay.
 import { spawnSync } from 'node:child_process';
 import { createDb } from '../src/db';
 

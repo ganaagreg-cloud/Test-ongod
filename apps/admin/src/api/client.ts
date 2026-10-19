@@ -61,7 +61,6 @@ export function deviceId(): string {
 
 let accessToken: string | null = null;
 let onSessionLost: (() => void) | undefined;
-let onTotpNeeded: (() => void) | undefined;
 
 export const session = {
   hasHint: () => storage.get(SESSION_HINT) === '1',
@@ -79,10 +78,6 @@ export const session = {
   /** The auth context listens here to switch to the signed-out state. */
   onLost(callback: (() => void) | undefined) {
     onSessionLost = callback;
-  },
-  /** ...and here to show the authenticator screen when the API asks for the second factor. */
-  onTotpNeeded(callback: (() => void) | undefined) {
-    onTotpNeeded = callback;
   },
 };
 
@@ -180,16 +175,9 @@ async function sendWithRefresh(path: string, options: RequestOptions<unknown>): 
   return res;
 }
 
-/** Builds the error for a failed response; a missing second factor also notifies the auth gate. */
-async function fail(res: Response): Promise<ApiError> {
-  const error = await toApiError(res);
-  if (error.code === 'TOTP_REQUIRED' || error.code === 'TOTP_SETUP_REQUIRED') onTotpNeeded?.();
-  return error;
-}
-
 export async function api<T = void>(path: string, options: RequestOptions<T> = {}): Promise<T> {
   const res = await sendWithRefresh(path, options);
-  if (!res.ok) throw await fail(res);
+  if (!res.ok) throw await toApiError(res);
   if (res.status === 204 || !options.schema) return undefined as T;
   return options.schema.parse(await res.json());
 }
@@ -200,7 +188,7 @@ export async function apiBlob(
   signal?: AbortSignal,
 ): Promise<{ blob: Blob; filename: string | undefined }> {
   const res = await sendWithRefresh(path, { signal });
-  if (!res.ok) throw await fail(res);
+  if (!res.ok) throw await toApiError(res);
   const disposition = res.headers.get('content-disposition') ?? '';
   const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1];
   return { blob: await res.blob(), filename };

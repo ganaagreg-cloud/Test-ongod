@@ -2,7 +2,6 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
-import { generateSecret, generateSync } from 'otplib';
 import { createReceiptStore, type ReceiptStore } from '../src/subscriptions/receipts';
 import { generateReferenceCode } from '../src/subscriptions/period';
 import { authApp, device, signedIn, type Signed } from './auth-helpers';
@@ -81,49 +80,27 @@ export async function makeMember(
   return signed;
 }
 
-export type TotpState = 'none' | 'enabled' | 'verified';
-
-/**
- * A signed-in admin. 'none' = never set up TOTP, 'enabled' = set up but this session has not
- * passed the check, 'verified' = this session passed it (what the admin API needs).
- */
+/** A signed-in admin or owner (password login only, ADR-0040). */
 export async function makeAdmin(
   app: FastifyInstance,
   opts: {
     email?: string;
     role?: 'ADMIN' | 'OWNER';
-    totp?: TotpState;
     /** 'web' (default) keeps the refresh token in a cookie; a native platform returns it in the body. */
     platform?: 'web' | 'ios' | 'android';
   } = {},
-): Promise<Signed & { secret: string | null }> {
+): Promise<Signed> {
   const email = opts.email ?? 'admin@example.com';
-  const totp = opts.totp ?? 'verified';
   const signed = await signedIn(app, {
     email,
     device: device(`admin-${email}`, opts.platform ?? 'web'),
   });
-  const secret = totp === 'none' ? null : generateSecret();
   await testDb.user.update({
     where: { id: signed.userId },
-    data: {
-      role: opts.role ?? 'ADMIN',
-      emailVerifiedAt: new Date(),
-      ...(secret ? { totpSecret: secret, totpEnabledAt: new Date() } : {}),
-    },
+    data: { role: opts.role ?? 'ADMIN', emailVerifiedAt: new Date() },
   });
-  if (totp === 'verified') {
-    await testDb.session.updateMany({
-      where: { userId: signed.userId },
-      data: { totpVerifiedAt: new Date() },
-    });
-  }
-  return { ...signed, secret };
+  return signed;
 }
-
-/** A valid TOTP code; `stepsAhead` picks a later 30 s step (a code that was not used before). */
-export const totpCode = (secret: string, stepsAhead = 0) =>
-  generateSync({ secret, epoch: Math.floor(Date.now() / 1000) + stepsAhead * 30 });
 
 /** A subscription waiting in the admin queue. */
 export async function makeSubmitted(

@@ -1,7 +1,7 @@
 ---
 id: ADR-0022
 title: 'Admin TOTP 2FA: the proof lives on the session'
-status: accepted
+status: superseded by [[ADR-0040-admin-password-only-no-totp|ADR-0040]]
 date: 2026-10-08
 tags: [adr, area/auth, area/admin]
 ---

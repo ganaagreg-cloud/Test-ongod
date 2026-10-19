@@ -14,6 +14,7 @@ const Verify = lazy(() => import('./pages/Verify'));
 const Forgot = lazy(() => import('./pages/Forgot'));
 const Reset = lazy(() => import('./pages/Reset'));
 const Pay = lazy(() => import('./pages/Pay'));
+const MockCheckout = lazy(() => import('./pages/MockCheckout'));
 const Status = lazy(() => import('./pages/Status'));
 const Account = lazy(() => import('./pages/Account'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
@@ -54,6 +55,7 @@ export function App() {
           <Route path="reset" element={<Reset />} />
           <Route element={<RequireAuth />}>
             <Route path="pay" element={<Pay />} />
+            <Route path="pay/mock/:id" element={<MockCheckout />} />
             <Route path="status" element={<Status />} />
             <Route path="account" element={<Account />} />
           </Route>

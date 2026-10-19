@@ -1,29 +1,13 @@
 import { z } from 'zod';
 import { subscriptionSchema, subscriptionStatusSchema } from './subscriptions';
 
-// /v1/admin/* (SPEC E). Roles ADMIN and OWNER, with TOTP 2FA.
+// /v1/admin/* (SPEC E). Roles ADMIN and OWNER, password login only (ADR-0040).
 
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 const idSchema = z.string().min(1).max(64);
 const reasonSchema = z.string().trim().min(1).max(500);
 
 export const adminIdParamsSchema = z.object({ id: idSchema });
-
-// ---- TOTP ----
-
-export const totpSetupResponseSchema = z.object({
-  /** Base32 secret, for manual entry. */
-  secret: z.string(),
-  /** otpauth:// URI for the QR code. */
-  otpauthUri: z.string(),
-});
-export const totpVerifyRequestSchema = z.object({
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/),
-});
-export const totpStatusResponseSchema = z.object({ enabled: z.boolean(), verified: z.boolean() });
 
 // ---- Queue and subscriptions ----
 

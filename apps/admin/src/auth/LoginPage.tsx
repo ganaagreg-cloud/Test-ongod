@@ -61,7 +61,7 @@ export function LoginPage({ forbidden }: { forbidden?: Extract<Gate, { stage: 'f
       <AuthFrame title={mn.login.title}>
         <Notice tone="danger">{mn.login.notAdmin}</Notice>
         <Button variant="secondary" onClick={() => void logout()}>
-          {mn.totp.wrongAccount}
+          {mn.login.wrongAccount}
         </Button>
       </AuthFrame>
     );

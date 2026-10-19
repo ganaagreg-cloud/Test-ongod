@@ -112,7 +112,7 @@ export function createAdminQueries(deps: {
       return { items: entries.map(toAuditDto) };
     },
 
-    /** Admin only (the route is behind the TOTP guard). Never cached, never a public URL. */
+    /** Admin only. Never cached, never a public URL. */
     async getReceipt(id: string) {
       const sub = await db.subscription.findUnique({
         where: { id },

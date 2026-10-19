@@ -28,10 +28,7 @@ const AUTH_NOTE: Record<DocAuth, string> = {
   none: 'No login needed.',
   user: '**Needs:** a signed-in user (Authorize with the `accessToken`).',
   pending: '**Needs:** a signed-in user; also works while the profile is incomplete.',
-  admin:
-    '**Needs:** a signed-in ADMIN or OWNER. TOTP not required yet (this is where you set it up).',
-  adminTotp:
-    '**Needs:** ADMIN or OWNER **and** a session that passed TOTP: log in, `POST /v1/admin/totp/setup`, then `POST /v1/admin/totp/verify` (get the code with `pnpm dev:totp`).',
+  admin: '**Needs:** a signed-in ADMIN or OWNER (password login, no second factor).',
   cron: '**Needs:** header `X-Cron-Secret`.',
 };
 
@@ -44,7 +41,7 @@ Seeded users (password = the \`SEED_*_PASSWORD\` values in your \`.env\`; owner 
 
 | username | what it is |
 |---|---|
-| \`owner\` | OWNER (admin). First admin login needs TOTP setup |
+| \`owner\` | OWNER (admin) |
 | \`bat\` | member, active access |
 | \`demo\` | member, active access (store-reviewer demo account) |
 | \`saraa\` | member, payment submitted (waiting in the admin queue) |
@@ -110,12 +107,7 @@ function describe(doc: RouteDoc) {
     description: [doc.description, AUTH_NOTE[doc.auth]].filter(Boolean).join('\n\n'),
   };
 
-  if (
-    doc.auth === 'user' ||
-    doc.auth === 'pending' ||
-    doc.auth === 'admin' ||
-    doc.auth === 'adminTotp'
-  ) {
+  if (doc.auth === 'user' || doc.auth === 'pending' || doc.auth === 'admin') {
     schema.security = [{ bearerAuth: [] }];
   }
   if (doc.auth === 'cron') {

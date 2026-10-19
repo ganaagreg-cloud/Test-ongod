@@ -3,9 +3,7 @@ import { authOf, type createAuthGuard } from '../auth/guard';
 import { AppError } from '../errors';
 
 /**
- * Guards for /v1/admin/*:
- * - `requireAdmin`: a signed-in ADMIN or OWNER. Used by the TOTP routes themselves.
- * - `requireAdminTotp`: the same, and this session has passed the TOTP check. Everything else.
+ * Guard for /v1/admin/*: a signed-in ADMIN or OWNER (password login only, ADR-0040).
  * The role is read from the database on every request, so a demoted admin is locked out at once.
  */
 export function createAdminGuards(requireAuth: ReturnType<typeof createAuthGuard>) {
@@ -15,14 +13,7 @@ export function createAdminGuards(requireAuth: ReturnType<typeof createAuthGuard
     if (role !== 'ADMIN' && role !== 'OWNER') throw new AppError(403, 'FORBIDDEN');
   }
 
-  async function requireAdminTotp(req: FastifyRequest): Promise<void> {
-    await requireAdmin(req);
-    const { user, session } = authOf(req);
-    if (!user.totpEnabledAt) throw new AppError(403, 'TOTP_SETUP_REQUIRED');
-    if (!session.totpVerifiedAt) throw new AppError(403, 'TOTP_REQUIRED');
-  }
-
-  return { requireAdmin, requireAdminTotp };
+  return { requireAdmin };
 }
 
 export type AdminGuards = ReturnType<typeof createAdminGuards>;

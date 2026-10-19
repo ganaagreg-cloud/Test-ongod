@@ -580,6 +580,11 @@ describe('receipt image (admin only, never public)', () => {
     const { subscription } = (
       await call(app, 'POST', '/v1/subscriptions', member.accessToken, { planId: plan.id })
     ).json();
+    // "Төлсөн" is only for old bank-transfer requests (ADR-0041).
+    await testDb.subscription.update({
+      where: { id: subscription.id },
+      data: { paymentProvider: 'NONE', checkoutUrl: null },
+    });
     const image = jpeg(3000);
     const { payload, headers } = await multipart(
       { transferAt: new Date(Date.now() - 60_000).toISOString() },
@@ -604,10 +609,6 @@ describe('receipt image (admin only, never public)', () => {
     // The owner of the receipt is not an admin: no access to their own file through this route.
     expect((await call(app, 'GET', url, member.accessToken)).statusCode).toBe(403);
     expect((await call(app, 'GET', url)).statusCode).toBe(401);
-    const unverified = await makeAdmin(app, { email: 'new-admin@example.com', totp: 'enabled' });
-    expect((await call(app, 'GET', url, unverified.accessToken)).json().error.code).toBe(
-      'TOTP_REQUIRED',
-    );
   });
 
   it('404 when there is no receipt, when the file is gone, or when the stored key is not ours', async () => {

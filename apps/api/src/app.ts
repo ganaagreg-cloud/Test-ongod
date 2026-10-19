@@ -8,7 +8,6 @@ import { createDecisionService } from './admin/decisions';
 import { createAdminGuards } from './admin/guard';
 import { createContentService } from './admin/content';
 import { createAdminQueries } from './admin/queries';
-import { createTotpService } from './admin/totp';
 import { createAuthGuard } from './auth/guard';
 import { AuthLimiter } from './auth/rate-limit';
 import { createAuthService } from './auth/service';
@@ -28,6 +27,8 @@ import { createLogger, type Logger } from './logger';
 import { createMediaRuntime, type MediaRuntime } from './media/storage';
 import { createTusServer } from './media/tus';
 import { createReceiptStore, type ReceiptStore } from './subscriptions/receipts';
+import { createPaymentService } from './payments/service';
+import { createWireGateway, type WireGateway } from './payments/wire';
 import { createSubscriptionService } from './subscriptions/service';
 import { adminRoutes } from './routes/admin';
 import { adminContentRoutes } from './routes/admin-content';
@@ -37,6 +38,7 @@ import { cronRoutes } from './routes/cron';
 import { meRoutes } from './routes/me';
 import { socialRoutes } from './routes/social';
 import { subscriptionRoutes } from './routes/subscriptions';
+import { webhookRoutes } from './routes/webhooks';
 import { appConfigRoutes, healthRoutes } from './routes/system';
 import { defaultStaticDirs, registerStatic } from './static';
 
@@ -62,6 +64,8 @@ export interface AppDeps {
   mediaRuntime?: MediaRuntime;
   /** Private store for payment receipt images; defaults to RECEIPTS_DIR on disk. */
   receipts?: ReceiptStore;
+  /** Wire payment gateway (QPay); built from WIRE_API_KEY by default, null = mock checkout. Tests pass a fake. */
+  wire?: WireGateway | null;
   /** Clock for the catalog and subscriptions (visibility, play expiry, periods); tests pass a fixed one. */
   now?: () => Date;
 }
@@ -155,16 +159,23 @@ export async function buildApp(deps: AppDeps) {
       const receipts = deps.receipts ?? createReceiptStore(env.RECEIPTS_DIR);
       const mediaRuntime = deps.mediaRuntime ?? createMediaRuntime(env);
       const tus = createTusServer({ db, dirs: mediaRuntime.dirs, env });
+      const payments = createPaymentService({
+        db,
+        env,
+        gateway: deps.wire === undefined ? createWireGateway(env) : deps.wire,
+        log: app.log,
+        now: deps.now,
+      });
       await v1.register(subscriptionRoutes, {
-        subscriptions: createSubscriptionService({ db, env, receipts, now: deps.now }),
+        subscriptions: createSubscriptionService({ db, payments, receipts, now: deps.now }),
+        payments,
         requireAuth,
       });
+      await v1.register(webhookRoutes, { payments });
       await v1.register(adminRoutes, {
         guards: createAdminGuards(requireAuth),
-        totp: createTotpService({ db, env, now: deps.now }),
         decisions: createDecisionService({ db, now: deps.now }),
         queries: createAdminQueries({ db, receipts, now: deps.now }),
-        limiter,
       });
       await v1.register(adminContentRoutes, {
         guards: createAdminGuards(requireAuth),

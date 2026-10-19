@@ -49,14 +49,14 @@ async function readCover(req: FastifyRequest): Promise<Buffer> {
 
 /**
  * /v1/admin categories, episodes and the resumable audio upload (SPEC G). Everything needs an
- * ADMIN/OWNER session that passed TOTP.
+ * ADMIN/OWNER session.
  */
 export async function adminContentRoutes(
   app: FastifyInstance,
   opts: { guards: AdminGuards; content: ContentService; tus: TusUploads },
 ) {
   const { content, tus } = opts;
-  app.addHook('preHandler', opts.guards.requireAdminTotp);
+  app.addHook('preHandler', opts.guards.requireAdmin);
   app.addHook('onSend', async (_req, reply) => {
     if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'private, no-store');
   });

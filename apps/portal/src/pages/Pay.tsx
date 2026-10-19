@@ -1,182 +1,127 @@
-import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
-import { MAX_RECEIPT_BYTES } from '@ongod/shared';
-import { Button, FileField, Notice, Skeleton, Textarea } from '@ongod/ui-web';
-import { ApiError } from '../api/client';
-import { getCurrentSubscription, submitPayment } from '../api/endpoints';
-import { CopyRow } from '../components/CopyRow';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
+import type { z } from 'zod';
+import type { currentSubscriptionResponseSchema } from '@ongod/shared';
+import { Button, Notice, Skeleton } from '@ongod/ui-web';
+import { getCurrentSubscription } from '../api/endpoints';
+import { useAuth } from '../auth/AuthContext';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { mn } from '../i18n/mn';
-import { formatMnt, toLocalInputValue } from '../lib/format';
+import { formatMnt } from '../lib/format';
+import { openCheckout } from '../lib/checkout';
 import { useAsync } from '../lib/useAsync';
 import { usePage } from '../lib/usePage';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+type Current = z.infer<typeof currentSubscriptionResponseSchema>;
 
+/** Every 2 s at first, every 4 s after 40 s, and it stops after 10 minutes (ADR-0041). */
+const FAST_MS = 2_000;
+const SLOW_MS = 4_000;
+const SLOW_AFTER_MS = 40_000;
+const GIVE_UP_MS = 10 * 60_000;
+
+/** The waiting room for a QPay payment: pay at the checkout, come back here, access arrives by itself. */
 export default function Pay() {
   usePage({ title: mn.pay.metaTitle, noindex: true });
   const navigate = useNavigate();
-  const current = useAsync((signal) => getCurrentSubscription(signal));
+  const { reloadUser } = useAuth();
+  const [params] = useSearchParams();
+  const canceledAtCheckout = params.get('canceled') === '1';
+  const first = useAsync((signal) => getCurrentSubscription(signal));
+  const [live, setLive] = useState<Current>();
+  const [stopped, setStopped] = useState(false);
 
-  const [transferAt, setTransferAt] = useState(() => toLocalInputValue(new Date()));
-  const [note, setNote] = useState('');
-  const [file, setFile] = useState<File>();
-  const [fileError, setFileError] = useState<string>();
-  const [dateError, setDateError] = useState<string>();
-  const [error, setError] = useState<unknown>();
-  const [expired, setExpired] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const current = live ?? first.data;
+  const subscription = current?.subscription;
+  const waiting = subscription?.status === 'PENDING_PAYMENT';
 
-  if (current.loading && !current.data) {
+  // Ask the API (which asks Wire) until the payment shows up as ACTIVE.
+  useEffect(() => {
+    if (!waiting) return;
+    const startedAt = Date.now();
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      if (Date.now() - startedAt > GIVE_UP_MS) return setStopped(true);
+      if (document.visibilityState === 'visible') {
+        try {
+          const next = await getCurrentSubscription();
+          if (cancelled) return;
+          setLive(next);
+          if (next.subscription?.status === 'ACTIVE') {
+            void reloadUser();
+            navigate('/status', { replace: true });
+            return;
+          }
+        } catch {
+          // The next round tries again.
+        }
+      }
+      const slow = Date.now() - startedAt > SLOW_AFTER_MS;
+      timer = setTimeout(() => void tick(), slow ? SLOW_MS : FAST_MS);
+    };
+    timer = setTimeout(() => void tick(), FAST_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [waiting, navigate, reloadUser]);
+
+  if (first.loading && !first.data) {
     return (
       <div className="portal-page" role="status" aria-busy="true" aria-label={mn.common.loading}>
         <Skeleton width="60%" />
         <Skeleton shape="pill" width="100%" />
-        <Skeleton shape="pill" width="100%" />
       </div>
     );
   }
-  if (current.error) {
+  if (first.error) {
     return (
       <div className="portal-page portal-narrow">
-        <ErrorNotice error={current.error} />
-        <Button variant="secondary" onClick={current.reload}>
+        <ErrorNotice error={first.error} />
+        <Button variant="secondary" onClick={first.reload}>
           {mn.common.retry}
         </Button>
       </div>
     );
   }
 
-  const subscription = current.data?.subscription;
-  if (subscription?.status === 'PAYMENT_SUBMITTED') return <Navigate to="/status" replace />;
-  if (!subscription || subscription.status !== 'PENDING_PAYMENT') {
+  if (!subscription) return <Navigate to="/plans" replace />;
+  if (subscription.status === 'ACTIVE' || subscription.status === 'PAYMENT_SUBMITTED') {
+    return <Navigate to="/status" replace />;
+  }
+  if (subscription.status !== 'PENDING_PAYMENT') {
+    // Cancelled at the checkout, expired or closed: start again.
     return <Navigate to="/plans" replace />;
   }
-  const bank = current.data?.bank;
-
-  const pickFile = (picked: File | undefined) => {
-    setFile(picked);
-    if (!picked) return setFileError(undefined);
-    if (!ALLOWED_TYPES.includes(picked.type)) return setFileError(mn.pay.fileType);
-    if (picked.size > MAX_RECEIPT_BYTES) return setFileError(mn.pay.fileTooBig);
-    setFileError(undefined);
-  };
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(undefined);
-    const when = new Date(transferAt);
-    if (Number.isNaN(when.getTime()) || when.getTime() > Date.now() + 60 * 60_000) {
-      setDateError(mn.pay.futureDate);
-      return;
-    }
-    setDateError(undefined);
-    if (fileError) return;
-
-    setBusy(true);
-    try {
-      await submitPayment(
-        subscription.id,
-        { transferAt: when.toISOString(), ...(note.trim() ? { payerNote: note.trim() } : {}) },
-        file,
-      );
-      navigate('/status', { replace: true });
-    } catch (err) {
-      if (
-        err instanceof ApiError &&
-        (err.code === 'SUBSCRIPTION_EXPIRED' || err.code === 'SUBSCRIPTION_STATE')
-      ) {
-        setExpired(true);
-      } else {
-        setError(err);
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
-    <div className="portal-page portal-pay">
+    <div className="portal-page portal-narrow portal-pay">
       <h1>{mn.pay.title}</h1>
       <p className="portal-lead">{mn.pay.lead(subscription.plan.name)}</p>
 
-      <section aria-labelledby="bank-title" className="portal-card">
-        <h2 id="bank-title">{mn.pay.bankTitle}</h2>
-        {bank ? (
-          <dl className="portal-copylist">
-            <CopyRow label={mn.pay.bank} value={bank.bankName} />
-            <CopyRow label={mn.pay.account} value={bank.accountNumber} />
-            <CopyRow label={mn.pay.holder} value={bank.accountHolder} />
-            <CopyRow
-              label={mn.pay.amount}
-              value={formatMnt(subscription.amountMnt)}
-              copyValue={String(subscription.amountMnt)}
-            />
-            <CopyRow label={mn.pay.reference} value={subscription.referenceCode} big />
-          </dl>
+      <section aria-labelledby="pay-summary" className="portal-card">
+        <h2 id="pay-summary">{mn.pay.amount}</h2>
+        <p className="portal-plan__price">{formatMnt(subscription.amountMnt)}</p>
+        <p className="portal-muted">{mn.pay.qpayNote}</p>
+        {canceledAtCheckout ? <Notice tone="warning">{mn.pay.canceled}</Notice> : null}
+        {subscription.checkoutUrl ? (
+          <Button fullWidth onClick={() => openCheckout(subscription.checkoutUrl!, navigate)}>
+            {mn.pay.payWithQpay}
+          </Button>
         ) : (
           <Notice tone="danger">{mn.common.errorGeneric}</Notice>
         )}
-        <p className="portal-muted">{mn.pay.referenceNote}</p>
       </section>
 
-      <section aria-labelledby="steps-title" className="portal-section">
-        <h2 id="steps-title">{mn.pay.stepsTitle}</h2>
-        <ol className="portal-steps">
-          {mn.pay.steps.map((text) => (
-            <li key={text}>{text}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section aria-labelledby="paid-title" className="portal-card">
-        <h2 id="paid-title">{mn.pay.formTitle}</h2>
-        {expired ? (
-          <Notice tone="warning" title={mn.pay.expiredTitle}>
-            {mn.pay.expiredText} <Link to="/plans">{mn.pay.newRequest}</Link>
-          </Notice>
+      <section aria-live="polite" className="portal-section">
+        {stopped ? (
+          <Notice tone="info">{mn.pay.stopped}</Notice>
         ) : (
-          <form className="portal-form" onSubmit={(e) => void onSubmit(e)} noValidate>
-            <div className="ui-field">
-              <label className="ui-field__label" htmlFor="transfer-at">
-                {mn.pay.transferAt}
-              </label>
-              <input
-                id="transfer-at"
-                type="datetime-local"
-                className="ui-field__input"
-                value={transferAt}
-                max={toLocalInputValue(new Date())}
-                onChange={(e) => setTransferAt(e.target.value)}
-                aria-invalid={dateError ? true : undefined}
-                aria-describedby={dateError ? 'transfer-at-error' : undefined}
-                required
-              />
-              {dateError ? (
-                <p id="transfer-at-error" className="ui-field__message is-error">
-                  {dateError}
-                </p>
-              ) : null}
-            </div>
-            <Textarea
-              label={mn.pay.note}
-              hint={mn.pay.noteHint}
-              maxLength={1000}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-            <FileField
-              label={mn.pay.receipt}
-              hint={mn.pay.receiptHint}
-              error={fileError}
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => pickFile(e.target.files?.[0])}
-            />
-            <ErrorNotice error={error} />
-            <Button type="submit" fullWidth loading={busy} disabled={Boolean(fileError)}>
-              {mn.pay.submit}
-            </Button>
-          </form>
+          <p className="portal-muted" role="status">
+            {mn.pay.waiting}
+          </p>
         )}
       </section>
     </div>

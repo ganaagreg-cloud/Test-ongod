@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { PAGE_SIZE_DEFAULT, PAGE_SIZE_MAX } from './admin';
 
-// /v1/admin categories, episodes and uploads (SPEC G). Roles ADMIN and OWNER, with TOTP.
+// /v1/admin categories, episodes and uploads (SPEC G). Roles ADMIN and OWNER, password login only (ADR-0040).
 
 const idSchema = z.string().min(1).max(64);
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
