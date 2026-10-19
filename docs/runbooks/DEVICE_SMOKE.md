@@ -1,7 +1,7 @@
 ---
 type: runbook
 status: draft
-updated: 2026-10-18
+updated: 2026-10-19
 tags: [runbook, area/mobile]
 ---
 
@@ -23,6 +23,10 @@ Decisions: [[ADR-0034-ios-first-zero-cost-device-gate|ADR-0034]] (replaces the A
 - The API reachable from the phone and the **Bunny dev zone** in the root `.env` ([[BUNNY_SWITCH]]); without Bunny the API gives no audio URL.
 - **A published episode whose audio is READY** (20 to 40 minutes is best): upload it in the admin on the PC (`http://localhost:5174/admin/`). The seeded episodes have no audio file.
 - Test accounts from the seed (password = `SEED_USER_PASSWORD` in `.env`): `demo` and `bat` have access, `tuya`'s access has ended, `saraa` has never paid.
+- **A newly registered account has no access** (members only, [[SPEC]]): playing shows `NO_ACCESS`, which is correct (that is row 23). To play with it, give it access in one of three ways:
+  1. Simplest: log in on the phone as `demo` or `bat`. If they do not exist yet, run `pnpm --filter @ongod/api db:seed` once (`pnpm dev` runs the migrations but not the seed).
+  2. Grant your own account in the admin: `http://localhost:5174/admin/`, sign in as `owner` (`SEED_OWNER_PASSWORD`, 2-step code from `pnpm dev:totp`), **Хэрэглэгчид** → search the username → open it → **Эрх олгох** → choose a plan → confirm.
+  3. The real member path (also tests payment): on the portal `http://localhost:5173`, sign in, choose a plan, note the `ONG-XXXXX` reference, fill the **Төлсөн** form (no real transfer needed locally), then approve it in the admin under payments, or run `pnpm dev:approve ONG-XXXXX`.
 - Video rows: the **Bunny Stream** keys in `.env` too ([[BUNNY_SWITCH]] step 3) and **a published episode with a READY video** (upload an `.mp4` in the admin; it stays PROCESSING while Bunny encodes, usually minutes). In the bench a video episode is listed as `[video] …`.
 - Open the bench: sign in, then tap **/dev/audio** on the placeholder home screen (dev builds and Expo Go only). It lists episodes, opens one through the signed URL and shows status, position, speed and sleep timer. It is a test bench, not the player screen.
 
