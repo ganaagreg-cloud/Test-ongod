@@ -336,6 +336,118 @@ test('episodes: create, cover, and an audio upload that resumes after a page ref
   await expect(page.getByRole('heading', { name: mn.episodes.title })).toBeVisible();
 });
 
+// The sidebar link (the detail pages have a back link with a similar name).
+const sidebar = (name: string) =>
+  page.getByRole('navigation', { name: mn.nav.label }).getByRole('link', { name, exact: true });
+
+// A draft e2e episode through the screens; returns its title.
+async function createDraft(label: string): Promise<string> {
+  const title = `E2E анги ${label} ${Date.now()}`;
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.new }).click();
+  await page.getByLabel(mn.episodes.form.title).fill(title);
+  await page.getByLabel(mn.episodes.form.category).selectOption({ index: 1 });
+  await page.getByRole('button', { name: mn.episodes.form.create }).click();
+  await expect(toast(mn.episodes.created)).toBeVisible();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+  return title;
+}
+
+test('series: create, add two existing items, move the second up, order survives a reload', async () => {
+  const stamp = Date.now();
+  const first = await createDraft('A');
+  const second = await createDraft('B');
+
+  await sidebar(mn.nav.series).click();
+  await page.getByRole('button', { name: mn.series.new }).first().click();
+  const title = `E2E цуврал ${stamp}`;
+  await page.getByLabel(mn.series.form.title).fill(title);
+  await page.getByLabel(mn.series.form.slug).fill(`e2e-series-${stamp}`);
+  await page.getByRole('button', { name: mn.series.form.create }).click();
+  await expect(toast(mn.series.created)).toBeVisible();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+
+  // add the two existing items, one after the other (each takes the next part)
+  const picker = page.locator('section', { hasText: mn.picker.title });
+  await picker.getByLabel(mn.picker.searchLabel).fill('E2E анги');
+  for (const item of [first, second]) {
+    const pick = picker.getByRole('listitem').filter({ hasText: item });
+    await pick.getByRole('button', { name: mn.picker.add }).click();
+    await expect(pick.getByRole('button', { name: mn.picker.added })).toBeVisible();
+  }
+
+  const items = page.locator('section', { hasText: mn.series.items.title }).first();
+  const order = async () =>
+    (await items.getByRole('listitem').allInnerTexts()).map((text) =>
+      text.includes(first) ? 'first' : text.includes(second) ? 'second' : '?',
+    );
+  await expect.poll(order).toEqual(['first', 'second']);
+
+  await page.getByRole('button', { name: mn.sortable.moveUp(second) }).click();
+  await expect(toast(mn.series.items.reordered)).toBeVisible();
+  await expect.poll(order).toEqual(['second', 'first']);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect.poll(order).toEqual(['second', 'first']);
+
+  // delete the series (the items stay and are cleaned up afterwards)
+  await page.getByRole('button', { name: mn.series.deleteSeries }).click();
+  await dialog(mn.series.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+  await expect(toast(mn.series.deleted)).toBeVisible();
+});
+
+test('playlists: create one shown on the home page, Онцлох cannot be deleted', async () => {
+  const stamp = Date.now();
+  await sidebar(mn.nav.playlists).click();
+  await page.getByRole('button', { name: mn.playlists.new }).first().click();
+  const title = `E2E жагсаалт ${stamp}`;
+  await page.getByLabel(mn.playlists.form.title).fill(title);
+  await page.getByLabel(mn.playlists.form.slug).fill(`e2e-playlist-${stamp}`);
+  await page.getByLabel(mn.playlists.form.showOnHome).check();
+  await page.getByRole('button', { name: mn.playlists.form.create }).click();
+  await expect(toast(mn.playlists.created)).toBeVisible();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+
+  await sidebar(mn.nav.playlists).click();
+  const row = page.getByRole('row', { name: new RegExp(title) });
+  await expect(row).toContainText(mn.playlists.onHome);
+  // it is in the home-order list too
+  await expect(
+    page.locator('section', { hasText: mn.playlists.home.title }).getByText(title),
+  ).toBeVisible();
+
+  // Онцлох (id `featured`) is refused by the server and the error shows as a toast
+  const featured = page.getByRole('row').filter({ hasText: mn.playlists.featured }).first();
+  await featured.getByRole('button', { name: mn.common.delete }).click();
+  await dialog(mn.playlists.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+  await expect(page.getByRole('alert').first()).toBeVisible();
+  await expect(featured).toBeVisible();
+
+  await row.getByRole('button', { name: mn.common.delete }).click();
+  await dialog(mn.playlists.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+  await expect(toast(mn.playlists.deleted)).toBeVisible();
+  await expect(row).toHaveCount(0);
+});
+
+test('tags: create and delete', async () => {
+  const name = `E2E шошго ${Date.now()}`;
+  await sidebar(mn.nav.tags).click();
+  await page.getByRole('button', { name: mn.tags.new }).first().click();
+  await dialog(mn.tags.formCreate).getByLabel(mn.tags.name).fill(name);
+  await dialog(mn.tags.formCreate).getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.tags.created)).toBeVisible();
+
+  const row = page.getByRole('row', { name: new RegExp(name) });
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: mn.common.delete }).click();
+  await dialog(mn.tags.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+  await expect(toast(mn.tags.deleted)).toBeVisible();
+  await expect(row).toHaveCount(0);
+});
+
 test('audit log lists what was done, and can be filtered', async () => {
   await page.getByRole('link', { name: mn.nav.audit }).click();
   await expect(page.getByRole('heading', { name: mn.audit.title })).toBeVisible();

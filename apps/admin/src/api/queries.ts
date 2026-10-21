@@ -10,6 +10,12 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminPlaylistDetailResponseSchema,
+  adminPlaylistListResponseSchema,
+  adminSeriesDetailResponseSchema,
+  adminSeriesListResponseSchema,
+  adminTagResponseSchema,
+  adminTagsResponseSchema,
   adminSubscriptionResponseSchema,
   adminSubscriptionsPageSchema,
   adminUserDetailResponseSchema,
@@ -18,9 +24,13 @@ import {
   dashboardResponseSchema,
   historyResponseSchema,
   plansResponseSchema,
+  type CreatePlaylistRequest,
+  type CreateSeriesRequest,
   type ListAdminEpisodesQuery,
   type ListSubscriptionsQuery,
   type SubscriptionStatus,
+  type UpdatePlaylistRequest,
+  type UpdateSeriesRequest,
 } from '@ongod/shared';
 import { api, apiBlob } from './client';
 
@@ -308,4 +318,213 @@ export function useEpisodeActions(episodeId: string | undefined) {
     onSuccess: done,
   });
   return { create, update, remove, transition, schedule, uploadCover };
+}
+
+// ---- Tags, series and playlists (ADR-0042) ----
+
+export const tagsQuery = () =>
+  queryOptions({
+    queryKey: ['tags'],
+    queryFn: ({ signal }) => api('/admin/tags', { schema: adminTagsResponseSchema, signal }),
+  });
+
+export function useTagActions() {
+  const invalidate = useInvalidate();
+  const done = () => invalidate('tags', 'episodes', 'episode');
+  const create = useMutation({
+    mutationFn: (v: { name: string }) =>
+      api('/admin/tags', { method: 'POST', body: v, schema: adminTagResponseSchema }),
+    onSuccess: done,
+  });
+  const update = useMutation({
+    mutationFn: (v: { id: string; name: string }) =>
+      api(`/admin/tags/${v.id}`, {
+        method: 'PATCH',
+        body: { name: v.name },
+        schema: adminTagResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/admin/tags/${id}`, { method: 'DELETE' }),
+    onSuccess: done,
+  });
+  return { create, update, remove };
+}
+
+function coverForm(file: File): FormData {
+  const form = new FormData();
+  form.append('cover', file);
+  return form;
+}
+
+export const seriesListQuery = () =>
+  queryOptions({
+    queryKey: ['series', 'list'],
+    queryFn: ({ signal }) =>
+      api('/admin/series', { schema: adminSeriesListResponseSchema, signal }),
+  });
+
+export const seriesQuery = (id: string) =>
+  queryOptions({
+    queryKey: ['series', 'detail', id],
+    queryFn: ({ signal }) =>
+      api(`/admin/series/${id}`, { schema: adminSeriesDetailResponseSchema, signal }),
+  });
+
+/** `seriesId` is undefined on the create screen. */
+export function useSeriesActions(seriesId: string | undefined) {
+  const invalidate = useInvalidate();
+  const done = () => invalidate('series', 'episodes', 'episode');
+  const create = useMutation({
+    mutationFn: (v: CreateSeriesRequest) =>
+      api('/admin/series', {
+        method: 'POST',
+        body: v,
+        schema: adminSeriesDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const update = useMutation({
+    mutationFn: (v: UpdateSeriesRequest) =>
+      api(`/admin/series/${seriesId}`, {
+        method: 'PATCH',
+        body: v,
+        schema: adminSeriesDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const remove = useMutation({
+    mutationFn: () => api(`/admin/series/${seriesId}`, { method: 'DELETE' }),
+    onSuccess: done,
+  });
+  const reorder = useMutation({
+    mutationFn: (episodeIds: string[]) =>
+      api(`/admin/series/${seriesId}/reorder`, {
+        method: 'POST',
+        body: { episodeIds },
+        schema: adminSeriesDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  /** One after the other: each item takes the next free part number. */
+  const addItems = useMutation({
+    mutationFn: async (episodeIds: string[]) => {
+      for (const id of episodeIds) {
+        await api(`/admin/episodes/${id}`, {
+          method: 'PATCH',
+          body: { seriesId },
+          schema: adminEpisodeResponseSchema,
+        });
+      }
+    },
+    onSuccess: done,
+  });
+  const removeItem = useMutation({
+    mutationFn: (episodeId: string) =>
+      api(`/admin/episodes/${episodeId}`, {
+        method: 'PATCH',
+        body: { seriesId: null },
+        schema: adminEpisodeResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const uploadCover = useMutation({
+    mutationFn: (file: File) =>
+      api(`/admin/series/${seriesId}/cover`, {
+        method: 'POST',
+        form: coverForm(file),
+        schema: adminSeriesDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  return { create, update, remove, reorder, addItems, removeItem, uploadCover };
+}
+
+export const playlistsQuery = () =>
+  queryOptions({
+    queryKey: ['playlists', 'list'],
+    queryFn: ({ signal }) =>
+      api('/admin/playlists', { schema: adminPlaylistListResponseSchema, signal }),
+  });
+
+export const playlistQuery = (id: string) =>
+  queryOptions({
+    queryKey: ['playlists', 'detail', id],
+    queryFn: ({ signal }) =>
+      api(`/admin/playlists/${id}`, { schema: adminPlaylistDetailResponseSchema, signal }),
+  });
+
+/** `playlistId` is undefined on the create screen and the list. */
+export function usePlaylistActions(playlistId: string | undefined) {
+  const invalidate = useInvalidate();
+  const done = () => invalidate('playlists', 'episodes');
+  const create = useMutation({
+    mutationFn: (v: CreatePlaylistRequest) =>
+      api('/admin/playlists', {
+        method: 'POST',
+        body: v,
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const update = useMutation({
+    mutationFn: (v: UpdatePlaylistRequest) =>
+      api(`/admin/playlists/${playlistId}`, {
+        method: 'PATCH',
+        body: v,
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  /** Takes the id itself: the list deletes any row. */
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/admin/playlists/${id}`, { method: 'DELETE' }),
+    onSuccess: done,
+  });
+  const addItems = useMutation({
+    mutationFn: (episodeIds: string[]) =>
+      api(`/admin/playlists/${playlistId}/items`, {
+        method: 'POST',
+        body: { episodeIds },
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const removeItem = useMutation({
+    mutationFn: (episodeId: string) =>
+      api(`/admin/playlists/${playlistId}/items/${episodeId}`, {
+        method: 'DELETE',
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const reorder = useMutation({
+    mutationFn: (episodeIds: string[]) =>
+      api(`/admin/playlists/${playlistId}/reorder`, {
+        method: 'POST',
+        body: { episodeIds },
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const reorderHome = useMutation({
+    mutationFn: (playlistIds: string[]) =>
+      api('/admin/playlists/home-order', {
+        method: 'POST',
+        body: { playlistIds },
+        schema: adminPlaylistListResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  const uploadCover = useMutation({
+    mutationFn: (file: File) =>
+      api(`/admin/playlists/${playlistId}/cover`, {
+        method: 'POST',
+        form: coverForm(file),
+        schema: adminPlaylistDetailResponseSchema,
+      }),
+    onSuccess: done,
+  });
+  return { create, update, remove, addItems, removeItem, reorder, reorderHome, uploadCover };
 }

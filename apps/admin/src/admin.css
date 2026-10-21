@@ -672,3 +672,18 @@ kbd {
   justify-content: space-between;
   gap: var(--space-sm);
 }
+
+/* ---------- Reorderable lists (series and playlist items) ---------- */
+.admin-list__main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-list__row[draggable='true'] {
+  cursor: grab;
+}
+
+.admin-list__row--dragging {
+  opacity: 0.4;
+}

@@ -8,7 +8,10 @@ const LINKS = [
   { to: '/payments', label: mn.nav.payments },
   { to: '/users', label: mn.nav.users },
   { to: '/episodes', label: mn.nav.episodes },
+  { to: '/series', label: mn.nav.series },
+  { to: '/playlists', label: mn.nav.playlists },
   { to: '/categories', label: mn.nav.categories },
+  { to: '/tags', label: mn.nav.tags },
   { to: '/audit', label: mn.nav.audit },
 ] as const;
 

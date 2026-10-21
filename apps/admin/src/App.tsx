@@ -10,6 +10,11 @@ import { EpisodeEditPage } from './pages/EpisodeEdit';
 import { EpisodesPage } from './pages/Episodes';
 import { AuditPage } from './pages/Audit';
 import { PaymentsPage } from './pages/Payments';
+import { PlaylistEditPage } from './pages/PlaylistEdit';
+import { PlaylistsPage } from './pages/Playlists';
+import { SeriesEditPage } from './pages/SeriesEdit';
+import { SeriesPage } from './pages/Series';
+import { TagsPage } from './pages/Tags';
 import { UserDetailPage } from './pages/UserDetail';
 import { UsersPage } from './pages/Users';
 
@@ -53,7 +58,14 @@ export function App() {
             <Route path="episodes" element={<EpisodesPage />} />
             <Route path="episodes/new" element={<EpisodeEditPage />} />
             <Route path="episodes/:id" element={<EpisodeEditPage />} />
+            <Route path="series" element={<SeriesPage />} />
+            <Route path="series/new" element={<SeriesEditPage />} />
+            <Route path="series/:id" element={<SeriesEditPage />} />
+            <Route path="playlists" element={<PlaylistsPage />} />
+            <Route path="playlists/new" element={<PlaylistEditPage />} />
+            <Route path="playlists/:id" element={<PlaylistEditPage />} />
             <Route path="categories" element={<CategoriesPage />} />
+            <Route path="tags" element={<TagsPage />} />
             <Route path="audit" element={<AuditPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
