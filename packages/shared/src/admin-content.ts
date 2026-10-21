@@ -42,6 +42,21 @@ export const updateCategoryRequestSchema = z
 /** The new order: every category id, first to last. */
 export const reorderCategoriesRequestSchema = z.object({ ids: z.array(idSchema).min(1).max(200) });
 
+// ---- Tags ----
+
+export const adminTagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  episodeCount: z.number().int(),
+});
+export type AdminTagDto = z.infer<typeof adminTagSchema>;
+export const adminTagsResponseSchema = z.object({ tags: z.array(adminTagSchema) });
+export const adminTagResponseSchema = z.object({ tag: adminTagSchema });
+/** The slug is derived on the server from the name. */
+export const createTagRequestSchema = z.object({ name: categoryNameSchema });
+export const updateTagRequestSchema = z.object({ name: categoryNameSchema });
+
 // ---- Episodes ----
 
 export const episodeStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']);

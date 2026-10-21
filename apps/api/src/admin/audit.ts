@@ -9,7 +9,7 @@ export function audit(
   tx: Prisma.TransactionClient,
   actorId: string,
   action: string,
-  targetType: 'User' | 'Subscription' | 'Export' | 'Episode' | 'Category',
+  targetType: 'User' | 'Subscription' | 'Export' | 'Episode' | 'Category' | 'Tag',
   targetId: string,
   data: Prisma.InputJsonObject,
 ) {

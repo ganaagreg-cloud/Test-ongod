@@ -42,6 +42,47 @@ export const makeCategory = (over: { name?: string; slug?: string; sortOrder?: n
   });
 };
 
+export const makeSeries = (over: { title?: string; slug?: string; description?: string } = {}) => {
+  seq++;
+  return testDb.series.create({
+    data: {
+      title: over.title ?? `Series ${seq}`,
+      slug: over.slug ?? `series-${seq}`,
+      description: over.description ?? '',
+    },
+  });
+};
+
+export const makePlaylist = (
+  over: {
+    title?: string;
+    slug?: string;
+    description?: string;
+    showOnHome?: boolean;
+    homeOrder?: number;
+    isFeatured?: boolean;
+  } = {},
+) => {
+  seq++;
+  return testDb.playlist.create({
+    data: {
+      title: over.title ?? `Playlist ${seq}`,
+      slug: over.slug ?? `playlist-${seq}`,
+      description: over.description ?? '',
+      showOnHome: over.showOnHome ?? false,
+      homeOrder: over.homeOrder ?? 0,
+      isFeatured: over.isFeatured ?? false,
+    },
+  });
+};
+
+export const makeTag = (over: { name?: string; slug?: string } = {}) => {
+  seq++;
+  return testDb.tag.create({
+    data: { name: over.name ?? `Tag ${seq}`, slug: over.slug ?? `tag-${seq}` },
+  });
+};
+
 type MediaState = 'READY' | 'PROCESSING' | 'UPLOADING' | 'FAILED' | 'NONE';
 
 export async function makeEpisode(

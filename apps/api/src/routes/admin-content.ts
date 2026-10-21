@@ -5,9 +5,12 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminTagResponseSchema,
+  adminTagsResponseSchema,
   contentIdParamsSchema,
   createCategoryRequestSchema,
   createEpisodeRequestSchema,
+  createTagRequestSchema,
   listAdminEpisodesQuerySchema,
   MAX_COVER_BYTES,
   removeDeviceParamsSchema,
@@ -15,9 +18,11 @@ import {
   scheduleRequestSchema,
   updateCategoryRequestSchema,
   updateEpisodeRequestSchema,
+  updateTagRequestSchema,
 } from '@ongod/shared';
 import type { AdminGuards } from '../admin/guard';
 import type { ContentService } from '../admin/content';
+import type { TagService } from '../admin/tags';
 import { authOf } from '../auth/guard';
 import { AppError } from '../errors';
 import { ADMIN_HEADER, type TusUploads } from '../media/tus';
@@ -53,9 +58,9 @@ async function readCover(req: FastifyRequest): Promise<Buffer> {
  */
 export async function adminContentRoutes(
   app: FastifyInstance,
-  opts: { guards: AdminGuards; content: ContentService; tus: TusUploads },
+  opts: { guards: AdminGuards; content: ContentService; tags: TagService; tus: TusUploads },
 ) {
-  const { content, tus } = opts;
+  const { content, tags, tus } = opts;
   app.addHook('preHandler', opts.guards.requireAdmin);
   app.addHook('onSend', async (_req, reply) => {
     if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'private, no-store');
@@ -95,6 +100,27 @@ export async function adminContentRoutes(
   app.delete('/admin/categories/:id', async (req, reply) => {
     const { id } = contentIdParamsSchema.parse(req.params);
     await content.deleteCategory(authOf(req).user, id);
+    return reply.code(204).send();
+  });
+
+  // ---- tags ----
+  app.get('/admin/tags', async () => adminTagsResponseSchema.parse({ tags: await tags.list() }));
+
+  app.post('/admin/tags', async (req, reply) => {
+    const body = createTagRequestSchema.parse(req.body);
+    const tag = await tags.create(authOf(req).user, body);
+    return reply.code(201).send(adminTagResponseSchema.parse({ tag }));
+  });
+
+  app.patch('/admin/tags/:id', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = updateTagRequestSchema.parse(req.body);
+    return adminTagResponseSchema.parse({ tag: await tags.rename(authOf(req).user, id, body) });
+  });
+
+  app.delete('/admin/tags/:id', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    await tags.remove(authOf(req).user, id);
     return reply.code(204).send();
   });
 

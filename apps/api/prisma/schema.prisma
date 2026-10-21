@@ -203,29 +203,29 @@ model Plan {
 }
 
 model Subscription {
-  id             String             @id @default(cuid())
-  userId         String
-  planId         String
-  status         SubscriptionStatus @default(PENDING_PAYMENT)
+  id                  String             @id @default(cuid())
+  userId              String
+  planId              String
+  status              SubscriptionStatus @default(PENDING_PAYMENT)
   /// ONG-XXXXX
-  referenceCode  String             @unique
-  amountMnt      Int
-  payerNote      String?            @db.Text
-  transferAt     DateTime?
-  proofImagePath String?
-  submittedAt    DateTime?
-  startsAt       DateTime?
-  endsAt         DateTime?
-  decidedById    String?
-  decidedAt      DateTime?
-  rejectReason   String?            @db.Text
+  referenceCode       String             @unique
+  amountMnt           Int
+  payerNote           String?            @db.Text
+  transferAt          DateTime?
+  proofImagePath      String?
+  submittedAt         DateTime?
+  startsAt            DateTime?
+  endsAt              DateTime?
+  decidedById         String?
+  decidedAt           DateTime?
+  rejectReason        String?            @db.Text
   /// Set once the "access ends in 14 days" reminder was queued (SPEC F).
-  reminderSentAt DateTime?
-  paymentProvider PaymentProvider   @default(NONE)
+  reminderSentAt      DateTime?
+  paymentProvider     PaymentProvider    @default(NONE)
   /// Wire payment intent id (QPay checkout); one subscription per intent.
-  wirePaymentIntentId String?       @unique
-  checkoutUrl    String?            @db.Text
-  createdAt      DateTime           @default(now())
+  wirePaymentIntentId String?            @unique
+  checkoutUrl         String?            @db.Text
+  createdAt           DateTime           @default(now())
 
   user      User      @relation("SubscriptionUser", fields: [userId], references: [id])
   plan      Plan      @relation(fields: [planId], references: [id])
@@ -269,24 +269,90 @@ model Category {
 }
 
 model Episode {
-  id           String        @id @default(cuid())
-  categoryId   String
-  title        String
-  description  String        @db.Text
-  coverPath    String
-  status       EpisodeStatus @default(DRAFT)
-  scheduledFor DateTime?
-  publishedAt  DateTime?
-  createdAt    DateTime      @default(now())
+  id              String        @id @default(cuid())
+  categoryId      String
+  title           String
+  description     String        @db.Text
+  coverPath       String
+  status          EpisodeStatus @default(DRAFT)
+  scheduledFor    DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  seriesId        String?
+  seriesPart      Int?
+  // Whether publishing sends a push to members; pushText overrides the default text.
+  notifyOnPublish Boolean       @default(true)
+  pushText        String?       @db.Text
 
   category         Category           @relation(fields: [categoryId], references: [id])
+  series           Series?            @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   mediaAssets      MediaAsset[]
   playbackProgress PlaybackProgress[]
   savedBy          SavedEpisode[]
+  tags             EpisodeTag[]
+  playlistItems    PlaylistItem[]
 
+  @@unique([seriesId, seriesPart])
   @@index([status, publishedAt])
   @@index([status, scheduledFor])
   @@index([categoryId])
+  @@index([seriesId])
+}
+
+model Series {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String   @default(dbgenerated("('')")) @db.Text
+  coverPath   String?
+  createdAt   DateTime @default(now())
+
+  episodes Episode[]
+}
+
+model Playlist {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String   @default(dbgenerated("('')")) @db.Text
+  coverPath   String?
+  showOnHome  Boolean  @default(false)
+  homeOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  items PlaylistItem[]
+}
+
+model PlaylistItem {
+  playlistId String
+  episodeId  String
+  position   Int
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  episode  Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, episodeId])
+  @@index([episodeId])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  episodes EpisodeTag[]
+}
+
+model EpisodeTag {
+  episodeId String
+  tagId     String
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([episodeId, tagId])
+  @@index([tagId])
 }
 
 model MediaAsset {

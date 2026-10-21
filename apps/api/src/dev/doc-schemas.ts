@@ -4,6 +4,10 @@
 import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
+  adminTagResponseSchema,
+  adminTagsResponseSchema,
+  createTagRequestSchema,
+  updateTagRequestSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
   createCategoryRequestSchema,
@@ -439,6 +443,20 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     responses: { 200: adminCategoryResponseSchema },
   }),
   'DELETE /v1/admin/categories/:id': admin('Delete an empty category', {
+    responses: { 204: noContent },
+  }),
+  'GET /v1/admin/tags': admin('Tags with episode counts', {
+    responses: { 200: adminTagsResponseSchema },
+  }),
+  'POST /v1/admin/tags': admin('Create a tag; the slug is derived from the name', {
+    body: createTagRequestSchema,
+    responses: { 201: adminTagResponseSchema },
+  }),
+  'PATCH /v1/admin/tags/:id': admin('Rename a tag (the slug stays)', {
+    body: updateTagRequestSchema,
+    responses: { 200: adminTagResponseSchema },
+  }),
+  'DELETE /v1/admin/tags/:id': admin('Delete a tag; its episodes stay', {
     responses: { 204: noContent },
   }),
   'GET /v1/admin/episodes': admin('Episodes: status, category, search, paging', {

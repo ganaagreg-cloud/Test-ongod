@@ -7,6 +7,7 @@ import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstanc
 import { createDecisionService } from './admin/decisions';
 import { createAdminGuards } from './admin/guard';
 import { createContentService } from './admin/content';
+import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
 import { AuthLimiter } from './auth/rate-limit';
@@ -185,6 +186,7 @@ export async function buildApp(deps: AppDeps) {
           dirs: mediaRuntime.dirs,
           now: deps.now,
         }),
+        tags: createTagService({ db }),
         tus,
       });
       await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
