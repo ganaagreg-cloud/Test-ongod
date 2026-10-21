@@ -11,6 +11,8 @@ import {
   adminEpisodesPageSchema,
   adminTagResponseSchema,
   adminTagsResponseSchema,
+  bulkRequestSchema,
+  bulkResponseSchema,
   contentIdParamsSchema,
   createCategoryRequestSchema,
   createEpisodeRequestSchema,
@@ -21,6 +23,7 @@ import {
   MAX_COVER_BYTES,
   playlistItemParamsSchema,
   playlistItemsRequestSchema,
+  previewResponseSchema,
   removeDeviceParamsSchema,
   reorderCategoriesRequestSchema,
   reorderHomeRequestSchema,
@@ -34,6 +37,7 @@ import {
   updateTagRequestSchema,
 } from '@ongod/shared';
 import type { AdminGuards } from '../admin/guard';
+import type { BulkService } from '../admin/bulk';
 import type { ContentService } from '../admin/content';
 import type { PlaylistService } from '../admin/playlists';
 import type { SeriesService } from '../admin/series';
@@ -79,10 +83,11 @@ export async function adminContentRoutes(
     tags: TagService;
     series: SeriesService;
     playlists: PlaylistService;
+    bulk: BulkService;
     tus: TusUploads;
   },
 ) {
-  const { content, tags, series, playlists, tus } = opts;
+  const { content, tags, series, playlists, bulk, tus } = opts;
   app.addHook('preHandler', opts.guards.requireAdmin);
   app.addHook('onSend', async (_req, reply) => {
     if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'private, no-store');
@@ -259,6 +264,23 @@ export async function adminContentRoutes(
     const body = createEpisodeRequestSchema.parse(req.body);
     const episode = await content.createEpisode(authOf(req).user, body);
     return reply.code(201).send(adminEpisodeResponseSchema.parse({ episode }));
+  });
+
+  app.post('/admin/episodes/bulk', async (req) => {
+    const body = bulkRequestSchema.parse(req.body);
+    return bulkResponseSchema.parse(await bulk.run(authOf(req).user, body.ids, body.action));
+  });
+
+  app.post('/admin/episodes/:id/duplicate', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const episode = await content.duplicate(authOf(req).user, id);
+    return reply.code(201).send(adminEpisodeResponseSchema.parse({ episode }));
+  });
+
+  app.post('/admin/episodes/:id/preview', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const preview = previewResponseSchema.parse(await content.preview(id));
+    return reply.header('cache-control', 'no-store').send(preview);
   });
 
   app.get('/admin/episodes/:id', async (req) => {

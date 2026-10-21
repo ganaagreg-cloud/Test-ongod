@@ -4,9 +4,10 @@ import type {
   AdminEpisodeDto,
   CreateEpisodeRequest,
   ListAdminEpisodesQuery,
+  PreviewResponse,
   UpdateEpisodeRequest,
 } from '@ongod/shared';
-import { thumbPathOf, type MediaUrls } from '../catalog/media';
+import { PLAY_URL_TTL_MS, thumbPathOf, type MediaUrls } from '../catalog/media';
 import type { Db, Prisma } from '../db';
 import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
@@ -35,6 +36,20 @@ const episodeInclude = {
 type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof episodeInclude }>;
 
 const OPEN_STATES = ['DRAFT', 'SCHEDULED'] as const;
+type EpisodeState = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED';
+
+/** What an episode still lacks before it can be published (the same rule for one and for bulk). */
+export function missingOf(
+  coverPath: string,
+  newestMedia: { status: string } | null | undefined,
+): AdminEpisodeDto['missing'] {
+  const missing: AdminEpisodeDto['missing'] = [];
+  if (!coverPath) missing.push('cover');
+  if (newestMedia?.status !== 'READY') missing.push('media');
+  return missing;
+}
+
+export const DUPLICATE_SUFFIX = ' (хуулбар)';
 
 /** Admin side of SPEC G: categories, episodes and their media. */
 export function createContentService(deps: {
@@ -51,9 +66,7 @@ export function createContentService(deps: {
   function toEpisodeDto(row: EpisodeRow): AdminEpisodeDto {
     const asset = row.mediaAssets[0] ?? null;
     const covers = row.coverPath ? media.cover(row.coverPath, now()) : null;
-    const missing: AdminEpisodeDto['missing'] = [];
-    if (!row.coverPath) missing.push('cover');
-    if (asset?.status !== 'READY') missing.push('media');
+    const missing = missingOf(row.coverPath, asset);
     return {
       id: row.id,
       title: row.title,
@@ -170,7 +183,38 @@ export function createContentService(deps: {
     }
   }
 
+  /** DRAFT/SCHEDULED -> PUBLISHED inside the caller's transaction (single and bulk publish). */
+  async function publishTx(tx: Prisma.TransactionClient, actor: User, id: string, at: Date) {
+    const done = await tx.episode.updateMany({
+      where: { id, status: { in: [...OPEN_STATES] } },
+      data: { status: 'PUBLISHED', publishedAt: at, scheduledFor: null },
+    });
+    if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
+    await audit(tx, actor.id, 'episode.publish', 'Episode', id, {});
+  }
+
+  /** `from` -> `to` with a status precondition inside the caller's transaction. */
+  async function transitionTx(
+    tx: Prisma.TransactionClient,
+    actor: User,
+    id: string,
+    from: EpisodeState,
+    to: EpisodeState,
+    action: string,
+    extra: Prisma.EpisodeUpdateManyMutationInput = {},
+  ) {
+    const done = await tx.episode.updateMany({
+      where: { id, status: from },
+      data: { status: to, ...extra },
+    });
+    if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
+    await audit(tx, actor.id, action, 'Episode', id, { from, to });
+  }
+
   return {
+    /** Writes that join the caller's transaction, for bulk actions. */
+    tx: { publish: publishTx, transition: transitionTx },
+
     // ---------- Categories ----------
 
     async listCategories() {
@@ -250,13 +294,32 @@ export function createContentService(deps: {
       const where: Prisma.EpisodeWhereInput = {
         ...(query.status ? { status: query.status } : {}),
         ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+        ...(query.seriesId ? { seriesId: query.seriesId } : {}),
+        ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
+        ...(query.playlistId ? { playlistItems: { some: { playlistId: query.playlistId } } } : {}),
+        ...(query.mediaStatus === 'NONE'
+          ? { mediaAssets: { none: {} } }
+          : query.mediaStatus
+            ? { mediaAssets: { some: { status: query.mediaStatus } } }
+            : {}),
+        ...(query.from && query.to
+          ? {
+              OR: [
+                { scheduledFor: { gte: new Date(query.from), lt: new Date(query.to) } },
+                { publishedAt: { gte: new Date(query.from), lt: new Date(query.to) } },
+              ],
+            }
+          : {}),
         ...(query.q ? { title: { contains: escapeLike(query.q) } } : {}),
       };
+      const sortField = (
+        { created: 'createdAt', published: 'publishedAt', scheduled: 'scheduledFor' } as const
+      )[query.sort];
       const [rows, total] = await Promise.all([
         db.episode.findMany({
           where,
           include: episodeInclude,
-          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          orderBy: [{ [sortField]: 'desc' }, { id: 'desc' }],
           skip: (query.page - 1) * query.limit,
           take: query.limit,
         }),
@@ -359,19 +422,12 @@ export function createContentService(deps: {
     /** DRAFT or SCHEDULED -> PUBLISHED, but only with a cover and READY audio. */
     async publish(actor: User, id: string) {
       const row = await loadEpisode(id);
-      const dto = toEpisodeDto(row);
-      if (dto.missing.length > 0) {
-        throw new AppError(409, 'NOT_READY_TO_PUBLISH', undefined, { missing: dto.missing });
+      const missing = missingOf(row.coverPath, row.mediaAssets[0]);
+      if (missing.length > 0) {
+        throw new AppError(409, 'NOT_READY_TO_PUBLISH', undefined, { missing });
       }
       const at = now();
-      await db.$transaction(async (tx) => {
-        const done = await tx.episode.updateMany({
-          where: { id, status: { in: [...OPEN_STATES] } },
-          data: { status: 'PUBLISHED', publishedAt: at, scheduledFor: null },
-        });
-        if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
-        await audit(tx, actor.id, 'episode.publish', 'Episode', id, {});
-      });
+      await db.$transaction((tx) => publishTx(tx, actor, id, at));
       return this.getEpisode(id);
     },
 
@@ -416,20 +472,69 @@ export function createContentService(deps: {
     async transition(
       actor: User,
       id: string,
-      from: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED',
-      to: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'ARCHIVED',
+      from: EpisodeState,
+      to: EpisodeState,
       action: string,
       extra: Prisma.EpisodeUpdateManyMutationInput = {},
     ) {
       await loadEpisode(id);
-      await db.$transaction(async (tx) => {
-        const done = await tx.episode.updateMany({
-          where: { id, status: from },
-          data: { status: to, ...extra },
+      await db.$transaction((tx) => transitionTx(tx, actor, id, from, to, action, extra));
+    },
+
+    /**
+     * A new DRAFT with the text, category, series (without a part), tags and notify settings of
+     * `id`. No cover and no media: those are per recording.
+     */
+    async duplicate(actor: User, id: string) {
+      const copyId = await db.$transaction(async (tx) => {
+        const source = await tx.episode.findUnique({
+          where: { id },
+          include: { tags: { select: { tagId: true } } },
         });
-        if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
-        await audit(tx, actor.id, action, 'Episode', id, { from, to });
+        if (!source) throw new AppError(404, 'NOT_FOUND');
+        const copy = await tx.episode.create({
+          data: {
+            title: source.title.slice(0, 200 - DUPLICATE_SUFFIX.length) + DUPLICATE_SUFFIX,
+            description: source.description,
+            categoryId: source.categoryId,
+            coverPath: '',
+            seriesId: source.seriesId,
+            seriesPart: null,
+            notifyOnPublish: source.notifyOnPublish,
+            pushText: source.pushText,
+          },
+        });
+        await setTags(
+          tx,
+          copy.id,
+          source.tags.map((t) => t.tagId),
+        );
+        await audit(tx, actor.id, 'episode.duplicate', 'Episode', copy.id, { from: id });
+        return copy.id;
       });
+      return this.getEpisode(copyId);
+    },
+
+    /**
+     * A signed play link for the admin to check the recording, whatever the episode's status:
+     * no member access or device checks (the caller is an admin).
+     */
+    async preview(id: string): Promise<PreviewResponse> {
+      const row = await loadEpisode(id);
+      const asset = row.mediaAssets[0];
+      if (asset?.status !== 'READY') throw new AppError(409, 'MEDIA_NOT_READY');
+      if (!media.enabled || (asset.kind === 'VIDEO' && !media.videoEnabled)) {
+        throw new AppError(503, 'SERVICE_UNAVAILABLE');
+      }
+      const expiresAt = new Date(now().getTime() + PLAY_URL_TTL_MS);
+      return {
+        kind: asset.kind,
+        url:
+          asset.kind === 'VIDEO'
+            ? media.video(asset.path, expiresAt)
+            : media.audio(asset.path, expiresAt),
+        expiresAt: expiresAt.toISOString(),
+      };
     },
 
     /** Only drafts can be deleted; the stored files are removed by a job. */

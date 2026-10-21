@@ -216,30 +216,37 @@ export function createPlaylistService(deps: {
       });
     },
 
+    /**
+     * Appends in the given order after the current last; episodes already in are skipped. Runs
+     * inside the caller's transaction (bulk actions); the row lock is its first statement, so the
+     * caller must not have read anything before it. Call `ensureFeatured` first for Онцлох.
+     */
+    async addItemsTx(tx: Tx, actor: User, id: string, episodeIds: string[]) {
+      const wanted = [...new Set(episodeIds)];
+      await lock(tx, id);
+      const known = await tx.episode.findMany({
+        where: { id: { in: wanted } },
+        select: { id: true },
+      });
+      if (known.length !== wanted.length) throw new AppError(404, 'NOT_FOUND');
+      const current = await tx.playlistItem.findMany({
+        where: { playlistId: id },
+        select: { episodeId: true, position: true },
+      });
+      const have = new Set(current.map((i) => i.episodeId));
+      let position = current.reduce((max, i) => Math.max(max, i.position), 0);
+      for (const episodeId of wanted.filter((e) => !have.has(e))) {
+        position += 1;
+        await tx.playlistItem.create({ data: { playlistId: id, episodeId, position } });
+        await audit(tx, actor.id, 'playlist.add-item', 'Playlist', id, { episodeId, position });
+      }
+    },
+
     /** Appends in the given order after the current last; episodes already in are skipped. */
     async addItems(actor: User, id: string, episodeIds: string[]) {
       if (id === FEATURED_PLAYLIST_ID) await ensureFeatured();
-      const wanted = [...new Set(episodeIds)];
       try {
-        await db.$transaction(async (tx) => {
-          await lock(tx, id);
-          const known = await tx.episode.findMany({
-            where: { id: { in: wanted } },
-            select: { id: true },
-          });
-          if (known.length !== wanted.length) throw new AppError(404, 'NOT_FOUND');
-          const current = await tx.playlistItem.findMany({
-            where: { playlistId: id },
-            select: { episodeId: true, position: true },
-          });
-          const have = new Set(current.map((i) => i.episodeId));
-          let position = current.reduce((max, i) => Math.max(max, i.position), 0);
-          for (const episodeId of wanted.filter((e) => !have.has(e))) {
-            position += 1;
-            await tx.playlistItem.create({ data: { playlistId: id, episodeId, position } });
-            await audit(tx, actor.id, 'playlist.add-item', 'Playlist', id, { episodeId, position });
-          }
-        });
+        await db.$transaction((tx) => this.addItemsTx(tx, actor, id, episodeIds));
       } catch (err) {
         return conflictOnUnique(err);
       }

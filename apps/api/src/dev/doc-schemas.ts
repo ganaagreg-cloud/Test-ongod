@@ -25,7 +25,10 @@ import {
   createCategoryRequestSchema,
   createEpisodeRequestSchema,
   historyResponseSchema,
+  bulkRequestSchema,
+  bulkResponseSchema,
   listAdminEpisodesQuerySchema,
+  previewResponseSchema,
   reorderCategoriesRequestSchema,
   scheduleRequestSchema,
   updateCategoryRequestSchema,
@@ -555,7 +558,7 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 202: adminPlaylistDetailResponseSchema },
     },
   ),
-  'GET /v1/admin/episodes': admin('Episodes: status, category, search, paging', {
+  'GET /v1/admin/episodes': admin('Episodes: filters (status, category, series, tag, playlist, media), sort, calendar range, search, paging', {
     query: listAdminEpisodesQuerySchema,
     responses: { 200: adminEpisodesPageSchema },
   }),
@@ -563,6 +566,20 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     body: createEpisodeRequestSchema,
     responses: { 201: adminEpisodeResponseSchema },
   }),
+  'POST /v1/admin/episodes/bulk': admin('Bulk action on up to 100 episodes, all or nothing', {
+    description:
+      'Actions: setCategory, addToPlaylist, addTag, removeTag, publish, archive. An unknown id is 404, a not-ready publish is 409 NOT_READY_TO_PUBLISH, a wrong status is 409 EPISODE_STATE; `error.details.ids` lists the ids at fault.',
+    body: bulkRequestSchema,
+    responses: { 200: bulkResponseSchema },
+  }),
+  'POST /v1/admin/episodes/:id/duplicate': admin(
+    'Copy an episode as a new draft (text, category, series, tags; no cover, no media)',
+    { responses: { 201: adminEpisodeResponseSchema } },
+  ),
+  'POST /v1/admin/episodes/:id/preview': admin(
+    'A signed play link for any episode with READY media (admin only, not cached)',
+    { responses: { 200: previewResponseSchema } },
+  ),
   'GET /v1/admin/episodes/:id': admin('One episode with its media status', {
     responses: { 200: adminEpisodeResponseSchema },
   }),

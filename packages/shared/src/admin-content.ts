@@ -213,13 +213,33 @@ export const adminEpisodeSchema = z.object({
 export type AdminEpisodeDto = z.infer<typeof adminEpisodeSchema>;
 export const adminEpisodeResponseSchema = z.object({ episode: adminEpisodeSchema });
 
-export const listAdminEpisodesQuerySchema = z.object({
-  status: z.preprocess(emptyToUndefined, episodeStatusSchema.optional()),
-  categoryId: z.preprocess(emptyToUndefined, idSchema.optional()),
-  q: z.preprocess(emptyToUndefined, z.string().trim().min(1).max(100).optional()),
-  page: z.coerce.number().int().min(1).max(10_000).default(1),
-  limit: z.coerce.number().int().min(1).max(PAGE_SIZE_MAX).default(PAGE_SIZE_DEFAULT),
-});
+export const MAX_CALENDAR_SPAN_DAYS = 62;
+const queryDatetime = z.preprocess(emptyToUndefined, z.iso.datetime({ offset: true }).optional());
+
+export const listAdminEpisodesQuerySchema = z
+  .object({
+    status: z.preprocess(emptyToUndefined, episodeStatusSchema.optional()),
+    categoryId: z.preprocess(emptyToUndefined, idSchema.optional()),
+    seriesId: z.preprocess(emptyToUndefined, idSchema.optional()),
+    tagId: z.preprocess(emptyToUndefined, idSchema.optional()),
+    playlistId: z.preprocess(emptyToUndefined, idSchema.optional()),
+    /** The newest media file's status, or NONE for episodes without media. */
+    mediaStatus: z.preprocess(emptyToUndefined, z.union([mediaStatusSchema, z.literal('NONE')]).optional()),
+    /** Always newest first. */
+    sort: z.preprocess(emptyToUndefined, z.enum(['created', 'published', 'scheduled']).default('created')),
+    /** Calendar range on scheduledFor OR publishedAt: from inclusive, to exclusive, both or neither. */
+    from: queryDatetime,
+    to: queryDatetime,
+    q: z.preprocess(emptyToUndefined, z.string().trim().min(1).max(100).optional()),
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    limit: z.coerce.number().int().min(1).max(PAGE_SIZE_MAX).default(PAGE_SIZE_DEFAULT),
+  })
+  .refine((v) => (v.from === undefined) === (v.to === undefined))
+  .refine((v) => {
+    if (v.from === undefined || v.to === undefined) return true;
+    const span = new Date(v.to).getTime() - new Date(v.from).getTime();
+    return span > 0 && span <= MAX_CALENDAR_SPAN_DAYS * 24 * 60 * 60_000;
+  });
 export type ListAdminEpisodesQuery = z.infer<typeof listAdminEpisodesQuerySchema>;
 export const adminEpisodesPageSchema = z.object({
   items: z.array(adminEpisodeSchema),
@@ -250,3 +270,29 @@ export const scheduleRequestSchema = z.object({ scheduledFor: z.iso.datetime({ o
 // ---- Subscription history and device removal (admin) ----
 
 export const removeDeviceParamsSchema = z.object({ id: idSchema, deviceId: idSchema });
+
+// ---- Preview and bulk actions ----
+
+export const previewResponseSchema = z.object({
+  kind: mediaKindSchema,
+  url: z.string(),
+  expiresAt: z.iso.datetime(),
+});
+export type PreviewResponse = z.infer<typeof previewResponseSchema>;
+
+export const BULK_MAX_IDS = 100;
+export const bulkActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('setCategory'), categoryId: idSchema }),
+  z.object({ type: z.literal('addToPlaylist'), playlistId: idSchema }),
+  z.object({ type: z.literal('addTag'), tagId: idSchema }),
+  z.object({ type: z.literal('removeTag'), tagId: idSchema }),
+  z.object({ type: z.literal('publish') }),
+  z.object({ type: z.literal('archive') }),
+]);
+export type BulkAction = z.infer<typeof bulkActionSchema>;
+export const bulkRequestSchema = z.object({
+  ids: z.array(idSchema).min(1).max(BULK_MAX_IDS),
+  action: bulkActionSchema,
+});
+export type BulkRequest = z.infer<typeof bulkRequestSchema>;
+export const bulkResponseSchema = z.object({ updated: z.number().int() });

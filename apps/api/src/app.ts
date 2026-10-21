@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstance } from 'fastify';
 import { createDecisionService } from './admin/decisions';
 import { createAdminGuards } from './admin/guard';
+import { createBulkService } from './admin/bulk';
 import { createContentService } from './admin/content';
 import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
@@ -180,14 +181,21 @@ export async function buildApp(deps: AppDeps) {
         decisions: createDecisionService({ db, now: deps.now }),
         queries: createAdminQueries({ db, receipts, now: deps.now }),
       });
+      const contentService = createContentService({
+        db,
+        media: mediaUrls,
+        dirs: mediaRuntime.dirs,
+        now: deps.now,
+      });
+      const playlistService = createPlaylistService({
+        db,
+        media: mediaUrls,
+        dirs: mediaRuntime.dirs,
+        now: deps.now,
+      });
       await v1.register(adminContentRoutes, {
         guards: createAdminGuards(requireAuth),
-        content: createContentService({
-          db,
-          media: mediaUrls,
-          dirs: mediaRuntime.dirs,
-          now: deps.now,
-        }),
+        content: contentService,
         tags: createTagService({ db }),
         series: createSeriesService({
           db,
@@ -195,10 +203,11 @@ export async function buildApp(deps: AppDeps) {
           dirs: mediaRuntime.dirs,
           now: deps.now,
         }),
-        playlists: createPlaylistService({
+        playlists: playlistService,
+        bulk: createBulkService({
           db,
-          media: mediaUrls,
-          dirs: mediaRuntime.dirs,
+          content: contentService,
+          playlists: playlistService,
           now: deps.now,
         }),
         tus,
