@@ -15,7 +15,7 @@ Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fast
 
 - Mobile app (iOS + Android): sign up, log in, browse, play, save, profile, settings, delete account. No payment UI.
 - Portal (web, mobile-first): sign up, log in, plans, pay with QPay (via Wire, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]), subscription status, privacy policy, terms, account deletion page.
-- Admin (web): payments queue, users, episodes, categories, uploads, dashboard, audit log. Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
+- Admin (web): payments queue, users, content (Контент), series (Цуврал), playlists (Жагсаалт), categories, tags (Шошго), uploads, dashboard, audit log ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]). Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
 
 # Workflows
 
@@ -33,7 +33,7 @@ E. Admin approval (old bank-transfer requests and manual grants only; QPay payme
 
 F. Access ends: 14 days before -> push + email, once. At expiry -> playback is refused; the app shows the no-access state.
 
-G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push to all active users on publish.
+G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Optionally one series (with part number), any playlists and tags. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push to active users on publish (now, scheduled, or one combined push for a bulk publish), switchable per item with optional custom text. Admin: filters, bulk actions, preview, duplicate, calendar. Decision: [[ADR-0042-content-organisation-and-publish-push|ADR-0042]].
 
 H. Account: change password, change email (re-verify), forgot password (email code), delete account (soft delete, revoke sessions, anonymize personal data, keep payment records).
 
@@ -53,7 +53,12 @@ Subscription(id, userId, planId, status PENDING_PAYMENT|PAYMENT_SUBMITTED|ACTIVE
 Payment(id, subscriptionId, method BANK_TRANSFER|QPAY|MANUAL_GRANT, amountMnt, providerRef?, status, createdAt)
 WebhookEvent(id, type, receivedAt) (Wire event ids, so a retried webhook is handled once)
 Category(id, name, slug uniq, sortOrder, coverPath?)
-Episode(id, categoryId, title, description, coverPath, status DRAFT|SCHEDULED|PUBLISHED|ARCHIVED, scheduledFor?, publishedAt?, createdAt)
+Episode(id, categoryId, title, description, coverPath, status DRAFT|SCHEDULED|PUBLISHED|ARCHIVED, scheduledFor?, publishedAt?, seriesId?, seriesPart?, notifyOnPublish, pushText?, createdAt)
+Series(id, title, slug uniq, description, coverPath?, createdAt) (uniq(seriesId, seriesPart) on Episode)
+Playlist(id, title, slug uniq, description?, coverPath?, showOnHome, homeOrder, isFeatured, createdAt) (one built-in isFeatured row, Онцлох, not deletable)
+PlaylistItem(playlistId, episodeId, position; pk(playlistId, episodeId))
+Tag(id, name, slug uniq)
+EpisodeTag(episodeId, tagId; pk(episodeId, tagId))
 MediaAsset(id, episodeId, kind AUDIO|VIDEO, provider BUNNY_STORAGE|BUNNY_STREAM, path, status UPLOADING|PROCESSING|READY|FAILED, failReason?, sizeBytes?, durationSec?)
 PlaybackProgress(userId, episodeId, positionSec, completed, updatedAt; pk(userId, episodeId))
 SavedEpisode(userId, episodeId, createdAt; pk(userId, episodeId))

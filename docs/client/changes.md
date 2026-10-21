@@ -54,3 +54,11 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** paid by the client (Ganaa confirmed on 2026-10-19 that the payment for QPay is received). Amount and written confirmation still to be added to [[approvals]].
 - **Status:** accepted as a paid add-on. Work not started. Needs first: QPay merchant credentials or sandbox access, a research note on the QPay API (`/research`) (TO-VERIFY), then an ADR.
 - **Notes:** [[open-questions]] #6 (individual merchant account). Payment UI in the mobile app stays out for the first release ([[R-apple-no-payment-ui]], [[R-google-play-payments]]). Turning in-app payment on in a later update is the owner's accepted risk (store rules, guideline 3.1.1) and gets its own ADR if it is ever built.
+
+### 2026-10-21: Content management (series, playlists, tags, admin tools) and free content
+
+- **Client asked** (relayed by Ganaa, 2026-10-21): organise content by series, playlists and tags, feature items on Нүүр, faster admin tools (filters, bulk actions, preview, duplicate, calendar), push control per item, stats; and free items playable by everyone as a hook.
+- **In scope:** no. [[SPEC#Workflows]] G and the admin surface cover only categories and a flat list; free content conflicts with "no free episodes" ([[SPEC]], CLAUDE.md).
+- **Price:** set by Ganaa.
+- **Status:** proposed. Phase 1 (organise, admin tools, push on publish) decided in [[ADR-0042-content-organisation-and-publish-push|ADR-0042]] (accepted).
+- **Notes:** design: [[2026-10-21-content-management-design]]. Free content (phase 2) is blocked until Ganaa sets the price and edits the CLAUDE.md "no free episodes" line.

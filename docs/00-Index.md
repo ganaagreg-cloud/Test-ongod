@@ -63,6 +63,7 @@ tags: [index]
 | ADR-0039 | [[ADR-0039-phase-3-before-gate-a]]                    | accepted               |
 | ADR-0040 | [[ADR-0040-admin-password-only-no-totp]]              | accepted               |
 | ADR-0041 | [[ADR-0041-qpay-via-wire-replaces-bank-transfer]]     | accepted               |
+| ADR-0042 | [[ADR-0042-content-organisation-and-publish-push]]    | accepted               |
 
 ## Research
 
