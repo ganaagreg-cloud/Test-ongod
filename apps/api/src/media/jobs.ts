@@ -33,6 +33,12 @@ export const coverUploadSpec = {
   schema: z.object({ episodeId: z.string().min(1), coverId: z.string().min(1) }),
   maxAttempts: 5,
 };
+/** A series cover (ADR-0042): the same two sizes as an episode cover, stored under covers/series. */
+export const seriesCoverUploadSpec = {
+  type: 'media.series-cover-upload',
+  schema: z.object({ seriesId: z.string().min(1), coverId: z.string().min(1) }),
+  maxAttempts: 5,
+};
 export const storageDeleteSpec = {
   type: 'media.delete-files',
   schema: z.object({ paths: z.array(z.string().min(1)).min(1).max(50) }),
@@ -66,6 +72,8 @@ export const enqueueAudioUpload = (db: JobWriter, assetId: string) =>
   enqueue(db, audioUploadSpec, { assetId });
 export const enqueueCoverUpload = (db: JobWriter, episodeId: string, coverId: string) =>
   enqueue(db, coverUploadSpec, { episodeId, coverId });
+export const enqueueSeriesCoverUpload = (db: JobWriter, seriesId: string, coverId: string) =>
+  enqueue(db, seriesCoverUploadSpec, { seriesId, coverId });
 export const enqueueStorageDelete = (db: JobWriter, paths: string[]) =>
   paths.length > 0 ? enqueue(db, storageDeleteSpec, { paths }) : undefined;
 export const enqueueVideoUpload = (db: JobWriter, assetId: string) =>
@@ -230,6 +238,32 @@ export function createMediaJobs(deps: {
     },
   });
 
+  /** Both sizes go to storage first; only then does the series point at them. */
+  const seriesCoverUpload = defineJob({
+    ...seriesCoverUploadSpec,
+    async handle({ seriesId, coverId }, { log }) {
+      const series = await db.series.findUnique({
+        where: { id: seriesId },
+        select: { coverPath: true },
+      });
+      if (!series) return;
+      const local = coverFiles(dirs, coverId);
+      if (!(await exists(local.full)) || !(await exists(local.thumb))) return;
+      const path = `covers/series/${seriesId}/${coverId}.webp`;
+      await storage.putFile(path, local.full, 'image/webp');
+      await storage.putFile(thumbPathOf(path), local.thumb, 'image/webp');
+      await db.series.update({ where: { id: seriesId }, data: { coverPath: path } });
+
+      if (series.coverPath && series.coverPath !== path) {
+        for (const old of [series.coverPath, thumbPathOf(series.coverPath)]) {
+          await storage.delete(old).catch((err) => log.warn({ err }, 'old cover not deleted'));
+        }
+      }
+      await rm(local.full, { force: true });
+      await rm(local.thumb, { force: true });
+    },
+  });
+
   const deleteFiles = defineJob({
     ...storageDeleteSpec,
     async handle({ paths }) {
@@ -359,6 +393,7 @@ export function createMediaJobs(deps: {
   return [
     audioUpload,
     coverUpload,
+    seriesCoverUpload,
     deleteFiles,
     videoUpload,
     videoStatus,

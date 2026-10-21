@@ -7,6 +7,7 @@ import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstanc
 import { createDecisionService } from './admin/decisions';
 import { createAdminGuards } from './admin/guard';
 import { createContentService } from './admin/content';
+import { createSeriesService } from './admin/series';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
@@ -187,6 +188,12 @@ export async function buildApp(deps: AppDeps) {
           now: deps.now,
         }),
         tags: createTagService({ db }),
+        series: createSeriesService({
+          db,
+          media: mediaUrls,
+          dirs: mediaRuntime.dirs,
+          now: deps.now,
+        }),
         tus,
       });
       await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });

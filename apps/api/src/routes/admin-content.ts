@@ -4,24 +4,30 @@ import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
+  adminSeriesDetailResponseSchema,
+  adminSeriesListResponseSchema,
   adminEpisodesPageSchema,
   adminTagResponseSchema,
   adminTagsResponseSchema,
   contentIdParamsSchema,
   createCategoryRequestSchema,
   createEpisodeRequestSchema,
+  createSeriesRequestSchema,
   createTagRequestSchema,
   listAdminEpisodesQuerySchema,
   MAX_COVER_BYTES,
   removeDeviceParamsSchema,
   reorderCategoriesRequestSchema,
+  reorderSeriesRequestSchema,
   scheduleRequestSchema,
   updateCategoryRequestSchema,
   updateEpisodeRequestSchema,
+  updateSeriesRequestSchema,
   updateTagRequestSchema,
 } from '@ongod/shared';
 import type { AdminGuards } from '../admin/guard';
 import type { ContentService } from '../admin/content';
+import type { SeriesService } from '../admin/series';
 import type { TagService } from '../admin/tags';
 import { authOf } from '../auth/guard';
 import { AppError } from '../errors';
@@ -58,9 +64,15 @@ async function readCover(req: FastifyRequest): Promise<Buffer> {
  */
 export async function adminContentRoutes(
   app: FastifyInstance,
-  opts: { guards: AdminGuards; content: ContentService; tags: TagService; tus: TusUploads },
+  opts: {
+    guards: AdminGuards;
+    content: ContentService;
+    tags: TagService;
+    series: SeriesService;
+    tus: TusUploads;
+  },
 ) {
-  const { content, tags, tus } = opts;
+  const { content, tags, series, tus } = opts;
   app.addHook('preHandler', opts.guards.requireAdmin);
   app.addHook('onSend', async (_req, reply) => {
     if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'private, no-store');
@@ -122,6 +134,48 @@ export async function adminContentRoutes(
     const { id } = contentIdParamsSchema.parse(req.params);
     await tags.remove(authOf(req).user, id);
     return reply.code(204).send();
+  });
+
+  // ---- series ----
+  const seriesReply = (detail: Awaited<ReturnType<SeriesService['get']>>) =>
+    adminSeriesDetailResponseSchema.parse({ series: detail });
+
+  app.get('/admin/series', async () =>
+    adminSeriesListResponseSchema.parse({ series: await series.list() }),
+  );
+
+  app.post('/admin/series', async (req, reply) => {
+    const body = createSeriesRequestSchema.parse(req.body);
+    return reply.code(201).send(seriesReply(await series.create(authOf(req).user, body)));
+  });
+
+  app.get('/admin/series/:id', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    return seriesReply(await series.get(id));
+  });
+
+  app.patch('/admin/series/:id', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = updateSeriesRequestSchema.parse(req.body);
+    return seriesReply(await series.update(authOf(req).user, id, body));
+  });
+
+  app.delete('/admin/series/:id', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    await series.remove(authOf(req).user, id);
+    return reply.code(204).send();
+  });
+
+  app.post('/admin/series/:id/reorder', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = reorderSeriesRequestSchema.parse(req.body);
+    return seriesReply(await series.reorder(authOf(req).user, id, body.episodeIds));
+  });
+
+  app.post('/admin/series/:id/cover', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const detail = await series.setCover(authOf(req).user, id, await readCover(req));
+    return reply.code(202).send(seriesReply(detail));
   });
 
   // ---- episodes ----

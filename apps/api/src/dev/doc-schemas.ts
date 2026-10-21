@@ -4,6 +4,11 @@
 import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
+  adminSeriesDetailResponseSchema,
+  adminSeriesListResponseSchema,
+  createSeriesRequestSchema,
+  reorderSeriesRequestSchema,
+  updateSeriesRequestSchema,
   adminTagResponseSchema,
   adminTagsResponseSchema,
   createTagRequestSchema,
@@ -458,6 +463,36 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   }),
   'DELETE /v1/admin/tags/:id': admin('Delete a tag; its episodes stay', {
     responses: { 204: noContent },
+  }),
+  'GET /v1/admin/series': admin('Series with episode counts', {
+    responses: { 200: adminSeriesListResponseSchema },
+  }),
+  'POST /v1/admin/series': admin('Create a series', {
+    body: createSeriesRequestSchema,
+    responses: { 201: adminSeriesDetailResponseSchema },
+  }),
+  'GET /v1/admin/series/:id': admin('One series with its episodes in part order', {
+    responses: { 200: adminSeriesDetailResponseSchema },
+  }),
+  'PATCH /v1/admin/series/:id': admin('Change a series title, slug or description', {
+    body: updateSeriesRequestSchema,
+    responses: { 200: adminSeriesDetailResponseSchema },
+  }),
+  'DELETE /v1/admin/series/:id': admin('Delete a series; its episodes stay without a series', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/series/:id/reorder': admin(
+    'Set the order: every episode id of the series, first to last; parts become 1..n',
+    {
+      body: reorderSeriesRequestSchema,
+      responses: { 200: adminSeriesDetailResponseSchema },
+    },
+  ),
+  'POST /v1/admin/series/:id/cover': admin('Upload the series cover (JPEG, PNG, WebP, up to 10 MB)', {
+    description:
+      'multipart/form-data, field `cover`. Centre-cropped to 16:9 (1280x720 and 640x360), then stored by a job.',
+    multipart: { fields: z.object({}), file: 'cover' },
+    responses: { 202: adminSeriesDetailResponseSchema },
   }),
   'GET /v1/admin/episodes': admin('Episodes: status, category, search, paging', {
     query: listAdminEpisodesQuerySchema,

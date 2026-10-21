@@ -57,6 +57,45 @@ export const adminTagResponseSchema = z.object({ tag: adminTagSchema });
 export const createTagRequestSchema = z.object({ name: categoryNameSchema });
 export const updateTagRequestSchema = z.object({ name: categoryNameSchema });
 
+// ---- Series ----
+
+export const adminSeriesSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string(),
+  /** Signed cover URL; null until a cover is stored. */
+  coverUrl: z.string().nullable(),
+  episodeCount: z.number().int(),
+});
+export type AdminSeriesDto = z.infer<typeof adminSeriesSchema>;
+export const adminSeriesDetailSchema = adminSeriesSchema.extend({
+  /** Ordered by part. */
+  episodes: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      status: z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']),
+      seriesPart: z.number().int().nullable(),
+    }),
+  ),
+});
+export type AdminSeriesDetailDto = z.infer<typeof adminSeriesDetailSchema>;
+export const adminSeriesListResponseSchema = z.object({ series: z.array(adminSeriesSchema) });
+export const adminSeriesDetailResponseSchema = z.object({ series: adminSeriesDetailSchema });
+export const createSeriesRequestSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  slug: slugSchema,
+  description: z.string().trim().max(5000).optional(),
+});
+export type CreateSeriesRequest = z.infer<typeof createSeriesRequestSchema>;
+export const updateSeriesRequestSchema = createSeriesRequestSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+export type UpdateSeriesRequest = z.infer<typeof updateSeriesRequestSchema>;
+/** The new order: every episode id of the series, first to last. */
+export const reorderSeriesRequestSchema = z.object({ episodeIds: z.array(idSchema).min(1).max(500) });
+
 // ---- Episodes ----
 
 export const episodeStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']);
@@ -111,6 +150,11 @@ export const adminEpisodeSchema = z.object({
   media: adminMediaSchema.nullable(),
   /** What is still missing before the episode can be published: cover and/or a ready media file. */
   missing: z.array(z.enum(['cover', 'media'])),
+  series: z.object({ id: z.string(), title: z.string() }).nullable(),
+  seriesPart: z.number().int().nullable(),
+  tags: z.array(z.object({ id: z.string(), name: z.string() })),
+  notifyOnPublish: z.boolean(),
+  pushText: z.string().nullable(),
 });
 export type AdminEpisodeDto = z.infer<typeof adminEpisodeSchema>;
 export const adminEpisodeResponseSchema = z.object({ episode: adminEpisodeSchema });
@@ -134,10 +178,17 @@ export const createEpisodeRequestSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(5000).default(''),
   categoryId: idSchema,
+  seriesId: idSchema.nullable().optional(),
+  seriesPart: z.number().int().min(1).max(9999).nullable().optional(),
+  tagIds: z.array(idSchema).max(20).optional(),
+  notifyOnPublish: z.boolean().optional(),
+  pushText: z.string().trim().max(180).nullable().optional(),
 });
+export type CreateEpisodeRequest = z.infer<typeof createEpisodeRequestSchema>;
 export const updateEpisodeRequestSchema = createEpisodeRequestSchema
   .partial()
   .refine((v) => Object.keys(v).length > 0);
+export type UpdateEpisodeRequest = z.infer<typeof updateEpisodeRequestSchema>;
 
 /** An instant with its offset, e.g. "2026-10-20T09:00:00+08:00" (Asia/Ulaanbaatar). */
 export const scheduleRequestSchema = z.object({ scheduledFor: z.iso.datetime({ offset: true }) });

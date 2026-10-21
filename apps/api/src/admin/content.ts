@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import type { AdminCategoryDto, AdminEpisodeDto, ListAdminEpisodesQuery } from '@ongod/shared';
+import type {
+  AdminCategoryDto,
+  AdminEpisodeDto,
+  CreateEpisodeRequest,
+  ListAdminEpisodesQuery,
+  UpdateEpisodeRequest,
+} from '@ongod/shared';
 import { thumbPathOf, type MediaUrls } from '../catalog/media';
 import type { Db, Prisma } from '../db';
 import { AppError } from '../errors';
@@ -20,6 +26,8 @@ import { audit } from './audit';
 
 const episodeInclude = {
   category: { select: { id: true, name: true } },
+  series: { select: { id: true, title: true } },
+  tags: { select: { tag: { select: { id: true, name: true } } } },
   // The newest media file, audio or video, decides what the admin sees (a re-upload replaces
   // the older one, ADR-0038).
   mediaAssets: { orderBy: { id: 'desc' }, take: 1 },
@@ -67,6 +75,11 @@ export function createContentService(deps: {
         durationSec: asset.durationSec,
       },
       missing,
+      series: row.series,
+      seriesPart: row.seriesPart,
+      tags: row.tags.map((t) => t.tag).sort((a, b) => a.name.localeCompare(b.name)),
+      notifyOnPublish: row.notifyOnPublish,
+      pushText: row.pushText,
     };
   }
 
@@ -98,6 +111,47 @@ export function createContentService(deps: {
     if (!row) throw new AppError(404, 'NOT_FOUND');
     return categoryDto(row);
   };
+
+  /**
+   * The part an episode gets in `seriesId`: the one asked for, the one it already has in that same
+   * series, or the next free number (read inside the transaction). No series means no part.
+   */
+  async function placeInSeries(
+    tx: Prisma.TransactionClient,
+    seriesId: string | null,
+    wanted: number | null,
+    current: { seriesId: string | null; seriesPart: number | null } | null,
+  ): Promise<number | null> {
+    if (seriesId === null) {
+      if (wanted !== null) throw new AppError(400, 'VALIDATION_ERROR');
+      return null;
+    }
+    if (!(await tx.series.findUnique({ where: { id: seriesId }, select: { id: true } }))) {
+      throw new AppError(404, 'NOT_FOUND');
+    }
+    if (wanted !== null) return wanted;
+    if (current && current.seriesId === seriesId && current.seriesPart !== null) {
+      return current.seriesPart;
+    }
+    const last = await tx.episode.aggregate({ where: { seriesId }, _max: { seriesPart: true } });
+    return (last._max.seriesPart ?? 0) + 1;
+  }
+
+  async function assertTagsExist(tx: Prisma.TransactionClient, tagIds: string[]) {
+    const unique = [...new Set(tagIds)];
+    if (unique.length === 0) return;
+    const found = await tx.tag.count({ where: { id: { in: unique } } });
+    if (found !== unique.length) throw new AppError(404, 'NOT_FOUND');
+  }
+
+  /** Replaces the episode's tags (ids already checked). */
+  async function setTags(tx: Prisma.TransactionClient, episodeId: string, tagIds: string[]) {
+    await tx.episodeTag.deleteMany({ where: { episodeId } });
+    const unique = [...new Set(tagIds)];
+    if (unique.length > 0) {
+      await tx.episodeTag.createMany({ data: unique.map((tagId) => ({ episodeId, tagId })) });
+    }
+  }
 
   return {
     // ---------- Categories ----------
@@ -198,43 +252,82 @@ export function createContentService(deps: {
       return toEpisodeDto(await loadEpisode(id));
     },
 
-    async createEpisode(
-      actor: User,
-      input: { title: string; description: string; categoryId: string },
-    ) {
+    async createEpisode(actor: User, input: CreateEpisodeRequest) {
       const category = await db.category.findUnique({ where: { id: input.categoryId } });
       if (!category) throw new AppError(404, 'NOT_FOUND');
-      const id = await db.$transaction(async (tx) => {
-        // coverPath is '' until a cover is stored.
-        const episode = await tx.episode.create({ data: { ...input, coverPath: '' } });
-        await audit(tx, actor.id, 'episode.create', 'Episode', episode.id, {
-          title: input.title,
-          categoryId: input.categoryId,
+      try {
+        const id = await db.$transaction(async (tx) => {
+          const seriesId = input.seriesId ?? null;
+          const seriesPart = await placeInSeries(tx, seriesId, input.seriesPart ?? null, null);
+          await assertTagsExist(tx, input.tagIds ?? []);
+          // coverPath is '' until a cover is stored.
+          const episode = await tx.episode.create({
+            data: {
+              title: input.title,
+              description: input.description,
+              categoryId: input.categoryId,
+              coverPath: '',
+              seriesId,
+              seriesPart,
+              ...(input.notifyOnPublish !== undefined
+                ? { notifyOnPublish: input.notifyOnPublish }
+                : {}),
+              pushText: input.pushText ?? null,
+            },
+          });
+          await setTags(tx, episode.id, input.tagIds ?? []);
+          await audit(tx, actor.id, 'episode.create', 'Episode', episode.id, {
+            title: input.title,
+            categoryId: input.categoryId,
+            ...(seriesId ? { seriesId, seriesPart } : {}),
+          });
+          return episode.id;
         });
-        return episode.id;
-      });
-      return this.getEpisode(id);
+        return await this.getEpisode(id);
+      } catch (err) {
+        if (isUniqueViolation(err)) throw new AppError(409, 'SERIES_PART_TAKEN');
+        throw err;
+      }
     },
 
-    async updateEpisode(
-      actor: User,
-      id: string,
-      input: { title?: string; description?: string; categoryId?: string },
-    ) {
+    async updateEpisode(actor: User, id: string, input: UpdateEpisodeRequest) {
       if (
         input.categoryId &&
         !(await db.category.findUnique({ where: { id: input.categoryId } }))
       ) {
         throw new AppError(404, 'NOT_FOUND');
       }
-      await db.$transaction(async (tx) => {
-        if (!(await tx.episode.findUnique({ where: { id }, select: { id: true } }))) {
-          throw new AppError(404, 'NOT_FOUND');
-        }
-        await tx.episode.update({ where: { id }, data: input });
-        await audit(tx, actor.id, 'episode.update', 'Episode', id, input);
-      });
-      return this.getEpisode(id);
+      try {
+        await db.$transaction(async (tx) => {
+          const current = await tx.episode.findUnique({
+            where: { id },
+            select: { seriesId: true, seriesPart: true },
+          });
+          if (!current) throw new AppError(404, 'NOT_FOUND');
+
+          const data: Prisma.EpisodeUncheckedUpdateInput = {};
+          if (input.title !== undefined) data.title = input.title;
+          if (input.description !== undefined) data.description = input.description;
+          if (input.categoryId !== undefined) data.categoryId = input.categoryId;
+          if (input.notifyOnPublish !== undefined) data.notifyOnPublish = input.notifyOnPublish;
+          if (input.pushText !== undefined) data.pushText = input.pushText;
+          if (input.seriesId !== undefined || input.seriesPart !== undefined) {
+            const seriesId = input.seriesId === undefined ? current.seriesId : input.seriesId;
+            data.seriesId = seriesId;
+            data.seriesPart = await placeInSeries(tx, seriesId, input.seriesPart ?? null, current);
+          }
+          if (input.tagIds !== undefined) {
+            await assertTagsExist(tx, input.tagIds);
+            await setTags(tx, id, input.tagIds);
+          }
+          if (Object.keys(data).length > 0) await tx.episode.update({ where: { id }, data });
+          await audit(tx, actor.id, 'episode.update', 'Episode', id, input);
+        });
+        return await this.getEpisode(id);
+      } catch (err) {
+        if (isUniqueViolation(err)) throw new AppError(409, 'SERIES_PART_TAKEN');
+        throw err;
+      }
     },
 
     /**
