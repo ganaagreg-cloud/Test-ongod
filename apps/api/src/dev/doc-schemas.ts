@@ -4,9 +4,16 @@
 import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
+  adminPlaylistDetailResponseSchema,
+  adminPlaylistListResponseSchema,
   adminSeriesDetailResponseSchema,
   adminSeriesListResponseSchema,
+  createPlaylistRequestSchema,
   createSeriesRequestSchema,
+  playlistItemsRequestSchema,
+  reorderHomeRequestSchema,
+  reorderPlaylistRequestSchema,
+  updatePlaylistRequestSchema,
   reorderSeriesRequestSchema,
   updateSeriesRequestSchema,
   adminTagResponseSchema,
@@ -494,6 +501,60 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     multipart: { fields: z.object({}), file: 'cover' },
     responses: { 202: adminSeriesDetailResponseSchema },
   }),
+  'GET /v1/admin/playlists': admin('Playlists with episode counts; Онцлох (id `featured`) is always first', {
+    responses: { 200: adminPlaylistListResponseSchema },
+  }),
+  'POST /v1/admin/playlists': admin('Create a playlist', {
+    body: createPlaylistRequestSchema,
+    responses: { 201: adminPlaylistDetailResponseSchema },
+  }),
+  'POST /v1/admin/playlists/home-order': admin(
+    'Order the home-page playlists: homeOrder becomes 1..n; the featured id is rejected',
+    {
+      body: reorderHomeRequestSchema,
+      responses: { 200: adminPlaylistListResponseSchema },
+    },
+  ),
+  'GET /v1/admin/playlists/:id': admin('One playlist with its episodes in position order', {
+    responses: { 200: adminPlaylistDetailResponseSchema },
+  }),
+  'PATCH /v1/admin/playlists/:id': admin(
+    'Change a playlist; Онцлох title and slug are fixed (409 PLAYLIST_FEATURED)',
+    {
+      body: updatePlaylistRequestSchema,
+      responses: { 200: adminPlaylistDetailResponseSchema },
+    },
+  ),
+  'DELETE /v1/admin/playlists/:id': admin('Delete a playlist; its episodes stay. Онцлох: 409', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/playlists/:id/items': admin(
+    'Append episodes in the given order; ones already in are skipped (max 100)',
+    {
+      body: playlistItemsRequestSchema,
+      responses: { 200: adminPlaylistDetailResponseSchema },
+    },
+  ),
+  'DELETE /v1/admin/playlists/:id/items/:episodeId': admin(
+    'Remove one episode from the playlist; later positions close the gap',
+    { responses: { 200: adminPlaylistDetailResponseSchema } },
+  ),
+  'POST /v1/admin/playlists/:id/reorder': admin(
+    'Set the order: every episode id of the playlist, first to last',
+    {
+      body: reorderPlaylistRequestSchema,
+      responses: { 200: adminPlaylistDetailResponseSchema },
+    },
+  ),
+  'POST /v1/admin/playlists/:id/cover': admin(
+    'Upload the playlist cover (JPEG, PNG, WebP, up to 10 MB)',
+    {
+      description:
+        'multipart/form-data, field `cover`. Centre-cropped to 16:9 (1280x720 and 640x360), then stored by a job.',
+      multipart: { fields: z.object({}), file: 'cover' },
+      responses: { 202: adminPlaylistDetailResponseSchema },
+    },
+  ),
   'GET /v1/admin/episodes': admin('Episodes: status, category, search, paging', {
     query: listAdminEpisodesQuerySchema,
     responses: { 200: adminEpisodesPageSchema },

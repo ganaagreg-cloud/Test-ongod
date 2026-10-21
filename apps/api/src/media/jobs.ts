@@ -39,6 +39,12 @@ export const seriesCoverUploadSpec = {
   schema: z.object({ seriesId: z.string().min(1), coverId: z.string().min(1) }),
   maxAttempts: 5,
 };
+/** A playlist cover (ADR-0042): the same two sizes, stored under covers/playlists. */
+export const playlistCoverUploadSpec = {
+  type: 'media.playlist-cover-upload',
+  schema: z.object({ playlistId: z.string().min(1), coverId: z.string().min(1) }),
+  maxAttempts: 5,
+};
 export const storageDeleteSpec = {
   type: 'media.delete-files',
   schema: z.object({ paths: z.array(z.string().min(1)).min(1).max(50) }),
@@ -74,6 +80,8 @@ export const enqueueCoverUpload = (db: JobWriter, episodeId: string, coverId: st
   enqueue(db, coverUploadSpec, { episodeId, coverId });
 export const enqueueSeriesCoverUpload = (db: JobWriter, seriesId: string, coverId: string) =>
   enqueue(db, seriesCoverUploadSpec, { seriesId, coverId });
+export const enqueuePlaylistCoverUpload = (db: JobWriter, playlistId: string, coverId: string) =>
+  enqueue(db, playlistCoverUploadSpec, { playlistId, coverId });
 export const enqueueStorageDelete = (db: JobWriter, paths: string[]) =>
   paths.length > 0 ? enqueue(db, storageDeleteSpec, { paths }) : undefined;
 export const enqueueVideoUpload = (db: JobWriter, assetId: string) =>
@@ -264,6 +272,31 @@ export function createMediaJobs(deps: {
     },
   });
 
+  const playlistCoverUpload = defineJob({
+    ...playlistCoverUploadSpec,
+    async handle({ playlistId, coverId }, { log }) {
+      const playlist = await db.playlist.findUnique({
+        where: { id: playlistId },
+        select: { coverPath: true },
+      });
+      if (!playlist) return;
+      const local = coverFiles(dirs, coverId);
+      if (!(await exists(local.full)) || !(await exists(local.thumb))) return;
+      const path = `covers/playlists/${playlistId}/${coverId}.webp`;
+      await storage.putFile(path, local.full, 'image/webp');
+      await storage.putFile(thumbPathOf(path), local.thumb, 'image/webp');
+      await db.playlist.update({ where: { id: playlistId }, data: { coverPath: path } });
+
+      if (playlist.coverPath && playlist.coverPath !== path) {
+        for (const old of [playlist.coverPath, thumbPathOf(playlist.coverPath)]) {
+          await storage.delete(old).catch((err) => log.warn({ err }, 'old cover not deleted'));
+        }
+      }
+      await rm(local.full, { force: true });
+      await rm(local.thumb, { force: true });
+    },
+  });
+
   const deleteFiles = defineJob({
     ...storageDeleteSpec,
     async handle({ paths }) {
@@ -394,6 +427,7 @@ export function createMediaJobs(deps: {
     audioUpload,
     coverUpload,
     seriesCoverUpload,
+    playlistCoverUpload,
     deleteFiles,
     videoUpload,
     videoStatus,

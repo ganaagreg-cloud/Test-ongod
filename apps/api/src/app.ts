@@ -7,6 +7,7 @@ import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstanc
 import { createDecisionService } from './admin/decisions';
 import { createAdminGuards } from './admin/guard';
 import { createContentService } from './admin/content';
+import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
@@ -189,6 +190,12 @@ export async function buildApp(deps: AppDeps) {
         }),
         tags: createTagService({ db }),
         series: createSeriesService({
+          db,
+          media: mediaUrls,
+          dirs: mediaRuntime.dirs,
+          now: deps.now,
+        }),
+        playlists: createPlaylistService({
           db,
           media: mediaUrls,
           dirs: mediaRuntime.dirs,

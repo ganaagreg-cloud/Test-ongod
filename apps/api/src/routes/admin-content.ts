@@ -4,6 +4,8 @@ import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
+  adminPlaylistDetailResponseSchema,
+  adminPlaylistListResponseSchema,
   adminSeriesDetailResponseSchema,
   adminSeriesListResponseSchema,
   adminEpisodesPageSchema,
@@ -12,21 +14,28 @@ import {
   contentIdParamsSchema,
   createCategoryRequestSchema,
   createEpisodeRequestSchema,
+  createPlaylistRequestSchema,
   createSeriesRequestSchema,
   createTagRequestSchema,
   listAdminEpisodesQuerySchema,
   MAX_COVER_BYTES,
+  playlistItemParamsSchema,
+  playlistItemsRequestSchema,
   removeDeviceParamsSchema,
   reorderCategoriesRequestSchema,
+  reorderHomeRequestSchema,
+  reorderPlaylistRequestSchema,
   reorderSeriesRequestSchema,
   scheduleRequestSchema,
   updateCategoryRequestSchema,
   updateEpisodeRequestSchema,
+  updatePlaylistRequestSchema,
   updateSeriesRequestSchema,
   updateTagRequestSchema,
 } from '@ongod/shared';
 import type { AdminGuards } from '../admin/guard';
 import type { ContentService } from '../admin/content';
+import type { PlaylistService } from '../admin/playlists';
 import type { SeriesService } from '../admin/series';
 import type { TagService } from '../admin/tags';
 import { authOf } from '../auth/guard';
@@ -69,10 +78,11 @@ export async function adminContentRoutes(
     content: ContentService;
     tags: TagService;
     series: SeriesService;
+    playlists: PlaylistService;
     tus: TusUploads;
   },
 ) {
-  const { content, tags, series, tus } = opts;
+  const { content, tags, series, playlists, tus } = opts;
   app.addHook('preHandler', opts.guards.requireAdmin);
   app.addHook('onSend', async (_req, reply) => {
     if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'private, no-store');
@@ -176,6 +186,66 @@ export async function adminContentRoutes(
     const { id } = contentIdParamsSchema.parse(req.params);
     const detail = await series.setCover(authOf(req).user, id, await readCover(req));
     return reply.code(202).send(seriesReply(detail));
+  });
+
+  // ---- playlists (incl. Онцлох) ----
+  const playlistReply = (detail: Awaited<ReturnType<PlaylistService['get']>>) =>
+    adminPlaylistDetailResponseSchema.parse({ playlist: detail });
+
+  app.get('/admin/playlists', async () =>
+    adminPlaylistListResponseSchema.parse({ playlists: await playlists.list() }),
+  );
+
+  app.post('/admin/playlists', async (req, reply) => {
+    const body = createPlaylistRequestSchema.parse(req.body);
+    return reply.code(201).send(playlistReply(await playlists.create(authOf(req).user, body)));
+  });
+
+  app.post('/admin/playlists/home-order', async (req) => {
+    const body = reorderHomeRequestSchema.parse(req.body);
+    return adminPlaylistListResponseSchema.parse({
+      playlists: await playlists.reorderHome(authOf(req).user, body.playlistIds),
+    });
+  });
+
+  app.get('/admin/playlists/:id', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    return playlistReply(await playlists.get(id));
+  });
+
+  app.patch('/admin/playlists/:id', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = updatePlaylistRequestSchema.parse(req.body);
+    return playlistReply(await playlists.update(authOf(req).user, id, body));
+  });
+
+  app.delete('/admin/playlists/:id', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    await playlists.remove(authOf(req).user, id);
+    return reply.code(204).send();
+  });
+
+  app.post('/admin/playlists/:id/items', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = playlistItemsRequestSchema.parse(req.body);
+    return playlistReply(await playlists.addItems(authOf(req).user, id, body.episodeIds));
+  });
+
+  app.delete('/admin/playlists/:id/items/:episodeId', async (req) => {
+    const { id, episodeId } = playlistItemParamsSchema.parse(req.params);
+    return playlistReply(await playlists.removeItem(authOf(req).user, id, episodeId));
+  });
+
+  app.post('/admin/playlists/:id/reorder', async (req) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const body = reorderPlaylistRequestSchema.parse(req.body);
+    return playlistReply(await playlists.reorder(authOf(req).user, id, body.episodeIds));
+  });
+
+  app.post('/admin/playlists/:id/cover', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const detail = await playlists.setCover(authOf(req).user, id, await readCover(req));
+    return reply.code(202).send(playlistReply(detail));
   });
 
   // ---- episodes ----

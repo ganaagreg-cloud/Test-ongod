@@ -96,6 +96,60 @@ export type UpdateSeriesRequest = z.infer<typeof updateSeriesRequestSchema>;
 /** The new order: every episode id of the series, first to last. */
 export const reorderSeriesRequestSchema = z.object({ episodeIds: z.array(idSchema).min(1).max(500) });
 
+// ---- Playlists ----
+
+export const adminPlaylistSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string(),
+  coverUrl: z.string().nullable(),
+  showOnHome: z.boolean(),
+  homeOrder: z.number().int(),
+  isFeatured: z.boolean(),
+  episodeCount: z.number().int(),
+});
+export type AdminPlaylistDto = z.infer<typeof adminPlaylistSchema>;
+export const adminPlaylistDetailSchema = adminPlaylistSchema.extend({
+  /** Ordered by position (1..n). */
+  episodes: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      status: z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']),
+      position: z.number().int(),
+    }),
+  ),
+});
+export type AdminPlaylistDetailDto = z.infer<typeof adminPlaylistDetailSchema>;
+export const adminPlaylistListResponseSchema = z.object({
+  playlists: z.array(adminPlaylistSchema),
+});
+export const adminPlaylistDetailResponseSchema = z.object({ playlist: adminPlaylistDetailSchema });
+export const createPlaylistRequestSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  slug: slugSchema,
+  description: z.string().trim().max(5000).optional(),
+  showOnHome: z.boolean().optional(),
+});
+export type CreatePlaylistRequest = z.infer<typeof createPlaylistRequestSchema>;
+export const updatePlaylistRequestSchema = createPlaylistRequestSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+export type UpdatePlaylistRequest = z.infer<typeof updatePlaylistRequestSchema>;
+export const playlistItemsRequestSchema = z.object({
+  episodeIds: z.array(idSchema).min(1).max(100),
+});
+/** Exactly the playlist's episode ids, first to last. */
+export const reorderPlaylistRequestSchema = z.object({
+  episodeIds: z.array(idSchema).min(1).max(500),
+});
+/** The home-page playlists in order (never the featured one: it is always first). */
+export const reorderHomeRequestSchema = z.object({
+  playlistIds: z.array(idSchema).min(1).max(100),
+});
+export const playlistItemParamsSchema = z.object({ id: idSchema, episodeId: idSchema });
+
 // ---- Episodes ----
 
 export const episodeStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']);
