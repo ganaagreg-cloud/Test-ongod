@@ -406,6 +406,8 @@ export const mn = {
       remove: 'Цувралаас хасах',
       removed: 'Цувралаас хаслаа.',
       added: 'Цувралд нэмлээ.',
+      partialAdded: (done: number, total: number, reason: string) =>
+        `${total}-аас ${done} нь нэмэгдсэн. ${reason}`,
       reordered: 'Дарааллыг хадгаллаа.',
     },
     deleteSeries: 'Цуврал устгах',

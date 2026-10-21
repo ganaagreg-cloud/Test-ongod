@@ -32,7 +32,8 @@ import {
   type UpdatePlaylistRequest,
   type UpdateSeriesRequest,
 } from '@ongod/shared';
-import { api, apiBlob } from './client';
+import { mn } from '../i18n/mn';
+import { api, apiBlob, ApiError } from './client';
 
 type Params = Record<string, string | number | undefined>;
 
@@ -383,7 +384,7 @@ export function useSeriesActions(seriesId: string | undefined) {
         body: v,
         schema: adminSeriesDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const update = useMutation({
     mutationFn: (v: UpdateSeriesRequest) =>
@@ -392,11 +393,11 @@ export function useSeriesActions(seriesId: string | undefined) {
         body: v,
         schema: adminSeriesDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const remove = useMutation({
     mutationFn: () => api(`/admin/series/${seriesId}`, { method: 'DELETE' }),
-    onSuccess: done,
+    onSettled: done,
   });
   const reorder = useMutation({
     mutationFn: (episodeIds: string[]) =>
@@ -405,20 +406,34 @@ export function useSeriesActions(seriesId: string | undefined) {
         body: { episodeIds },
         schema: adminSeriesDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   /** One after the other: each item takes the next free part number. */
   const addItems = useMutation({
     mutationFn: async (episodeIds: string[]) => {
+      let added = 0;
       for (const id of episodeIds) {
-        await api(`/admin/episodes/${id}`, {
-          method: 'PATCH',
-          body: { seriesId },
-          schema: adminEpisodeResponseSchema,
-        });
+        try {
+          await api(`/admin/episodes/${id}`, {
+            method: 'PATCH',
+            body: { seriesId },
+            schema: adminEpisodeResponseSchema,
+          });
+          added += 1;
+        } catch (err) {
+          // Say how far it got: the earlier ones are already in the series.
+          if (added > 0 && err instanceof ApiError) {
+            throw new ApiError(
+              err.status,
+              err.code,
+              mn.series.items.partialAdded(added, episodeIds.length, err.message),
+            );
+          }
+          throw err;
+        }
       }
     },
-    onSuccess: done,
+    onSettled: done,
   });
   const removeItem = useMutation({
     mutationFn: (episodeId: string) =>
@@ -427,7 +442,7 @@ export function useSeriesActions(seriesId: string | undefined) {
         body: { seriesId: null },
         schema: adminEpisodeResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const uploadCover = useMutation({
     mutationFn: (file: File) =>
@@ -436,7 +451,7 @@ export function useSeriesActions(seriesId: string | undefined) {
         form: coverForm(file),
         schema: adminSeriesDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   return { create, update, remove, reorder, addItems, removeItem, uploadCover };
 }
@@ -466,7 +481,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         body: v,
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const update = useMutation({
     mutationFn: (v: UpdatePlaylistRequest) =>
@@ -475,12 +490,12 @@ export function usePlaylistActions(playlistId: string | undefined) {
         body: v,
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   /** Takes the id itself: the list deletes any row. */
   const remove = useMutation({
     mutationFn: (id: string) => api(`/admin/playlists/${id}`, { method: 'DELETE' }),
-    onSuccess: done,
+    onSettled: done,
   });
   const addItems = useMutation({
     mutationFn: (episodeIds: string[]) =>
@@ -489,7 +504,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         body: { episodeIds },
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const removeItem = useMutation({
     mutationFn: (episodeId: string) =>
@@ -497,7 +512,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         method: 'DELETE',
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const reorder = useMutation({
     mutationFn: (episodeIds: string[]) =>
@@ -506,7 +521,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         body: { episodeIds },
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const reorderHome = useMutation({
     mutationFn: (playlistIds: string[]) =>
@@ -515,7 +530,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         body: { playlistIds },
         schema: adminPlaylistListResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   const uploadCover = useMutation({
     mutationFn: (file: File) =>
@@ -524,7 +539,7 @@ export function usePlaylistActions(playlistId: string | undefined) {
         form: coverForm(file),
         schema: adminPlaylistDetailResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
   });
   return { create, update, remove, addItems, removeItem, reorder, reorderHome, uploadCover };
 }

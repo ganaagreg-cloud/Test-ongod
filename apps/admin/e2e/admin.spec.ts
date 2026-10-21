@@ -341,8 +341,8 @@ const sidebar = (name: string) =>
   page.getByRole('navigation', { name: mn.nav.label }).getByRole('link', { name, exact: true });
 
 // A draft e2e episode through the screens; returns its title.
-async function createDraft(label: string): Promise<string> {
-  const title = `E2E анги ${label} ${Date.now()}`;
+async function createDraft(label: string, stamp: number): Promise<string> {
+  const title = `E2E анги ${label} ${stamp}`;
   await sidebar(mn.nav.episodes).click();
   await page.getByRole('button', { name: mn.episodes.new }).click();
   await page.getByLabel(mn.episodes.form.title).fill(title);
@@ -355,8 +355,8 @@ async function createDraft(label: string): Promise<string> {
 
 test('series: create, add two existing items, move the second up, order survives a reload', async () => {
   const stamp = Date.now();
-  const first = await createDraft('A');
-  const second = await createDraft('B');
+  const first = await createDraft('A', stamp);
+  const second = await createDraft('B', stamp);
 
   await sidebar(mn.nav.series).click();
   await page.getByRole('button', { name: mn.series.new }).first().click();
@@ -369,7 +369,7 @@ test('series: create, add two existing items, move the second up, order survives
 
   // add the two existing items, one after the other (each takes the next part)
   const picker = page.locator('section', { hasText: mn.picker.title });
-  await picker.getByLabel(mn.picker.searchLabel).fill('E2E анги');
+  await picker.getByLabel(mn.picker.searchLabel).fill(String(stamp));
   for (const item of [first, second]) {
     const pick = picker.getByRole('listitem').filter({ hasText: item });
     await pick.getByRole('button', { name: mn.picker.add }).click();
@@ -393,10 +393,21 @@ test('series: create, add two existing items, move the second up, order survives
   });
   await expect.poll(order).toEqual(['second', 'first']);
 
-  // delete the series (the items stay and are cleaned up afterwards)
+  // delete the series (the items stay), then the two drafts
   await page.getByRole('button', { name: mn.series.deleteSeries }).click();
   await dialog(mn.series.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
   await expect(toast(mn.series.deleted)).toBeVisible();
+
+  for (const draft of [first, second]) {
+    await sidebar(mn.nav.episodes).click();
+    await page.getByLabel(mn.episodes.searchLabel).fill(draft);
+    await page.getByRole('row').filter({ hasText: draft }).click();
+    await page.getByRole('button', { name: mn.episodes.deleteEpisode }).click();
+    await dialog(mn.episodes.deleteConfirmTitle)
+      .getByRole('button', { name: mn.common.delete })
+      .click();
+    await expect(toast(mn.episodes.deleted)).toBeVisible();
+  }
 });
 
 test('playlists: create one shown on the home page, Онцлох cannot be deleted', async () => {
