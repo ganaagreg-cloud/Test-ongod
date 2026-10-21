@@ -45,7 +45,8 @@ export function createBulkService(deps: {
 
     switch (action.type) {
       case 'setCategory':
-        if (!(await db.category.findUnique({ where: { id: action.categoryId } }))) failOn(404, 'NOT_FOUND');
+        if (!(await db.category.findUnique({ where: { id: action.categoryId } })))
+          failOn(404, 'NOT_FOUND');
         break;
       case 'addTag':
       case 'removeTag':
@@ -58,7 +59,9 @@ export function createBulkService(deps: {
         }
         break;
       case 'publish': {
-        const notReady = ids.filter((id) => missingOf(of(id).coverPath, of(id).mediaAssets[0]).length > 0);
+        const notReady = ids.filter(
+          (id) => missingOf(of(id).coverPath, of(id).mediaAssets[0]).length > 0,
+        );
         if (notReady.length > 0) failOn(409, 'NOT_READY_TO_PUBLISH', notReady);
         const closed = ids.filter((id) => !OPEN_STATES.includes(of(id).status));
         if (closed.length > 0) failOn(409, 'EPISODE_STATE', closed);

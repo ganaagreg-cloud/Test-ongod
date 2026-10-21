@@ -104,7 +104,10 @@ describe('list filters', () => {
       status: 'SCHEDULED',
       scheduledFor: new Date('2026-11-01T00:00:00Z'),
     });
-    await makeEpisode(category.id, { status: 'SCHEDULED', scheduledFor: new Date('2026-12-01T00:00:00Z') });
+    await makeEpisode(category.id, {
+      status: 'SCHEDULED',
+      scheduledFor: new Date('2026-12-01T00:00:00Z'),
+    });
     await makeEpisode(category.id, { publishedAt: new Date('2026-10-31T23:59:59Z') });
     await makeEpisode(category.id, { status: 'DRAFT' });
     const got = await listIds(
@@ -152,7 +155,12 @@ describe('duplicate', () => {
     });
     await testDb.episodeTag.create({ data: { episodeId: source.id, tagId: tag.id } });
 
-    const res = await call(app, 'POST', `/v1/admin/episodes/${source.id}/duplicate`, admin.accessToken);
+    const res = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${source.id}/duplicate`,
+      admin.accessToken,
+    );
     expect(res.statusCode).toBe(201);
     const { episode } = res.json();
     expect(episode).toMatchObject({
@@ -194,7 +202,12 @@ describe('preview', () => {
     const draft = await makeEpisode(category.id, { status: 'DRAFT' });
     const asset = await testDb.mediaAsset.findFirstOrThrow({ where: { episodeId: draft.id } });
 
-    const res = await call(app, 'POST', `/v1/admin/episodes/${draft.id}/preview`, admin.accessToken);
+    const res = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${draft.id}/preview`,
+      admin.accessToken,
+    );
     expect(res.statusCode).toBe(200);
     expect(res.headers['cache-control']).toContain('no-store');
     const expiresAt = new Date(fixed.now.getTime() + PLAY_URL_TTL_MS);
@@ -213,7 +226,12 @@ describe('preview', () => {
     const category = await makeCategory();
     const draft = await makeEpisode(category.id, { status: 'DRAFT', kind: 'VIDEO' });
     const asset = await testDb.mediaAsset.findFirstOrThrow({ where: { episodeId: draft.id } });
-    const res = await call(app, 'POST', `/v1/admin/episodes/${draft.id}/preview`, admin.accessToken);
+    const res = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${draft.id}/preview`,
+      admin.accessToken,
+    );
     expect(res.statusCode).toBe(200);
     const expiresAt = new Date(fixed.now.getTime() + PLAY_URL_TTL_MS);
     expect(res.json()).toEqual({
@@ -256,7 +274,10 @@ describe('bulk', () => {
     const to = await makeCategory();
     const a = await makeEpisode(from.id, { status: 'DRAFT' });
     const b = await makeEpisode(from.id, { status: 'DRAFT' });
-    const res = await bulk(admin.accessToken, [a.id, b.id], { type: 'setCategory', categoryId: to.id });
+    const res = await bulk(admin.accessToken, [a.id, b.id], {
+      type: 'setCategory',
+      categoryId: to.id,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ updated: 2 });
     expect(await testDb.episode.count({ where: { categoryId: to.id } })).toBe(2);
@@ -271,7 +292,10 @@ describe('bulk', () => {
     const lacks = await makeEpisode(category.id, { status: 'DRAFT' });
     await testDb.episodeTag.create({ data: { episodeId: has.id, tagId: tag.id } });
 
-    const add = await bulk(admin.accessToken, [has.id, lacks.id], { type: 'addTag', tagId: tag.id });
+    const add = await bulk(admin.accessToken, [has.id, lacks.id], {
+      type: 'addTag',
+      tagId: tag.id,
+    });
     expect(add.statusCode).toBe(200);
     expect(await testDb.episodeTag.count({ where: { tagId: tag.id } })).toBe(2);
     expect(await auditCount('episode.tag-add')).toBe(2);
@@ -316,7 +340,10 @@ describe('bulk', () => {
     const admin = await makeAdmin(app);
     const category = await makeCategory();
     const a = await makeEpisode(category.id);
-    const res = await bulk(admin.accessToken, [a.id], { type: 'addToPlaylist', playlistId: 'featured' });
+    const res = await bulk(admin.accessToken, [a.id], {
+      type: 'addToPlaylist',
+      playlistId: 'featured',
+    });
     expect(res.statusCode).toBe(200);
     expect(await testDb.playlistItem.count({ where: { playlistId: 'featured' } })).toBe(1);
   });
@@ -333,7 +360,9 @@ describe('bulk', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ updated: 2 });
     const rows = await testDb.episode.findMany({ where: { id: { in: [a.id, b.id] } } });
-    expect(rows.every((r) => r.status === 'PUBLISHED' && r.publishedAt && !r.scheduledFor)).toBe(true);
+    expect(rows.every((r) => r.status === 'PUBLISHED' && r.publishedAt && !r.scheduledFor)).toBe(
+      true,
+    );
     expect(await auditCount('episode.publish')).toBe(2);
   });
 
@@ -343,7 +372,9 @@ describe('bulk', () => {
     const a = await makeEpisode(category.id);
     const res = await bulk(admin.accessToken, [a.id], { type: 'archive' });
     expect(res.json()).toEqual({ updated: 1 });
-    expect((await testDb.episode.findUniqueOrThrow({ where: { id: a.id } })).status).toBe('ARCHIVED');
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: a.id } })).status).toBe(
+      'ARCHIVED',
+    );
     expect(await auditCount('episode.archive')).toBe(1);
   });
 
@@ -352,10 +383,15 @@ describe('bulk', () => {
     const from = await makeCategory();
     const to = await makeCategory();
     const a = await makeEpisode(from.id, { status: 'DRAFT' });
-    const res = await bulk(admin.accessToken, [a.id, 'nope'], { type: 'setCategory', categoryId: to.id });
+    const res = await bulk(admin.accessToken, [a.id, 'nope'], {
+      type: 'setCategory',
+      categoryId: to.id,
+    });
     expect(res.statusCode).toBe(404);
     expect(res.json().error.details).toEqual({ ids: ['nope'] });
-    expect((await testDb.episode.findUniqueOrThrow({ where: { id: a.id } })).categoryId).toBe(from.id);
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: a.id } })).categoryId).toBe(
+      from.id,
+    );
     expect(await testDb.auditLog.count()).toBe(0);
   });
 
@@ -395,7 +431,9 @@ describe('bulk', () => {
     const res = await bulk(admin.accessToken, [draft.id, live.id], { type: 'publish' });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('EPISODE_STATE');
-    expect((await testDb.episode.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe('DRAFT');
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe(
+      'DRAFT',
+    );
   });
 
   it('archive with one DRAFT: 409 EPISODE_STATE, nothing archived', async () => {
@@ -407,7 +445,9 @@ describe('bulk', () => {
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('EPISODE_STATE');
     expect(res.json().error.details).toEqual({ ids: [draft.id] });
-    expect((await testDb.episode.findUniqueOrThrow({ where: { id: live.id } })).status).toBe('PUBLISHED');
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: live.id } })).status).toBe(
+      'PUBLISHED',
+    );
     expect(await testDb.auditLog.count()).toBe(0);
   });
 

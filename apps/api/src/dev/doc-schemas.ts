@@ -498,15 +498,21 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: adminSeriesDetailResponseSchema },
     },
   ),
-  'POST /v1/admin/series/:id/cover': admin('Upload the series cover (JPEG, PNG, WebP, up to 10 MB)', {
-    description:
-      'multipart/form-data, field `cover`. Centre-cropped to 16:9 (1280x720 and 640x360), then stored by a job.',
-    multipart: { fields: z.object({}), file: 'cover' },
-    responses: { 202: adminSeriesDetailResponseSchema },
-  }),
-  'GET /v1/admin/playlists': admin('Playlists with episode counts; Онцлох (id `featured`) is always first', {
-    responses: { 200: adminPlaylistListResponseSchema },
-  }),
+  'POST /v1/admin/series/:id/cover': admin(
+    'Upload the series cover (JPEG, PNG, WebP, up to 10 MB)',
+    {
+      description:
+        'multipart/form-data, field `cover`. Centre-cropped to 16:9 (1280x720 and 640x360), then stored by a job.',
+      multipart: { fields: z.object({}), file: 'cover' },
+      responses: { 202: adminSeriesDetailResponseSchema },
+    },
+  ),
+  'GET /v1/admin/playlists': admin(
+    'Playlists with episode counts; Онцлох (id `featured`) is always first',
+    {
+      responses: { 200: adminPlaylistListResponseSchema },
+    },
+  ),
   'POST /v1/admin/playlists': admin('Create a playlist', {
     body: createPlaylistRequestSchema,
     responses: { 201: adminPlaylistDetailResponseSchema },
@@ -558,10 +564,13 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 202: adminPlaylistDetailResponseSchema },
     },
   ),
-  'GET /v1/admin/episodes': admin('Episodes: filters (status, category, series, tag, playlist, media), sort, calendar range, search, paging', {
-    query: listAdminEpisodesQuerySchema,
-    responses: { 200: adminEpisodesPageSchema },
-  }),
+  'GET /v1/admin/episodes': admin(
+    'Episodes: filters (status, category, series, tag, playlist, media), sort, calendar range, search, paging',
+    {
+      query: listAdminEpisodesQuerySchema,
+      responses: { 200: adminEpisodesPageSchema },
+    },
+  ),
   'POST /v1/admin/episodes': admin('Create a draft episode', {
     body: createEpisodeRequestSchema,
     responses: { 201: adminEpisodeResponseSchema },

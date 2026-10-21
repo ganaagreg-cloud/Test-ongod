@@ -94,7 +94,9 @@ export const updateSeriesRequestSchema = createSeriesRequestSchema
   .refine((v) => Object.keys(v).length > 0);
 export type UpdateSeriesRequest = z.infer<typeof updateSeriesRequestSchema>;
 /** The new order: every episode id of the series, first to last. */
-export const reorderSeriesRequestSchema = z.object({ episodeIds: z.array(idSchema).min(1).max(500) });
+export const reorderSeriesRequestSchema = z.object({
+  episodeIds: z.array(idSchema).min(1).max(500),
+});
 
 // ---- Playlists ----
 
@@ -224,9 +226,15 @@ export const listAdminEpisodesQuerySchema = z
     tagId: z.preprocess(emptyToUndefined, idSchema.optional()),
     playlistId: z.preprocess(emptyToUndefined, idSchema.optional()),
     /** The newest media file's status, or NONE for episodes without media. */
-    mediaStatus: z.preprocess(emptyToUndefined, z.union([mediaStatusSchema, z.literal('NONE')]).optional()),
+    mediaStatus: z.preprocess(
+      emptyToUndefined,
+      z.union([mediaStatusSchema, z.literal('NONE')]).optional(),
+    ),
     /** Always newest first. */
-    sort: z.preprocess(emptyToUndefined, z.enum(['created', 'published', 'scheduled']).default('created')),
+    sort: z.preprocess(
+      emptyToUndefined,
+      z.enum(['created', 'published', 'scheduled']).default('created'),
+    ),
     /** Calendar range on scheduledFor OR publishedAt: from inclusive, to exclusive, both or neither. */
     from: queryDatetime,
     to: queryDatetime,
