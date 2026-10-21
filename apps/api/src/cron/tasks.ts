@@ -5,6 +5,7 @@ import { enqueueEmail } from '../email';
 import { mn } from '../i18n/mn';
 import { DAY_MS, ubDate } from '../lib/dates';
 import { enqueuePush } from '../push';
+import { enqueuePublishPush, type PublishedEpisode } from '../push/publish';
 
 export interface CronTaskContext {
   db: Db;
@@ -119,20 +120,39 @@ export const publishScheduledEpisodes: CronTask = {
         status: 'SCHEDULED',
         scheduledFor: { lte: now },
         coverPath: { not: '' },
-        mediaAssets: { some: { kind: 'AUDIO', status: 'READY' } },
+        // Audio or video (ADR-0038): any READY media file.
+        mediaAssets: { some: { status: 'READY' } },
       },
-      select: { id: true, scheduledFor: true },
+      select: {
+        id: true,
+        title: true,
+        pushText: true,
+        notifyOnPublish: true,
+        scheduledFor: true,
+      },
       orderBy: { scheduledFor: 'asc' },
       take: PUBLISH_BATCH,
     });
-    let published = 0;
-    for (const episode of due) {
-      const done = await db.episode.updateMany({
-        where: { id: episode.id, status: 'SCHEDULED' },
-        data: { status: 'PUBLISHED', publishedAt: episode.scheduledFor ?? now, scheduledFor: null },
-      });
-      published += done.count;
-    }
+    if (due.length === 0) return { affected: 0 };
+
+    // One transaction: the status changes and the one combined push for the episodes this tick
+    // really published (count === 1) commit together, so a repeated tick never pushes twice.
+    const published = await db.$transaction(async (tx) => {
+      const won: PublishedEpisode[] = [];
+      for (const episode of due) {
+        const done = await tx.episode.updateMany({
+          where: { id: episode.id, status: 'SCHEDULED' },
+          data: {
+            status: 'PUBLISHED',
+            publishedAt: episode.scheduledFor ?? now,
+            scheduledFor: null,
+          },
+        });
+        if (done.count === 1) won.push(episode);
+      }
+      await enqueuePublishPush(tx, won, now);
+      return won.length;
+    });
     return { affected: published };
   },
 };

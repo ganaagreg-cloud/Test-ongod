@@ -3,6 +3,7 @@ import { isUniqueViolation } from '../auth/service';
 import type { Db } from '../db';
 import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
+import { enqueuePublishPush, type PublishedEpisode } from '../push/publish';
 import { audit } from './audit';
 import { missingOf, type ContentService } from './content';
 import { FEATURED_PLAYLIST_ID, type PlaylistService } from './playlists';
@@ -87,6 +88,7 @@ export function createBulkService(deps: {
 
   async function runWrites(actor: User, ids: string[], action: BulkAction, at: Date) {
     await db.$transaction(async (tx) => {
+      const published: PublishedEpisode[] = [];
       // addToPlaylist: the playlist's row lock must be the first statement of the transaction.
       if (action.type === 'addToPlaylist') {
         await playlists.addItemsTx(tx, actor, action.playlistId, ids);
@@ -117,13 +119,15 @@ export function createBulkService(deps: {
             await audit(tx, actor.id, 'episode.tag-remove', 'Episode', id, { tagId: action.tagId });
             break;
           case 'publish':
-            await content.tx.publish(tx, actor, id, at);
+            published.push(await content.tx.publish(tx, actor, id, at));
             break;
           case 'archive':
             await content.tx.transition(tx, actor, id, 'PUBLISHED', 'ARCHIVED', 'episode.archive');
             break;
         }
       }
+      // One combined push for the whole batch, queued with the publish itself.
+      await enqueuePublishPush(tx, published, at);
     });
   }
 

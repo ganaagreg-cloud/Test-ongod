@@ -23,6 +23,7 @@ import {
 } from '../media/jobs';
 import { coverFiles, processCover } from '../media/cover';
 import type { UploadDirs } from '../media/storage';
+import { enqueuePublishPush, type PublishedEpisode } from '../push/publish';
 import { audit } from './audit';
 
 const episodeInclude = {
@@ -184,13 +185,23 @@ export function createContentService(deps: {
   }
 
   /** DRAFT/SCHEDULED -> PUBLISHED inside the caller's transaction (single and bulk publish). */
-  async function publishTx(tx: Prisma.TransactionClient, actor: User, id: string, at: Date) {
+  async function publishTx(
+    tx: Prisma.TransactionClient,
+    actor: User,
+    id: string,
+    at: Date,
+  ): Promise<PublishedEpisode> {
     const done = await tx.episode.updateMany({
       where: { id, status: { in: [...OPEN_STATES] } },
       data: { status: 'PUBLISHED', publishedAt: at, scheduledFor: null },
     });
     if (done.count !== 1) throw new AppError(409, 'EPISODE_STATE');
     await audit(tx, actor.id, 'episode.publish', 'Episode', id, {});
+    // The caller queues the push (one per transaction, so a bulk publish sends one message).
+    return tx.episode.findUniqueOrThrow({
+      where: { id },
+      select: { id: true, title: true, pushText: true, notifyOnPublish: true },
+    });
   }
 
   /** `from` -> `to` with a status precondition inside the caller's transaction. */
@@ -427,7 +438,10 @@ export function createContentService(deps: {
         throw new AppError(409, 'NOT_READY_TO_PUBLISH', undefined, { missing });
       }
       const at = now();
-      await db.$transaction((tx) => publishTx(tx, actor, id, at));
+      await db.$transaction(async (tx) => {
+        const published = await publishTx(tx, actor, id, at);
+        await enqueuePublishPush(tx, [published], at);
+      });
       return this.getEpisode(id);
     },
 

@@ -76,6 +76,8 @@ export const mn = {
       title: 'Эрх дуусах гэж байна',
       body: (p: { endsAt: string }) => `Таны эрх ${p.endsAt}-нд дуусна.`,
     },
+    newEpisode: { title: 'Шинэ анги' },
+    newEpisodes: { body: (n: number) => `${n} шинэ анги нэмэгдлээ` },
   },
 
   /** Admin CSV export column titles. */
