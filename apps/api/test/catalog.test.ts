@@ -402,6 +402,8 @@ describe('home', () => {
       categories: [],
       thisWeek: [],
       nextRelease: null,
+      featured: [],
+      playlists: [],
     });
   });
 

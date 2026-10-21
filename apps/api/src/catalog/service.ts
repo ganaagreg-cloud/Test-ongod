@@ -7,7 +7,10 @@ import type {
   ListEpisodesQuery,
   MeStats,
   PlayResponse,
+  PlaylistPage,
   SaveProgressRequest,
+  SeriesPage,
+  TagDto,
 } from '@ongod/shared';
 import type { Db, Prisma } from '../db';
 import { AppError } from '../errors';
@@ -19,6 +22,8 @@ import { PLAY_URL_TTL_MS, type MediaUrls } from './media';
 const DAY_MS = 24 * 60 * 60_000;
 const HOME_ROW = 10;
 const NEXT_ROW = 5;
+/** The id the admin playlist service gives the "Онцлох" playlist (created lazily there). */
+const FEATURED_PLAYLIST_ID = 'featured';
 
 /** The READY media file of an episode, audio or video (SPEC G: media status Ready; ADR-0038). */
 const readyMedia = {
@@ -31,6 +36,8 @@ const readyMedia = {
 const itemInclude = {
   category: { select: { id: true, name: true, slug: true } },
   mediaAssets: readyMedia,
+  series: { select: { id: true, title: true } },
+  tags: { select: { tag: { select: { id: true, name: true, slug: true } } } },
 } satisfies Prisma.EpisodeInclude;
 
 type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof itemInclude }>;
@@ -127,7 +134,26 @@ export function createCatalogService(deps: CatalogDeps) {
       publishedAt: (ep.publishedAt ?? ep.createdAt).toISOString(),
       progress,
       saved,
+      series: ep.series ? { id: ep.series.id, title: ep.series.title, part: ep.seriesPart } : null,
+      tags: ep.tags
+        .map((t) => t.tag)
+        .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
     };
+  }
+
+  /** Ids of published episodes in a playlist, by position. Unpublished ones are never selected. */
+  async function playlistEpisodeIds(
+    playlistId: string,
+    now: Date,
+    take?: number,
+  ): Promise<string[]> {
+    const rows = await db.playlistItem.findMany({
+      where: { playlistId, episode: publishedWhere(now) },
+      orderBy: [{ position: 'asc' }, { episodeId: 'asc' }],
+      select: { episodeId: true },
+      ...(take ? { take } : {}),
+    });
+    return rows.map((r) => r.episodeId);
   }
 
   async function categories(now: Date): Promise<CategoryDto[]> {
@@ -171,6 +197,8 @@ export function createCatalogService(deps: CatalogDeps) {
       const now = clock();
       const where: Prisma.EpisodeWhereInput[] = [];
       if (q.category) where.push({ category: { OR: [{ id: q.category }, { slug: q.category }] } });
+      if (q.tag) where.push({ tags: { some: { tag: { OR: [{ id: q.tag }, { slug: q.tag }] } } } });
+      if (q.series) where.push({ series: { OR: [{ id: q.series }, { slug: q.series }] } });
       if (q.q) {
         const needle = escapeLike(q.q);
         where.push({
@@ -221,12 +249,28 @@ export function createCatalogService(deps: CatalogDeps) {
           now,
         ),
       ]);
-      return { ...item!, description: ep.description, next };
+
+      // The next PUBLISHED part: a draft part in between is skipped, never named.
+      let nextInSeries: EpisodeItem | null = null;
+      if (ep.seriesId && ep.seriesPart !== null) {
+        const following = await db.episode.findFirst({
+          where: {
+            AND: [
+              publishedWhere(now),
+              { seriesId: ep.seriesId, seriesPart: { gt: ep.seriesPart } },
+            ],
+          },
+          orderBy: [{ seriesPart: 'asc' }, { id: 'asc' }],
+          select: { id: true },
+        });
+        if (following) nextInSeries = (await itemsFor(userId, [following.id], now))[0] ?? null;
+      }
+      return { ...item!, description: ep.description, next, nextInSeries };
     },
 
     async home(userId: string): Promise<HomeResponse> {
       const now = clock();
-      const [recent, published, cats, upcoming] = await Promise.all([
+      const [recent, published, cats, upcoming, featuredIds, homePlaylists] = await Promise.all([
         db.playbackProgress.findMany({
           where: { userId, completed: false, positionSec: { gt: 0 }, episode: publishedWhere(now) },
           orderBy: { updatedAt: 'desc' },
@@ -244,10 +288,22 @@ export function createCatalogService(deps: CatalogDeps) {
           orderBy: { scheduledFor: 'asc' },
           select: { title: true, scheduledFor: true, category: itemInclude.category },
         }),
+        playlistEpisodeIds(FEATURED_PLAYLIST_ID, now, HOME_ROW),
+        db.playlist.findMany({
+          where: { showOnHome: true, isFeatured: false },
+          orderBy: [{ homeOrder: 'asc' }, { id: 'asc' }],
+          select: { id: true, title: true, slug: true },
+        }),
       ]);
+      const playlistRows = await Promise.all(
+        homePlaylists.map(async (p) => ({
+          ...p,
+          ids: await playlistEpisodeIds(p.id, now, HOME_ROW),
+        })),
+      );
       const newest = pageAfter(published, 'desc', published.length || 1);
       const weekAgo = now.getTime() - 7 * DAY_MS;
-      const [continueListening, latest, thisWeek] = await Promise.all([
+      const [continueListening, latest, thisWeek, featured, playlistItems] = await Promise.all([
         itemsFor(
           userId,
           recent.map((r) => r.episodeId),
@@ -266,7 +322,18 @@ export function createCatalogService(deps: CatalogDeps) {
             .map((e) => e.id),
           now,
         ),
+        itemsFor(userId, featuredIds, now),
+        itemsFor(userId, [...new Set(playlistRows.flatMap((p) => p.ids))], now),
       ]);
+      const itemById = new Map(playlistItems.map((i) => [i.id, i]));
+      const playlists = playlistRows
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug,
+          items: p.ids.flatMap((id) => itemById.get(id) ?? []),
+        }))
+        .filter((p) => p.items.length > 0);
       const nextRelease =
         upcoming?.scheduledFor != null
           ? {
@@ -275,7 +342,74 @@ export function createCatalogService(deps: CatalogDeps) {
               scheduledFor: upcoming.scheduledFor.toISOString(),
             }
           : null;
-      return { continueListening, latest, categories: cats, thisWeek, nextRelease };
+      return {
+        continueListening,
+        latest,
+        categories: cats,
+        thisWeek,
+        nextRelease,
+        featured,
+        playlists,
+      };
+    },
+
+    /** Only published parts, by part number (real numbers, so gaps are not filled in). */
+    async seriesPage(userId: string, id: string): Promise<SeriesPage> {
+      const now = clock();
+      const series = await db.series.findUnique({ where: { id } });
+      if (!series) throw new AppError(404, 'NOT_FOUND');
+      const rows = await db.episode.findMany({
+        where: { AND: [publishedWhere(now), { seriesId: id }] },
+        select: { id: true, seriesPart: true, publishedAt: true },
+      });
+      if (rows.length === 0) throw new AppError(404, 'NOT_FOUND');
+      const last = Number.MAX_SAFE_INTEGER;
+      rows.sort(
+        (a, b) =>
+          (a.seriesPart ?? last) - (b.seriesPart ?? last) ||
+          (a.publishedAt?.getTime() ?? 0) - (b.publishedAt?.getTime() ?? 0) ||
+          a.id.localeCompare(b.id),
+      );
+      const items = await itemsFor(
+        userId,
+        rows.map((r) => r.id),
+        now,
+      );
+      return {
+        id: series.id,
+        title: series.title,
+        slug: series.slug,
+        description: series.description,
+        coverUrl: series.coverPath ? media.cover(series.coverPath, now).coverUrl : null,
+        items,
+      };
+    },
+
+    /** Only published items, by position. A playlist with none published does not exist. */
+    async playlistPage(userId: string, id: string): Promise<PlaylistPage> {
+      const now = clock();
+      const playlist = await db.playlist.findUnique({ where: { id } });
+      if (!playlist) throw new AppError(404, 'NOT_FOUND');
+      const items = await itemsFor(userId, await playlistEpisodeIds(id, now), now);
+      if (items.length === 0) throw new AppError(404, 'NOT_FOUND');
+      return {
+        id: playlist.id,
+        title: playlist.title,
+        slug: playlist.slug,
+        description: playlist.description,
+        coverUrl: playlist.coverPath ? media.cover(playlist.coverPath, now).coverUrl : null,
+        items,
+      };
+    },
+
+    /** Tags with at least one published episode (a draft-only tag would reveal unpublished work). */
+    async tags(): Promise<TagDto[]> {
+      const now = clock();
+      return db.tag.findMany({
+        where: { episodes: { some: { episode: publishedWhere(now) } } },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        select: { id: true, name: true, slug: true },
+      });
     },
 
     /**

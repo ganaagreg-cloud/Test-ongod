@@ -59,6 +59,9 @@ import {
   googleLoginRequestSchema,
   grantRequestSchema,
   homeResponseSchema,
+  playlistResponseSchema,
+  seriesResponseSchema,
+  tagsResponseSchema,
   identitiesResponseSchema,
   linkAppleRequestSchema,
   linkGoogleRequestSchema,
@@ -308,6 +311,15 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   }),
   'GET /v1/episodes/:id': user('catalog', 'One episode with the next one', {
     responses: { 200: episodeDetailResponseSchema },
+  }),
+  'GET /v1/series/:id': user('catalog', 'A series: its published parts in part order', {
+    responses: { 200: seriesResponseSchema },
+  }),
+  'GET /v1/playlists/:id': user('catalog', 'A playlist: its published items in order', {
+    responses: { 200: playlistResponseSchema },
+  }),
+  'GET /v1/tags': user('catalog', 'Tags with at least one published episode', {
+    responses: { 200: tagsResponseSchema },
   }),
   'GET /v1/home': user('catalog', 'Home rows and the next release within 7 days', {
     responses: { 200: homeResponseSchema },

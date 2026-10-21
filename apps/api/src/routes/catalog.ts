@@ -10,7 +10,10 @@ import {
   listSavedQuerySchema,
   meStatsResponseSchema,
   playResponseSchema,
+  playlistResponseSchema,
   saveProgressRequestSchema,
+  seriesResponseSchema,
+  tagsResponseSchema,
 } from '@ongod/shared';
 import { authOf, type createAuthGuard } from '../auth/guard';
 import type { CatalogService } from '../catalog/service';
@@ -42,6 +45,22 @@ export async function catalogRoutes(
       episode: await catalog.episodeDetail(authOf(req).user.id, id),
     });
   });
+
+  app.get('/series/:id', async (req) => {
+    const { id } = episodeParamsSchema.parse(req.params);
+    return seriesResponseSchema.parse({
+      series: await catalog.seriesPage(authOf(req).user.id, id),
+    });
+  });
+
+  app.get('/playlists/:id', async (req) => {
+    const { id } = episodeParamsSchema.parse(req.params);
+    return playlistResponseSchema.parse({
+      playlist: await catalog.playlistPage(authOf(req).user.id, id),
+    });
+  });
+
+  app.get('/tags', async () => tagsResponseSchema.parse({ tags: await catalog.tags() }));
 
   app.get('/home', async (req) =>
     homeResponseSchema.parse(await catalog.home(authOf(req).user.id)),

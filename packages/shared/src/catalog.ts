@@ -31,6 +31,17 @@ export const episodeCategorySchema = z.object({
   slug: z.string(),
 });
 
+export const episodeSeriesSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  /** Part number within the series; null when the episode has none. */
+  part: z.number().int().nullable(),
+});
+
+export const tagSchema = z.object({ id: z.string(), name: z.string(), slug: z.string() });
+export type TagDto = z.infer<typeof tagSchema>;
+export const tagsResponseSchema = z.object({ tags: z.array(tagSchema) });
+
 /** One row of any episode list (library, home, saved). */
 export const episodeItemSchema = z.object({
   id: z.string(),
@@ -49,6 +60,8 @@ export const episodeItemSchema = z.object({
     .object({ positionSec: z.number().int().nonnegative(), completed: z.boolean() })
     .nullable(),
   saved: z.boolean(),
+  series: episodeSeriesSchema.nullable(),
+  tags: z.array(tagSchema),
 });
 export type EpisodeItem = z.infer<typeof episodeItemSchema>;
 
@@ -56,6 +69,8 @@ export const episodeDetailSchema = episodeItemSchema.extend({
   description: z.string(),
   /** Up to 5 episodes of the same category published after this one ("Дараагийн"). */
   next: z.array(episodeItemSchema),
+  /** The next published part of the same series; null at the end or outside a series. */
+  nextInSeries: episodeItemSchema.nullable(),
 });
 export type EpisodeDetail = z.infer<typeof episodeDetailSchema>;
 export const episodeDetailResponseSchema = z.object({ episode: episodeDetailSchema });
@@ -76,6 +91,10 @@ const cursorSchema = z.string().min(1).max(200);
 export const listEpisodesQuerySchema = z.object({
   /** Category id or slug. */
   category: z.string().trim().min(1).max(64).optional(),
+  /** Tag id or slug. */
+  tag: z.string().trim().min(1).max(64).optional(),
+  /** Series id or slug. */
+  series: z.string().trim().min(1).max(64).optional(),
   /** Searches title and description. */
   q: z.string().trim().min(1).max(100).optional(),
   sort: episodeSortSchema.default('newest'),
@@ -112,6 +131,17 @@ export const homeResponseSchema = z.object({
   categories: z.array(categorySchema),
   thisWeek: z.array(episodeItemSchema),
   nextRelease: nextReleaseSchema.nullable(),
+  /** Items of the "Онцлох" playlist, in its order. */
+  featured: z.array(episodeItemSchema),
+  /** Playlists shown on home, by homeOrder; empty ones are left out. */
+  playlists: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      slug: z.string(),
+      items: z.array(episodeItemSchema),
+    }),
+  ),
 });
 export type HomeResponse = z.infer<typeof homeResponseSchema>;
 
@@ -151,3 +181,20 @@ export const saveProgressRequestSchema = z.object({
   completed: z.boolean().default(false),
 });
 export type SaveProgressRequest = z.input<typeof saveProgressRequestSchema>;
+
+// ---- GET /v1/series/:id, GET /v1/playlists/:id ----
+
+const collectionBase = {
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string(),
+  coverUrl: z.string().nullable(),
+  items: z.array(episodeItemSchema),
+};
+export const seriesPageSchema = z.object(collectionBase);
+export const seriesResponseSchema = z.object({ series: seriesPageSchema });
+export const playlistPageSchema = z.object(collectionBase);
+export const playlistResponseSchema = z.object({ playlist: playlistPageSchema });
+export type SeriesPage = z.infer<typeof seriesPageSchema>;
+export type PlaylistPage = z.infer<typeof playlistPageSchema>;
