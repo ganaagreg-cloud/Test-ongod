@@ -1,12 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { MAX_COVER_BYTES, type AdminEpisodeDto } from '@ongod/shared';
+import {
+  MAX_COVER_BYTES,
+  type AdminEpisodeDto,
+  type CreateEpisodeRequest,
+  type UpdateEpisodeRequest,
+} from '@ongod/shared';
 import { Button, FileField, Input, Notice, Skeleton, Textarea, useToast } from '@ongod/ui-web';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
-import { categoriesQuery, episodeQuery, useEpisodeActions } from '../api/queries';
+import { categoriesQuery, episodeQuery, seriesListQuery, useEpisodeActions } from '../api/queries';
 import { EpisodeBadge, Fact, LoadError, PageHeader, SelectField, useNow } from '../components/bits';
-import { ConfirmDialog } from '../components/Modal';
+import { MediaPreview } from '../components/MediaPreview';
+import { ConfirmDialog, errorText } from '../components/Modal';
+import { TagPicker } from '../components/TagPicker';
 import {
   formatDateTime,
   toUlaanbaatarInputValue,
@@ -81,7 +88,8 @@ function EpisodeEdit({ id }: { id: string }) {
 
 function EpisodeScreen({ episode, refetch }: { episode: AdminEpisodeDto; refetch: () => void }) {
   const toast = useToast();
-  const { update } = useEpisodeActions(episode.id);
+  const navigate = useNavigate();
+  const { update, duplicate } = useEpisodeActions(episode.id);
 
   return (
     <>
@@ -90,6 +98,21 @@ function EpisodeScreen({ episode, refetch }: { episode: AdminEpisodeDto; refetch
       </Link>
       <PageHeader title={episode.title}>
         <EpisodeBadge status={episode.status} />
+        <Button
+          variant="secondary"
+          loading={duplicate.isPending}
+          onClick={() =>
+            duplicate.mutate(undefined, {
+              onSuccess: ({ episode: copy }) => {
+                toast.show(t.duplicate.done, { tone: 'success' });
+                void navigate(`/episodes/${copy.id}`);
+              },
+              onError: (err) => toast.show(errorText(err), { tone: 'danger' }),
+            })
+          }
+        >
+          {t.duplicate.button}
+        </Button>
       </PageHeader>
 
       <div className="admin-columns">
@@ -122,6 +145,9 @@ function EpisodeScreen({ episode, refetch }: { episode: AdminEpisodeDto; refetch
           {t.audio.title}
         </h2>
         <MediaUploader episode={episode} />
+        {episode.media?.status === 'READY' ? (
+          <MediaPreview key={episode.media.id} episodeId={episode.id} kind={episode.media.kind} />
+        ) : null}
       </section>
 
       <section className="admin-card" aria-labelledby="ep-publish">
@@ -147,16 +173,16 @@ function DetailsForm({
   initial?: AdminEpisodeDto;
   submitLabel: string;
   pending: boolean;
-  onSubmit: (values: {
-    title: string;
-    description: string;
-    categoryId: string;
-  }) => Promise<unknown>;
+  onSubmit: (values: CreateEpisodeRequest) => Promise<unknown>;
 }) {
   const categories = useQuery(categoriesQuery());
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [categoryId, setCategoryId] = useState(initial?.category.id ?? '');
+  const series = useQuery(seriesListQuery());
+  const [seriesId, setSeriesId] = useState(initial?.series?.id ?? '');
+  const [part, setPart] = useState(initial?.seriesPart != null ? String(initial.seriesPart) : '');
+  const [tagIds, setTagIds] = useState<string[]>(initial?.tags.map((tag) => tag.id) ?? []);
   const [error, setError] = useState<string>();
 
   const list = categories.data?.categories ?? [];
@@ -167,7 +193,17 @@ function DetailsForm({
     if (!valid || pending) return;
     setError(undefined);
     try {
-      await onSubmit({ title: title.trim(), description: description.trim(), categoryId });
+      const partChanged =
+        seriesId !== (initial?.series?.id ?? '') || part !== String(initial?.seriesPart ?? '');
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        categoryId,
+        seriesId: seriesId || null,
+        // Empty part: the server takes the next free number. Unchanged part: leave it alone.
+        ...(seriesId && part.trim() !== '' && partChanged ? { seriesPart: Number(part) } : {}),
+        tagIds,
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : mn.common.errorGeneric);
     }
@@ -205,6 +241,34 @@ function DetailsForm({
           ]}
         />
       )}
+      <div className="admin-series-row">
+        <SelectField
+          label={t.form.series}
+          value={seriesId}
+          onChange={(value) => {
+            if (value !== seriesId) setPart('');
+            setSeriesId(value);
+          }}
+          options={[
+            { value: '', label: t.form.noSeries },
+            ...(series.data?.series ?? []).map((s) => ({ value: s.id, label: s.title })),
+          ]}
+        />
+        {seriesId ? (
+          <Input
+            label={t.form.part}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={9999}
+            step={1}
+            value={part}
+            hint={t.form.partHint}
+            onChange={(event) => setPart(event.target.value)}
+          />
+        ) : null}
+      </div>
+      <TagPicker value={tagIds} onChange={setTagIds} />
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <div>
         <Button type="submit" loading={pending} disabled={!valid}>
@@ -321,6 +385,8 @@ function PublishSection({ episode }: { episode: AdminEpisodeDto }) {
         ) : null}
       </dl>
 
+      {open ? <NotifyForm episode={episode} /> : null}
+
       {open && !canPublish ? (
         <Notice tone="warning">
           {t.missing.text(episode.missing.map((m) => t.missing[m]).join(', '))}
@@ -424,6 +490,56 @@ function PublishSection({ episode }: { episode: AdminEpisodeDto }) {
         onConfirm={() => run('archive', p.archived)}
       />
     </div>
+  );
+}
+
+/** Whether to tell the members when this goes out, and with which words. */
+function NotifyForm({ episode }: { episode: AdminEpisodeDto }) {
+  const toast = useToast();
+  const { update } = useEpisodeActions(episode.id);
+  const [notify, setNotify] = useState(episode.notifyOnPublish);
+  const [text, setText] = useState(episode.pushText ?? '');
+  const [error, setError] = useState<string>();
+  const dirty = notify !== episode.notifyOnPublish || text.trim() !== (episode.pushText ?? '');
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setError(undefined);
+    const values: UpdateEpisodeRequest = { notifyOnPublish: notify, pushText: text.trim() || null };
+    try {
+      await update.mutateAsync(values);
+      toast.show(mn.common.saved, { tone: 'success' });
+    } catch (err) {
+      setError(errorText(err));
+    }
+  }
+
+  return (
+    <form className="admin-form" onSubmit={(event) => void save(event)} noValidate>
+      <label className="admin-check">
+        <input
+          type="checkbox"
+          checked={notify}
+          onChange={(event) => setNotify(event.target.checked)}
+        />
+        <span>{t.notify.switch}</span>
+      </label>
+      {notify ? (
+        <Input
+          label={t.notify.text}
+          value={text}
+          maxLength={180}
+          hint={t.notify.textHint}
+          onChange={(event) => setText(event.target.value)}
+        />
+      ) : null}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      <div>
+        <Button type="submit" variant="secondary" loading={update.isPending} disabled={!dirty}>
+          {t.notify.save}
+        </Button>
+      </div>
+    </form>
   );
 }
 

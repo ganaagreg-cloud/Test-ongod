@@ -459,6 +459,199 @@ test('tags: create and delete', async () => {
   await expect(row).toHaveCount(0);
 });
 
+// Deletes one e2e draft through its edit screen (found by its exact title in the list).
+async function deleteDraft(title: string) {
+  await sidebar(mn.nav.episodes).click();
+  await page.getByLabel(mn.episodes.searchLabel).fill(title);
+  await page.getByRole('row').filter({ hasText: title }).first().click();
+  await page.getByRole('button', { name: mn.episodes.deleteEpisode }).click();
+  await dialog(mn.episodes.deleteConfirmTitle)
+    .getByRole('button', { name: mn.common.delete })
+    .click();
+  // back on the list (an earlier toast may still be on screen, so do not wait for a toast)
+  await expect(page.getByRole('heading', { name: mn.episodes.title })).toBeVisible();
+  await expect(page.getByLabel(mn.episodes.searchLabel)).toBeVisible();
+}
+
+test('content: series, part and tags are saved; filter by tag; bulk tag; duplicate', async () => {
+  test.setTimeout(150_000);
+  const stamp = Date.now();
+  const seriesTitle = `E2E цуврал ${stamp}`;
+  const tagOne = `E2E шошго ${stamp}`;
+  const tagTwo = `E2E бөөнөөр ${stamp}`;
+  const first = `E2E анги A ${stamp}`;
+  const second = `E2E анги B ${stamp}`;
+  const f = mn.episodes.form;
+
+  // fixtures: a series and a second tag (the first tag is created in the picker with Enter)
+  await sidebar(mn.nav.series).click();
+  await page.getByRole('button', { name: mn.series.new }).first().click();
+  await page.getByLabel(mn.series.form.title).fill(seriesTitle);
+  await page.getByLabel(mn.series.form.slug).fill(`e2e-series-${stamp}`);
+  await page.getByRole('button', { name: mn.series.form.create }).click();
+  await expect(toast(mn.series.created)).toBeVisible();
+
+  await sidebar(mn.nav.tags).click();
+  await page.getByRole('button', { name: mn.tags.new }).first().click();
+  await dialog(mn.tags.formCreate).getByLabel(mn.tags.name).fill(tagTwo);
+  await dialog(mn.tags.formCreate).getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.tags.created)).toBeVisible();
+
+  // first item: series + part 3 + a new tag made with Enter; all still there after a reload
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.new }).click();
+  await page.getByLabel(f.title, { exact: true }).fill(first);
+  await page.getByLabel(f.category, { exact: true }).selectOption({ index: 1 });
+  await expect(page.getByLabel(f.part, { exact: true })).toHaveCount(0); // only with a series
+  await page.getByLabel(f.series, { exact: true }).selectOption({ label: seriesTitle });
+  await page.getByLabel(f.part, { exact: true }).fill('3');
+  const picker = page.getByLabel(f.tags, { exact: true });
+  await picker.fill(tagOne);
+  await picker.press('Enter');
+  await expect(
+    page.getByRole('button', { name: mn.episodes.tagPicker.remove(tagOne) }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: f.create }).click();
+  await expect(toast(mn.episodes.created)).toBeVisible();
+  await expect(page.getByRole('heading', { name: first, level: 1 })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: first, level: 1 })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByLabel(f.series, { exact: true })).toHaveValue(/.+/);
+  await expect(page.getByLabel(f.series, { exact: true }).locator('option:checked')).toHaveText(
+    seriesTitle,
+  );
+  await expect(page.getByLabel(f.part, { exact: true })).toHaveValue('3');
+  await expect(
+    page.getByRole('button', { name: mn.episodes.tagPicker.remove(tagOne) }),
+  ).toBeVisible();
+
+  // second item: same series, the part left empty (the next one is taken), same tag by Enter
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.new }).click();
+  await page.getByLabel(f.title, { exact: true }).fill(second);
+  await page.getByLabel(f.category, { exact: true }).selectOption({ index: 1 });
+  await page.getByLabel(f.series, { exact: true }).selectOption({ label: seriesTitle });
+  const again = page.getByLabel(f.tags, { exact: true });
+  await again.fill(tagOne);
+  await again.press('Enter');
+  await expect(
+    page.getByRole('button', { name: mn.episodes.tagPicker.remove(tagOne) }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: f.create }).click();
+  await expect(page.getByRole('heading', { name: second, level: 1 })).toBeVisible();
+  await expect(page.getByLabel(f.part, { exact: true })).toHaveValue('4');
+
+  // the list: filter by the tag, the series column shows the series
+  await sidebar(mn.nav.episodes).click();
+  await page.getByLabel(mn.episodes.searchLabel).fill(String(stamp));
+  await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagOne });
+  const rowOf = (title: string) => page.getByRole('row').filter({ hasText: title });
+  await expect(rowOf(first)).toBeVisible();
+  await expect(rowOf(second)).toBeVisible();
+  await expect(rowOf(first)).toContainText(seriesTitle);
+  await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagTwo });
+  await expect(rowOf(first)).toHaveCount(0);
+  await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagOne });
+  await expect(rowOf(first)).toBeVisible();
+
+  // bulk: select both rows and add the second tag
+  await page.getByLabel(mn.episodes.columns.selectRow(first)).check();
+  await page.getByLabel(mn.episodes.columns.selectRow(second)).check();
+  const bar = page.getByRole('region', { name: mn.episodes.bulk.region });
+  await expect(bar).toContainText(mn.episodes.bulk.selected(2));
+  await bar.getByLabel(mn.episodes.bulk.action, { exact: true }).selectOption({
+    label: mn.episodes.bulk.types.addTag,
+  });
+  await bar.getByLabel(mn.episodes.bulk.tag, { exact: true }).selectOption({ label: tagTwo });
+  await bar.getByRole('button', { name: mn.episodes.bulk.apply }).click();
+  await expect(toast(mn.episodes.bulk.done(2))).toBeVisible();
+  await expect(bar).toHaveCount(0); // the selection is cleared
+  await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagTwo });
+  await expect(rowOf(first)).toBeVisible();
+  await expect(rowOf(second)).toBeVisible();
+
+  // duplicate: lands on the copy's edit page, titled with "(хуулбар)"
+  await rowOf(first).click();
+  await page.getByRole('button', { name: mn.episodes.duplicate.button }).click();
+  await expect(toast(mn.episodes.duplicate.done)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /\(хуулбар\)/, level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: first, level: 1 })).toContainText(first);
+
+  // clean up: the three drafts, then the series and both tags
+  await deleteDraft(`${first} (хуулбар)`);
+  await deleteDraft(first);
+  await deleteDraft(second);
+  await sidebar(mn.nav.series).click();
+  await page
+    .getByRole('row', { name: new RegExp(seriesTitle) })
+    .getByRole('button', { name: mn.common.edit })
+    .click();
+  await page.getByRole('button', { name: mn.series.deleteSeries }).click();
+  await dialog(mn.series.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+  await expect(toast(mn.series.deleted)).toBeVisible();
+  await sidebar(mn.nav.tags).click();
+  for (const name of [tagOne, tagTwo]) {
+    const row = page.getByRole('row', { name: new RegExp(name) });
+    await row.getByRole('button', { name: mn.common.delete }).click();
+    await dialog(mn.tags.deleteTitle).getByRole('button', { name: mn.common.delete }).click();
+    await expect(toast(mn.tags.deleted)).toBeVisible();
+    await expect(row).toHaveCount(0);
+  }
+});
+
+test('content: the calendar shows a scheduled item on its day and opens it', async () => {
+  const stamp = Date.now();
+  const title = await createDraft('Cal', stamp);
+  const draftId = /\/episodes\/([^/?#]+)/.exec(page.url())?.[1] ?? '';
+  expect(draftId).not.toBe('');
+  const loaded = page.waitForResponse(
+    (res) =>
+      res.url().endsWith(`/v1/admin/episodes/${draftId}`) && res.request().method() === 'GET',
+  );
+  await page.reload();
+  const draft = ((await (await loaded).json()) as { episode: Record<string, unknown> }).episode;
+
+  // Scheduling needs a cover and a READY file, which this stack cannot make (storage is not
+  // usable, see the upload test). So the calendar's own list request gets the draft back as if it
+  // were scheduled for today at noon (Ulaanbaatar): the grid, the chip and the link are real.
+  const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+  const calendarRequest = /\/v1\/admin\/episodes\?(?:.*&)?from=/;
+  await page.route(calendarRequest, async (route) => {
+    const real = await route.fetch();
+    const body = (await real.json()) as { items: unknown[]; total: number };
+    // The API answers instants in UTC ("Z"), so the mock does too: noon in Ulaanbaatar.
+    const scheduledFor = new Date(`${today}T12:00:00+08:00`).toISOString();
+    body.items.push({ ...draft, status: 'SCHEDULED', scheduledFor });
+    body.total += 1;
+    await route.fulfill({ response: real, json: body });
+  });
+
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.view.calendar }).click();
+  await expect(page).toHaveURL(/view=calendar/);
+  const chip = page.locator(`[data-day="${today}"]`).getByRole('link', { name: new RegExp(title) });
+  await expect(chip).toBeVisible();
+  await expect(chip).toHaveClass(/ui-badge--info/); // scheduled = the same tone as the list badge
+
+  // the view survives a reload (it lives in the URL)
+  await page.reload();
+  await expect(chip).toBeVisible({ timeout: 20_000 });
+
+  // a click opens the item
+  await chip.click();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+  await page.unroute(calendarRequest);
+
+  // back to the list view: the toggle clears the URL
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.view.list }).click();
+  await expect(page).not.toHaveURL(/view=calendar/);
+
+  await deleteDraft(title);
+});
+
 test('audit log lists what was done, and can be filtered', async () => {
   await page.getByRole('link', { name: mn.nav.audit }).click();
   await expect(page.getByRole('heading', { name: mn.audit.title })).toBeVisible();

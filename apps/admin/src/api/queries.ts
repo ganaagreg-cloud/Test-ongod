@@ -16,6 +16,8 @@ import {
   adminSeriesListResponseSchema,
   adminTagResponseSchema,
   adminTagsResponseSchema,
+  bulkResponseSchema,
+  previewResponseSchema,
   adminSubscriptionResponseSchema,
   adminSubscriptionsPageSchema,
   adminUserDetailResponseSchema,
@@ -24,11 +26,14 @@ import {
   dashboardResponseSchema,
   historyResponseSchema,
   plansResponseSchema,
+  type BulkAction,
+  type CreateEpisodeRequest,
   type CreatePlaylistRequest,
   type CreateSeriesRequest,
   type ListAdminEpisodesQuery,
   type ListSubscriptionsQuery,
   type SubscriptionStatus,
+  type UpdateEpisodeRequest,
   type UpdatePlaylistRequest,
   type UpdateSeriesRequest,
 } from '@ongod/shared';
@@ -112,7 +117,7 @@ export const categoriesQuery = () =>
       api('/admin/categories', { schema: adminCategoriesResponseSchema, signal }),
   });
 
-export type EpisodesFilter = Partial<Omit<ListAdminEpisodesQuery, 'limit'>>;
+export type EpisodesFilter = Partial<ListAdminEpisodesQuery>;
 
 export const episodesQuery = (filter: EpisodesFilter) =>
   queryOptions({
@@ -272,18 +277,35 @@ export function useEpisodeActions(episodeId: string | undefined) {
   const invalidate = useInvalidate();
   const done = () => invalidate('episode', 'episodes', 'categories', 'dashboard');
   const create = useMutation({
-    mutationFn: (v: { title: string; description: string; categoryId: string }) =>
+    mutationFn: (v: CreateEpisodeRequest) =>
       api('/admin/episodes', { method: 'POST', body: v, schema: adminEpisodeResponseSchema }),
-    onSuccess: done,
+    onSettled: done,
   });
   const update = useMutation({
-    mutationFn: (v: { title: string; description: string; categoryId: string }) =>
+    mutationFn: (v: UpdateEpisodeRequest) =>
       api(`/admin/episodes/${episodeId}`, {
         method: 'PATCH',
         body: v,
         schema: adminEpisodeResponseSchema,
       }),
-    onSuccess: done,
+    onSettled: done,
+  });
+  /** A draft copy; the server adds "(хуулбар)" to the title. */
+  const duplicate = useMutation({
+    mutationFn: () =>
+      api(`/admin/episodes/${episodeId}/duplicate`, {
+        method: 'POST',
+        schema: adminEpisodeResponseSchema,
+      }),
+    onSettled: done,
+  });
+  /** A short-lived signed link to the media file (never cached: it expires). */
+  const preview = useMutation({
+    mutationFn: () =>
+      api(`/admin/episodes/${episodeId}/preview`, {
+        method: 'POST',
+        schema: previewResponseSchema,
+      }),
   });
   const remove = useMutation({
     mutationFn: () => api(`/admin/episodes/${episodeId}`, { method: 'DELETE' }),
@@ -318,7 +340,7 @@ export function useEpisodeActions(episodeId: string | undefined) {
     },
     onSuccess: done,
   });
-  return { create, update, remove, transition, schedule, uploadCover };
+  return { create, update, duplicate, preview, remove, transition, schedule, uploadCover };
 }
 
 // ---- Tags, series and playlists (ADR-0042) ----
@@ -351,6 +373,17 @@ export function useTagActions() {
     onSuccess: done,
   });
   return { create, update, remove };
+}
+
+/** One action on up to 100 items at once (all or nothing on the server). */
+export function useBulkEpisodes() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { ids: string[]; action: BulkAction }) =>
+      api('/admin/episodes/bulk', { method: 'POST', body: v, schema: bulkResponseSchema }),
+    onSettled: () =>
+      invalidate('episodes', 'episode', 'playlists', 'series', 'tags', 'categories', 'dashboard'),
+  });
 }
 
 function coverForm(file: File): FormData {

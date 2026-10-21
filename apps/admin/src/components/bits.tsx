@@ -48,7 +48,7 @@ export function SubscriptionBadge({ status }: { status: keyof typeof mn.subscrip
   return <Badge tone={SUBSCRIPTION_TONE[status]}>{mn.subscriptionStatus[status]}</Badge>;
 }
 
-const EPISODE_TONE: Record<keyof typeof mn.episodes.status, BadgeTone> = {
+export const EPISODE_TONE: Record<keyof typeof mn.episodes.status, BadgeTone> = {
   DRAFT: 'neutral',
   SCHEDULED: 'info',
   PUBLISHED: 'success',
