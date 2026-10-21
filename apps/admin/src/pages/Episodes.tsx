@@ -39,6 +39,8 @@ function when(episode: AdminEpisodeDto): string {
   return mn.common.none;
 }
 
+const NO_SELECTION: Record<string, string> = {};
+
 const col = columnsFor<AdminEpisodeDto>();
 
 /** A click on the checkbox must not open the row. */
@@ -170,11 +172,21 @@ export function EpisodesPage() {
   const [playlistId, setPlaylistId] = useState('');
   const [mediaStatus, setMediaStatus] = useState('');
   const [sort, setSort] = useState('created');
-  const [page, setPage] = usePage(
-    `${q}|${status}|${categoryId}|${seriesId}|${tagId}|${playlistId}|${mediaStatus}|${sort}`,
-  );
+  const filterKey = `${q}|${status}|${categoryId}|${seriesId}|${tagId}|${playlistId}|${mediaStatus}|${sort}`;
+  const [page, setPage] = usePage(filterKey);
   /** id -> title of the selected rows (kept across pages; the titles name the refused ones). */
-  const [selected, setSelected] = useState<Record<string, string>>({});
+  // The selection belongs to one filter and one view: it is empty again after either changes.
+  const selectionKey = `${filterKey}|${calendar}`;
+  const [selection, setSelection] = useState<{ key: string; items: Record<string, string> }>({
+    key: selectionKey,
+    items: {},
+  });
+  const selected = selection.key === selectionKey ? selection.items : NO_SELECTION;
+  const setSelected = (update: (current: Record<string, string>) => Record<string, string>) =>
+    setSelection((state) => ({
+      key: selectionKey,
+      items: update(state.key === selectionKey ? state.items : NO_SELECTION),
+    }));
 
   const categories = useQuery(categoriesQuery());
   const seriesList = useQuery(seriesListQuery());
@@ -314,12 +326,14 @@ export function EpisodesPage() {
           />
         )}
       </div>
-      <BulkBar
-        selectedIds={selectedIds}
-        titles={selected}
-        onDone={() => setSelected({})}
-        onClear={() => setSelected({})}
-      />
+      {calendar ? null : (
+        <BulkBar
+          selectedIds={selectedIds}
+          titles={selected}
+          onDone={() => setSelected(() => ({}))}
+          onClear={() => setSelected(() => ({}))}
+        />
+      )}
       {calendar ? (
         <ContentCalendar month={month} filter={filter} onMonth={setMonth} />
       ) : (
