@@ -133,23 +133,33 @@ export function createSeriesService(deps: {
 
     /** `episodeIds` must be exactly the series' episodes, in the new order: parts become 1..n. */
     async reorder(actor: User, id: string, episodeIds: string[]) {
-      await db.$transaction(async (tx) => {
-        if (!(await tx.series.findUnique({ where: { id }, select: { id: true } }))) {
-          throw new AppError(404, 'NOT_FOUND');
-        }
-        const items = await tx.episode.findMany({ where: { seriesId: id }, select: { id: true } });
-        const same =
-          episodeIds.length === items.length &&
-          new Set(episodeIds).size === episodeIds.length &&
-          items.every((e) => episodeIds.includes(e.id));
-        if (!same) throw new AppError(400, 'VALIDATION_ERROR');
-        // Free every part first so the (series, part) unique key never clashes mid-way.
-        await tx.episode.updateMany({ where: { seriesId: id }, data: { seriesPart: null } });
-        for (const [index, episodeId] of episodeIds.entries()) {
-          await tx.episode.update({ where: { id: episodeId }, data: { seriesPart: index + 1 } });
-        }
-        await audit(tx, actor.id, 'series.reorder', 'Series', id, { episodeIds });
-      });
+      try {
+        await db.$transaction(async (tx) => {
+          const found = await tx.series.findUnique({ where: { id }, select: { title: true } });
+          if (!found) throw new AppError(404, 'NOT_FOUND');
+          // Row lock on the series (a no-op write): moves into it wait until the renumbering is done.
+          await tx.series.update({ where: { id }, data: { title: found.title } });
+          const items = await tx.episode.findMany({
+            where: { seriesId: id },
+            select: { id: true },
+          });
+          const same =
+            episodeIds.length === items.length &&
+            new Set(episodeIds).size === episodeIds.length &&
+            items.every((e) => episodeIds.includes(e.id));
+          if (!same) throw new AppError(400, 'VALIDATION_ERROR');
+          // Free every part first so the (series, part) unique key never clashes mid-way.
+          await tx.episode.updateMany({ where: { seriesId: id }, data: { seriesPart: null } });
+          for (const [index, episodeId] of episodeIds.entries()) {
+            await tx.episode.update({ where: { id: episodeId }, data: { seriesPart: index + 1 } });
+          }
+          await audit(tx, actor.id, 'series.reorder', 'Series', id, { episodeIds });
+        });
+      } catch (err) {
+        // A part taken by an episode moved in at the same moment.
+        if (isUniqueViolation(err)) throw new AppError(409, 'SERIES_PART_TAKEN');
+        throw err;
+      }
       return load(id);
     },
 

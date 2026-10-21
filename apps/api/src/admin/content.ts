@@ -126,15 +126,32 @@ export function createContentService(deps: {
       if (wanted !== null) throw new AppError(400, 'VALIDATION_ERROR');
       return null;
     }
-    if (!(await tx.series.findUnique({ where: { id: seriesId }, select: { id: true } }))) {
-      throw new AppError(404, 'NOT_FOUND');
-    }
+    const found = await tx.series.findUnique({ where: { id: seriesId }, select: { title: true } });
+    if (!found) throw new AppError(404, 'NOT_FOUND');
+    // Row lock on the series (a no-op write): placements into one series queue up.
+    await tx.series.update({ where: { id: seriesId }, data: { title: found.title } });
     if (wanted !== null) return wanted;
     if (current && current.seriesId === seriesId && current.seriesPart !== null) {
       return current.seriesPart;
     }
     const last = await tx.episode.aggregate({ where: { seriesId }, _max: { seriesPart: true } });
     return (last._max.seriesPart ?? 0) + 1;
+  }
+
+  /**
+   * Runs `attempt`; a unique violation on a part the caller did not ask for (taken by a concurrent
+   * request between our read and write) retries on a fresh snapshot, and only a part the caller
+   * chose is reported as SERIES_PART_TAKEN.
+   */
+  async function withPartRetry<T>(chosenPart: boolean, attempt: () => Promise<T>): Promise<T> {
+    for (let n = 1; ; n++) {
+      try {
+        return await attempt();
+      } catch (err) {
+        if (!isUniqueViolation(err)) throw err;
+        if (chosenPart || n >= 5) throw new AppError(409, 'SERIES_PART_TAKEN');
+      }
+    }
   }
 
   async function assertTagsExist(tx: Prisma.TransactionClient, tagIds: string[]) {
@@ -255,7 +272,7 @@ export function createContentService(deps: {
     async createEpisode(actor: User, input: CreateEpisodeRequest) {
       const category = await db.category.findUnique({ where: { id: input.categoryId } });
       if (!category) throw new AppError(404, 'NOT_FOUND');
-      try {
+      return withPartRetry(input.seriesPart != null, async () => {
         const id = await db.$transaction(async (tx) => {
           const seriesId = input.seriesId ?? null;
           const seriesPart = await placeInSeries(tx, seriesId, input.seriesPart ?? null, null);
@@ -284,10 +301,7 @@ export function createContentService(deps: {
           return episode.id;
         });
         return await this.getEpisode(id);
-      } catch (err) {
-        if (isUniqueViolation(err)) throw new AppError(409, 'SERIES_PART_TAKEN');
-        throw err;
-      }
+      });
     },
 
     async updateEpisode(actor: User, id: string, input: UpdateEpisodeRequest) {
@@ -297,7 +311,7 @@ export function createContentService(deps: {
       ) {
         throw new AppError(404, 'NOT_FOUND');
       }
-      try {
+      return withPartRetry(input.seriesPart != null, async () => {
         await db.$transaction(async (tx) => {
           const current = await tx.episode.findUnique({
             where: { id },
@@ -324,10 +338,7 @@ export function createContentService(deps: {
           await audit(tx, actor.id, 'episode.update', 'Episode', id, input);
         });
         return await this.getEpisode(id);
-      } catch (err) {
-        if (isUniqueViolation(err)) throw new AppError(409, 'SERIES_PART_TAKEN');
-        throw err;
-      }
+      });
     },
 
     /**

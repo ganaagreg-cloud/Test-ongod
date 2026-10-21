@@ -82,9 +82,9 @@ describe('series access', () => {
     expect(list.json().series).toHaveLength(1);
     const one = await call(app, 'GET', `/v1/admin/series/${series.id}`, admin.accessToken);
     expect(one.json().series.episodes).toEqual([]);
-    expect(
-      (await call(app, 'GET', '/v1/admin/series/nope', admin.accessToken)).statusCode,
-    ).toBe(404);
+    expect((await call(app, 'GET', '/v1/admin/series/nope', admin.accessToken)).statusCode).toBe(
+      404,
+    );
     expect(await testDb.auditLog.count({ where: { action: 'series.create' } })).toBe(1);
   });
 });
@@ -140,9 +140,15 @@ describe('items in a series', () => {
     });
     expect(out.json().episode.series).toBeNull();
     expect(out.json().episode.seriesPart).toBeNull();
-    const unknown = await call(app, 'PATCH', `/v1/admin/episodes/${episode.id}`, admin.accessToken, {
-      seriesId: 'nope',
-    });
+    const unknown = await call(
+      app,
+      'PATCH',
+      `/v1/admin/episodes/${episode.id}`,
+      admin.accessToken,
+      {
+        seriesId: 'nope',
+      },
+    );
     expect(unknown.statusCode).toBe(404);
   });
 
@@ -154,9 +160,12 @@ describe('items in a series', () => {
     const url = `/v1/admin/episodes/${episode.id}`;
     const set = await call(app, 'PATCH', url, admin.accessToken, { tagIds: [t1.id, t2.id] });
     expect(set.statusCode).toBe(200);
-    expect(set.json().episode.tags.map((t: { id: string }) => t.id).sort()).toEqual(
-      [t1.id, t2.id].sort(),
-    );
+    expect(
+      set
+        .json()
+        .episode.tags.map((t: { id: string }) => t.id)
+        .sort(),
+    ).toEqual([t1.id, t2.id].sort());
     const bad = await call(app, 'PATCH', url, admin.accessToken, { tagIds: [t1.id, 'nope'] });
     expect(bad.statusCode).toBe(404);
     expect(await testDb.episodeTag.count({ where: { episodeId: episode.id } })).toBe(2);
@@ -255,10 +264,14 @@ describe('series cover', () => {
       headers: { ...headers, authorization: `Bearer ${admin.accessToken}` },
     });
     expect(res.statusCode).toBe(202);
-    expect((await testDb.series.findUniqueOrThrow({ where: { id: series.id } })).coverPath).toBeNull();
+    expect(
+      (await testDb.series.findUniqueOrThrow({ where: { id: series.id } })).coverPath,
+    ).toBeNull();
     await runMediaJobs(live.runtime);
     const stored = await testDb.series.findUniqueOrThrow({ where: { id: series.id } });
-    expect(stored.coverPath).toMatch(new RegExp(`^covers/series/${series.id}/[0-9a-f-]{36}\\.webp$`));
+    expect(stored.coverPath).toMatch(
+      new RegExp(`^covers/series/${series.id}/[0-9a-f-]{36}\\.webp$`),
+    );
     const meta = await sharp(join(live.runtime.dirs.published, stored.coverPath!)).metadata();
     expect(meta).toMatchObject({ format: 'webp', width: 1280, height: 720 });
     const got = await call(app, 'GET', `/v1/admin/series/${series.id}`, admin.accessToken);
@@ -266,5 +279,47 @@ describe('series cover', () => {
 
     const bad = await call(app, 'POST', `/v1/admin/series/${series.id}/cover`, admin.accessToken);
     expect(bad.statusCode).toBe(400);
+  });
+});
+
+describe('concurrent placement', () => {
+  it('simultaneous creates without a part all succeed with distinct parts', async () => {
+    const admin = await makeAdmin(app);
+    const series = await makeSeries();
+    const category = await makeCategory();
+    const results = await Promise.all(
+      [1, 2, 3, 4].map((n) =>
+        call(app, 'POST', '/v1/admin/episodes', admin.accessToken, {
+          title: `Зэрэг ${n}`,
+          categoryId: category.id,
+          seriesId: series.id,
+        }),
+      ),
+    );
+    expect(results.map((r) => r.statusCode)).toEqual([201, 201, 201, 201]);
+    const parts = results.map((r) => r.json().episode.seriesPart).sort();
+    expect(parts).toEqual([1, 2, 3, 4]);
+  });
+
+  it('a reorder racing a move-in never gives a 500', async () => {
+    const admin = await makeAdmin(app);
+    const series = await makeSeries();
+    const a = await inSeries(series.id, 1);
+    const b = await inSeries(series.id, 2);
+    const mover = await makeEpisode((await makeCategory()).id);
+    const [reorder, move] = await Promise.all([
+      call(app, 'POST', `/v1/admin/series/${series.id}/reorder`, admin.accessToken, {
+        episodeIds: [b.id, a.id],
+      }),
+      call(app, 'PATCH', `/v1/admin/episodes/${mover.id}`, admin.accessToken, {
+        seriesId: series.id,
+      }),
+    ]);
+    expect([200, 400, 409]).toContain(reorder.statusCode);
+    expect(move.statusCode).toBe(200);
+    const parts = (await testDb.episode.findMany({ where: { seriesId: series.id } })).map(
+      (e) => e.seriesPart,
+    );
+    expect(new Set(parts).size).toBe(parts.length);
   });
 });
