@@ -18,6 +18,8 @@ import { audit } from './audit';
 /** The built-in playlist (ADR-0042): always there, always first, cannot be deleted or renamed. */
 export const FEATURED_PLAYLIST_ID = 'featured';
 const FEATURED_TITLE = 'Онцлох';
+/** Reserved: Онцлох owns this slug. */
+const FEATURED_SLUG = 'featured';
 
 type Tx = Parameters<Parameters<Db['$transaction']>[0]>[0];
 
@@ -62,7 +64,7 @@ export function createPlaylistService(deps: {
         create: {
           id: FEATURED_PLAYLIST_ID,
           title: FEATURED_TITLE,
-          slug: 'featured',
+          slug: FEATURED_SLUG,
           isFeatured: true,
         },
       });
@@ -70,6 +72,12 @@ export function createPlaylistService(deps: {
       // A parallel first call created it between our check and insert.
       if (!isUniqueViolation(err)) throw err;
     }
+    // Never silent: if it is still missing, the clash was not the id race.
+    const found = await db.playlist.findUnique({
+      where: { id: FEATURED_PLAYLIST_ID },
+      select: { id: true },
+    });
+    if (!found) throw new Error('The featured playlist could not be created');
   };
 
   const load = async (id: string): Promise<AdminPlaylistDetailDto> => {
@@ -138,6 +146,7 @@ export function createPlaylistService(deps: {
     get,
 
     async create(actor: User, input: CreatePlaylistRequest) {
+      if (input.slug === FEATURED_SLUG) throw new AppError(409, 'PLAYLIST_SLUG_TAKEN');
       try {
         const id = await db.$transaction(async (tx) => {
           const playlist = await tx.playlist.create({
@@ -168,6 +177,7 @@ export function createPlaylistService(deps: {
           throw new AppError(409, 'PLAYLIST_FEATURED');
         }
       }
+      if (input.slug === FEATURED_SLUG) throw new AppError(409, 'PLAYLIST_SLUG_TAKEN');
       try {
         await db.$transaction(async (tx) => {
           if (!(await tx.playlist.findUnique({ where: { id }, select: { id: true } }))) {

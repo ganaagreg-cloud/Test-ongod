@@ -138,6 +138,26 @@ describe('Онцлох', () => {
   });
 });
 
+describe('reserved slug', () => {
+  it('the slug featured is taken, and Онцлох still appears', async () => {
+    const admin = await makeAdmin(app);
+    const res = await call(app, 'POST', '/v1/admin/playlists', admin.accessToken, {
+      title: 'Хуурамч',
+      slug: 'featured',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('PLAYLIST_SLUG_TAKEN');
+    const other = await makePlaylist();
+    const upd = await call(app, 'PATCH', `/v1/admin/playlists/${other.id}`, admin.accessToken, {
+      slug: 'featured',
+    });
+    expect(upd.statusCode).toBe(409);
+    expect(upd.json().error.code).toBe('PLAYLIST_SLUG_TAKEN');
+    const list = await call(app, 'GET', '/v1/admin/playlists', admin.accessToken);
+    expect(list.json().playlists[0]).toMatchObject({ id: 'featured', title: 'Онцлох' });
+  });
+});
+
 describe('playlist items', () => {
   it('addItems appends in the given order, skips ones already in', async () => {
     const admin = await makeAdmin(app);
