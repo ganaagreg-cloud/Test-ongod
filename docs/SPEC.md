@@ -33,7 +33,7 @@ E. Admin approval (old bank-transfer requests and manual grants only; QPay payme
 
 F. Access ends: 14 days before -> push + email, once. At expiry -> playback is refused; the app shows the no-access state.
 
-G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Optionally one series (with part number), any playlists and tags. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push to active users on publish (now, scheduled, or one combined push for a bulk publish), switchable per item with optional custom text. Admin: filters, bulk actions, preview, duplicate, calendar. Decision: [[ADR-0042-content-organisation-and-publish-push|ADR-0042]].
+G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Optionally one series (with part number), any playlists and tags. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push on publish to users with active access and a non-revoked session (logout clears that device's push token) (now, scheduled, or one combined push for a bulk publish), switchable per item with optional custom text. Admin: filters, bulk actions, preview, duplicate, calendar. Decision: [[ADR-0042-content-organisation-and-publish-push|ADR-0042]].
 
 H. Account: change password, change email (re-verify), forgot password (email code), delete account (soft delete, revoke sessions, anonymize personal data, keep payment records).
 
