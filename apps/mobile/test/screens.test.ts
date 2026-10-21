@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { EpisodeItem, EpisodesPage } from '@ongod/shared';
+import type { EpisodeItem, EpisodesPage, HomeResponse } from '@ongod/shared';
 import { createEndpoints, queryString } from '../src/api/endpoints';
 import { mn } from '../src/i18n/mn';
+import { homeRows } from '../src/screens/home/homeRows';
 import {
   accessState,
   clockLabel,
@@ -36,6 +37,8 @@ const episode = (over: Partial<EpisodeItem> = {}): EpisodeItem => ({
   publishedAt: '2026-03-01T04:00:00.000Z',
   progress: null,
   saved: false,
+  series: null,
+  tags: [],
   ...over,
 });
 
@@ -190,5 +193,88 @@ test('the phase 3 screens call the right endpoints, and none for payments', asyn
     ['GET', '/me/devices', undefined],
     ['DELETE', '/me/devices/d1', { password: 'pw-123456' }],
     ['DELETE', '/me', undefined],
+  ]);
+});
+
+const homeData = (over: Partial<HomeResponse> = {}): HomeResponse => ({
+  continueListening: [episode({ id: 'c1' })],
+  latest: [episode({ id: 'l1' })],
+  categories: [{ id: 'cat1', name: 'Сэтгэл зүй', slug: 'psy', episodeCount: 3, coverUrl: null }],
+  thisWeek: [],
+  nextRelease: {
+    title: 'Дараагийн дугаар',
+    category: { id: 'c1', name: 'Сэтгэл зүй', slug: 'psy' },
+    scheduledFor: '2026-10-25T04:00:00.000Z',
+  },
+  featured: [episode({ id: 'f1' })],
+  playlists: [
+    { id: 'p1', title: 'Эхлэгчдэд', slug: 'starters', items: [episode({ id: 'a' })] },
+    { id: 'p2', title: 'Амралтын өдөр', slug: 'weekend', items: [episode({ id: 'b' })] },
+  ],
+  ...over,
+});
+
+test('home rows: featured, continue, this week, playlists, latest, categories in that order', () => {
+  const rows = homeRows(homeData(), true);
+  assert.deepEqual(
+    rows.map((r) => r.kind),
+    ['featured', 'continue', 'thisWeek', 'playlist', 'playlist', 'latest', 'categories'],
+  );
+  assert.deepEqual(
+    rows.map((r) => r.key),
+    ['featured', 'continue', 'thisWeek', 'playlist:p1', 'playlist:p2', 'latest', 'categories'],
+  );
+  assert.equal(rows[3]!.title, 'Эхлэгчдэд', 'a playlist row is titled by the playlist');
+  assert.equal(rows[5]!.title, mn.home.latest);
+  assert.equal(rows[6]!.title, mn.home.categories);
+});
+
+test('home rows: empty featured, empty playlists and other empty rows are dropped', () => {
+  const rows = homeRows(
+    homeData({
+      featured: [],
+      continueListening: [],
+      latest: [],
+      categories: [],
+      nextRelease: null,
+      playlists: [
+        { id: 'p1', title: 'Хоосон', slug: 'empty', items: [] },
+        { id: 'p2', title: 'Амралтын өдөр', slug: 'weekend', items: [episode({ id: 'b' })] },
+      ],
+    }),
+    true,
+  );
+  assert.deepEqual(
+    rows.map((r) => r.key),
+    ['playlist:p2'],
+  );
+});
+
+test('home rows: logged out drops the continue row', () => {
+  const kinds = homeRows(homeData(), false).map((r) => r.kind);
+  assert.ok(!kinds.includes('continue'));
+  assert.ok(kinds.includes('featured'));
+});
+
+test('series part label and series/playlist/tag calls', async () => {
+  assert.equal(mn.series.part(2), '2-р хэсэг');
+  const seen: Array<[string | undefined, string]> = [];
+  const client = {
+    request: async (path: string, options: { method?: string } = {}) => {
+      seen.push([options.method ?? 'GET', path]);
+      return undefined;
+    },
+    getRefreshToken: async () => null,
+  } as unknown as Parameters<typeof createEndpoints>[0];
+  const api = createEndpoints(client);
+  await api.series('s 1');
+  await api.playlist('p1');
+  await api.tags();
+  await api.episodes({ category: 'psy', tag: 'stoic' });
+  assert.deepEqual(seen, [
+    ['GET', '/series/s%201'],
+    ['GET', '/playlists/p1'],
+    ['GET', '/tags'],
+    ['GET', '/episodes?category=psy&tag=stoic'],
   ]);
 });

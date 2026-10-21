@@ -10,7 +10,10 @@ import {
   meResponseSchema,
   meStatsResponseSchema,
   playResponseSchema,
+  playlistResponseSchema,
   registerResponseSchema,
+  seriesResponseSchema,
+  tagsResponseSchema,
   type EpisodeSort,
   type LoginRequest,
   type RegisterRequest,
@@ -24,6 +27,8 @@ type DeviceInfo = Pick<LoginRequest, 'deviceId' | 'platform' | 'model'>;
 /** Query of the library list (GET /v1/episodes). */
 export interface EpisodeQuery {
   category?: string | undefined;
+  tag?: string | undefined;
+  series?: string | undefined;
   q?: string | undefined;
   sort?: EpisodeSort | undefined;
   cursor?: string | undefined;
@@ -112,6 +117,17 @@ export function createEndpoints(client: ApiClient) {
     /** Сан: one page of the library (search, category, sort; `cursor` for the next page). */
     episodes: (query: EpisodeQuery = {}) =>
       request(`/episodes${queryString({ ...query })}`, { schema: episodesPageSchema }),
+
+    /** Сан tag chips: tags with at least one published episode. */
+    tags: () => request('/tags', { schema: tagsResponseSchema }),
+
+    /** A series with its published parts. */
+    series: (id: string) =>
+      request(`/series/${encodeURIComponent(id)}`, { schema: seriesResponseSchema }),
+
+    /** A playlist with its published episodes. */
+    playlist: (id: string) =>
+      request(`/playlists/${encodeURIComponent(id)}`, { schema: playlistResponseSchema }),
 
     /** Player: the episode with its description and the "Дараагийн" list. */
     episode: (episodeId: string) =>

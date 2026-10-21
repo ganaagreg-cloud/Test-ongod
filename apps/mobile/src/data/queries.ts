@@ -8,12 +8,20 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { EpisodeDetail, EpisodesPage, EpisodeSort, HomeResponse } from '@ongod/shared';
+import type {
+  EpisodeDetail,
+  EpisodesPage,
+  EpisodeSort,
+  HomeResponse,
+  PlaylistPage,
+  SeriesPage,
+} from '@ongod/shared';
 import { api } from '../api';
 import { pagesWithSaved, withSaved } from '../lib/episode';
 
 export interface LibraryFilter {
   category?: string | undefined;
+  tag?: string | undefined;
   q?: string | undefined;
   sort: EpisodeSort;
 }
@@ -21,6 +29,11 @@ export interface LibraryFilter {
 export const keys = {
   home: ['home'] as const,
   categories: ['categories'] as const,
+  tags: ['tags'] as const,
+  series: (id: string) => ['series', id] as const,
+  seriesAll: ['series'] as const,
+  playlist: (id: string) => ['playlist', id] as const,
+  playlistAll: ['playlist'] as const,
   library: (filter: LibraryFilter) => ['library', filter] as const,
   libraryAll: ['library'] as const,
   episode: (id: string) => ['episode', id] as const,
@@ -37,6 +50,18 @@ export const useHome = () => useQuery({ queryKey: keys.home, queryFn: () => api.
 
 export const useCategories = () =>
   useQuery({ queryKey: keys.categories, queryFn: () => api.categories(), staleTime: 5 * 60_000 });
+
+export const useTags = () =>
+  useQuery({ queryKey: keys.tags, queryFn: () => api.tags(), staleTime: 5 * 60_000 });
+
+export const useSeries = (id: string) =>
+  useQuery({ queryKey: keys.series(id), queryFn: () => api.series(id).then((r) => r.series) });
+
+export const usePlaylist = (id: string) =>
+  useQuery({
+    queryKey: keys.playlist(id),
+    queryFn: () => api.playlist(id).then((r) => r.playlist),
+  });
 
 export const useLibrary = (filter: LibraryFilter) =>
   useInfiniteQuery({
@@ -80,12 +105,25 @@ function setSavedEverywhere(client: QueryClient, id: string, saved: boolean): ()
     continueListening: withSaved(home.continueListening, id, saved),
     latest: withSaved(home.latest, id, saved),
     thisWeek: withSaved(home.thisWeek, id, saved),
+    featured: withSaved(home.featured, id, saved),
+    playlists: home.playlists.map((pl) => ({ ...pl, items: withSaved(pl.items, id, saved) })),
+  }));
+  update<SeriesPage | PlaylistPage>(keys.seriesAll, (page) => ({
+    ...page,
+    items: withSaved(page.items, id, saved),
+  }));
+  update<SeriesPage | PlaylistPage>(keys.playlistAll, (page) => ({
+    ...page,
+    items: withSaved(page.items, id, saved),
   }));
   update<InfiniteData<EpisodesPage>>(keys.libraryAll, (data) => pagesWithSaved(data, id, saved));
   update<InfiniteData<EpisodesPage>>(keys.saved, (data) => pagesWithSaved(data, id, saved, true));
   update<EpisodeDetail>(keys.episodeAll, (detail) => ({
     ...(detail.id === id ? { ...detail, saved } : detail),
     next: withSaved(detail.next, id, saved),
+    nextInSeries: detail.nextInSeries
+      ? (withSaved([detail.nextInSeries], id, saved)[0] ?? null)
+      : null,
   }));
   return () => {
     for (const [key, data] of touched) client.setQueryData(key, data);

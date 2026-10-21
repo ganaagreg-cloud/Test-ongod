@@ -51,6 +51,7 @@ function yearOf(iso: string): string {
 /** "Сэтгэл зүй · 2026" under a title; "Сэтгэл зүй · 2026 · 36 мин" with `withLength`. */
 export function episodeMeta(item: EpisodeItem, withLength = false): string {
   const parts = [item.category.name, yearOf(item.publishedAt)];
+  if (item.series?.part != null) parts.push(mn.series.part(item.series.part));
   if (withLength && item.durationSec) parts.push(formatDurationMn(item.durationSec));
   return parts.join(' · ');
 }

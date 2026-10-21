@@ -212,6 +212,7 @@ export default function PlayerScreen() {
           <Enter index={5}>
             <NextList
               items={item.next}
+              nextInSeries={item.nextInSeries}
               onOpen={(next) =>
                 router.replace({ pathname: '/player/[id]', params: { id: next.id } })
               }

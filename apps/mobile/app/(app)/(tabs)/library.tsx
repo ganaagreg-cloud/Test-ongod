@@ -5,7 +5,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import type { EpisodeSort } from '@ongod/shared';
 import { layout, nativeTextStyle, spacing, themes } from '@ongod/tokens';
-import { useCategories, useLibrary } from '../../../src/data/queries';
+import { useCategories, useLibrary, useTags } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
 import { EpisodeList } from '../../../src/screens/EpisodeList';
 import { useDebounced, useHold } from '../../../src/screens/hooks';
@@ -39,7 +39,9 @@ export default function Library() {
   const insets = useSafeAreaInsets();
   const bottom = useBottomSpace();
   const categories = useCategories();
+  const tags = useTags();
   const [category, setCategory] = useState(params.category ?? ALL);
+  const [tag, setTag] = useState(ALL);
   const [text, setText] = useState('');
   const [sort, setSort] = useState<EpisodeSort>('newest');
   const [refreshing, setRefreshing] = useState(false);
@@ -62,18 +64,27 @@ export default function Library() {
   );
 
   const filter = useMemo(
-    () => ({ category: category === ALL ? undefined : category, q: q || undefined, sort }),
-    [category, q, sort],
+    () => ({
+      category: category === ALL ? undefined : category,
+      tag: tag === ALL ? undefined : tag,
+      q: q || undefined,
+      sort,
+    }),
+    [category, tag, q, sort],
   );
   const list = useLibrary(filter);
-  const held = useHold(`${category}|${q}|${sort}`, FILTER_SKELETON_MS);
+  const held = useHold(`${category}|${tag}|${q}|${sort}`, FILTER_SKELETON_MS);
   const items = useMemo(() => list.data?.pages.flatMap((page) => page.items) ?? [], [list.data]);
 
   const chips = [
     { id: ALL, label: mn.library.all },
     ...(categories.data?.categories ?? []).map((c) => ({ id: c.slug, label: c.name })),
   ];
-  const filtered = category !== ALL || q !== '';
+  const tagChips = [
+    { id: ALL, label: mn.library.all },
+    ...(tags.data?.tags ?? []).map((t) => ({ id: t.slug, label: t.name })),
+  ];
+  const filtered = category !== ALL || tag !== ALL || q !== '';
 
   const refresh = async () => {
     setRefreshing(true);
@@ -96,6 +107,11 @@ export default function Library() {
       <View style={styles.bleed}>
         <ChipRow items={chips} value={category} onChange={setCategory} />
       </View>
+      {tagChips.length > 1 ? (
+        <View style={styles.bleed}>
+          <ChipRow items={tagChips} value={tag} onChange={setTag} />
+        </View>
+      ) : null}
       <Segmented
         items={SORTS}
         value={sort}
@@ -124,6 +140,7 @@ export default function Library() {
             onPress={() => {
               setText('');
               setCategory(ALL);
+              setTag(ALL);
             }}
           />
         ) : undefined

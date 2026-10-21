@@ -16,9 +16,10 @@ import { keys, useHome } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
 import { durationBadge, greeting } from '../../../src/lib/episode';
 import { ContinueCard } from '../../../src/screens/home/ContinueCard';
+import { homeRows, type HomeRow } from '../../../src/screens/home/homeRows';
 import { NextReleaseCard } from '../../../src/screens/home/NextReleaseCard';
 import { useBottomSpace } from '../../../src/screens/layout';
-import { openLibrary, openPlayer } from '../../../src/screens/navigation';
+import { openLibrary, openPlaylist, openPlayer } from '../../../src/screens/navigation';
 import { SectionHeader } from '../../../src/screens/SectionHeader';
 import {
   AuroraBackground,
@@ -38,7 +39,7 @@ import {
 /** Hero slides: the newest episodes (DESIGN "Нүүр"). */
 const HERO_COUNT = 3;
 
-/** Нүүр (dark): greeting, hero, continue, new, categories, this week (Home.dc.html). */
+/** Нүүр (dark): greeting, then the rows of `homeRows` in order (Home.dc.html). */
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -83,6 +84,112 @@ export default function Home() {
   const name = user ? user.firstName.trim() || user.username : '';
   const data = home.data;
   const open = (item: EpisodeItem, autoplay = false) => openPlayer(router, item.id, autoplay);
+  // Phase 1 is members only: always logged in (the logged-out Нүүр comes later).
+  const rows = data ? homeRows(data, true) : [];
+
+  const cardRow = (
+    row: { key: string; title: string; items: EpisodeItem[] },
+    index: number,
+    onAll: () => void,
+  ) => (
+    <Enter key={row.key} index={index} style={styles.sectionTight}>
+      <View style={styles.padded}>
+        <SectionHeader title={row.title} action={{ label: mn.home.all, onPress: onAll }} />
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.cards}
+      >
+        {row.items.map((item) => (
+          <EpisodeCard
+            key={item.id}
+            title={item.title}
+            durationLabel={durationBadge(item) ?? ''}
+            coverUri={item.coverUrl}
+            family={coverFamilyFor(item.id)}
+            width={layout.cardWidth}
+            onPress={() => open(item)}
+          />
+        ))}
+      </ScrollView>
+    </Enter>
+  );
+
+  const renderRow = (row: HomeRow, index: number): ReactNode => {
+    switch (row.kind) {
+      case 'featured': {
+        const hero: HeroItem[] = row.items.slice(0, HERO_COUNT).map((item) => ({
+          id: item.id,
+          title: item.title,
+          tag: item.category.name,
+          meta: item.durationSec ? formatDurationMn(item.durationSec) : item.category.name,
+          imageUri: item.coverUrl,
+          family: coverFamilyFor(item.id),
+        }));
+        const byId = new Map(row.items.map((item) => [item.id, item]));
+        return (
+          <Enter key={row.key} index={index}>
+            <HeroCarousel
+              items={hero}
+              onOpen={(slide) => {
+                const item = byId.get(slide.id);
+                if (item) open(item);
+              }}
+              onPlay={(slide) => {
+                const item = byId.get(slide.id);
+                if (item) open(item, true);
+              }}
+              playLabel={mn.episode.play}
+              slideLabel={mn.home.slide}
+            />
+          </Enter>
+        );
+      }
+      case 'continue': {
+        const resume = row.items[0];
+        if (!resume) return null;
+        return (
+          <Enter key={row.key} index={index} style={styles.section}>
+            <SectionHeader title={row.title} />
+            <ContinueCard item={resume} onPress={() => open(resume, true)} />
+          </Enter>
+        );
+      }
+      case 'thisWeek':
+        return (
+          <Enter key={row.key} index={index} style={styles.section}>
+            <SectionHeader title={row.title} />
+            <NextReleaseCard release={row.release} />
+          </Enter>
+        );
+      case 'playlist':
+        return cardRow(row, index, () => openPlaylist(router, row.id));
+      case 'latest':
+        return cardRow(row, index, () => openLibrary(router));
+      case 'categories':
+        return (
+          <Enter key={row.key} index={index} style={styles.section}>
+            <SectionHeader
+              title={row.title}
+              action={{ label: mn.home.all, onPress: () => openLibrary(router) }}
+            />
+            <View style={styles.categoryList}>
+              {row.categories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  name={category.name}
+                  countLabel={mn.home.episodeCount(category.episodeCount)}
+                  imageUri={category.coverUrl}
+                  family={coverFamilyFor(category.id)}
+                  onPress={() => openLibrary(router, category.slug)}
+                />
+              ))}
+            </View>
+          </Enter>
+        );
+    }
+  };
 
   let body: ReactNode;
   if (!data && home.isError) {
@@ -96,99 +203,10 @@ export default function Home() {
     );
   } else if (!data) {
     body = <HomeSkeleton />;
-  } else if (data.latest.length === 0) {
+  } else if (rows.length === 0) {
     body = <EmptyState title={mn.home.emptyTitle} text={mn.home.emptyText} />;
   } else {
-    const hero: HeroItem[] = data.latest.slice(0, HERO_COUNT).map((item) => ({
-      id: item.id,
-      title: item.title,
-      tag: item.category.name,
-      meta: item.durationSec ? formatDurationMn(item.durationSec) : item.category.name,
-      imageUri: item.coverUrl,
-      family: coverFamilyFor(item.id),
-    }));
-    const byId = new Map(data.latest.map((item) => [item.id, item]));
-    const resume = data.continueListening[0];
-    body = (
-      <>
-        <Enter index={1}>
-          <HeroCarousel
-            items={hero}
-            onOpen={(slide) => {
-              const item = byId.get(slide.id);
-              if (item) open(item);
-            }}
-            onPlay={(slide) => {
-              const item = byId.get(slide.id);
-              if (item) open(item, true);
-            }}
-            playLabel={mn.episode.play}
-            slideLabel={mn.home.slide}
-          />
-        </Enter>
-
-        {resume ? (
-          <Enter index={2} style={styles.section}>
-            <SectionHeader title={mn.home.continue} />
-            <ContinueCard item={resume} onPress={() => open(resume, true)} />
-          </Enter>
-        ) : null}
-
-        <Enter index={3} style={styles.sectionTight}>
-          <View style={styles.padded}>
-            <SectionHeader
-              title={mn.home.latest}
-              action={{ label: mn.home.all, onPress: () => openLibrary(router) }}
-            />
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.cards}
-          >
-            {data.latest.map((item) => (
-              <EpisodeCard
-                key={item.id}
-                title={item.title}
-                durationLabel={durationBadge(item) ?? ''}
-                coverUri={item.coverUrl}
-                family={coverFamilyFor(item.id)}
-                width={layout.cardWidth}
-                onPress={() => open(item)}
-              />
-            ))}
-          </ScrollView>
-        </Enter>
-
-        {data.categories.length > 0 ? (
-          <Enter index={4} style={styles.section}>
-            <SectionHeader
-              title={mn.home.categories}
-              action={{ label: mn.home.all, onPress: () => openLibrary(router) }}
-            />
-            <View style={styles.categoryList}>
-              {data.categories.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  name={category.name}
-                  countLabel={mn.home.episodeCount(category.episodeCount)}
-                  imageUri={category.coverUrl}
-                  family={coverFamilyFor(category.id)}
-                  onPress={() => openLibrary(router, category.slug)}
-                />
-              ))}
-            </View>
-          </Enter>
-        ) : null}
-
-        {data.nextRelease ? (
-          <Enter index={5} style={styles.section}>
-            <SectionHeader title={mn.home.thisWeek} />
-            <NextReleaseCard release={data.nextRelease} />
-          </Enter>
-        ) : null}
-      </>
-    );
+    body = <>{rows.map((row, index) => renderRow(row, index + 1))}</>;
   }
 
   return (

@@ -15,43 +15,58 @@ import { SectionHeader } from '../SectionHeader';
 /** "Дараагийн": later episodes of the same category, 16:9 pictures (DESIGN "Player"). */
 export function NextList({
   items,
+  nextInSeries,
   onOpen,
   onAll,
 }: {
   items: readonly EpisodeItem[];
+  /** The next part of the series this episode belongs to: shown first, before the list. */
+  nextInSeries?: EpisodeItem | null | undefined;
   onOpen: (item: EpisodeItem) => void;
   onAll: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
-  if (items.length === 0) return null;
+  if (items.length === 0 && !nextInSeries) return null;
+  const row = (item: EpisodeItem) => (
+    <PressableScale
+      key={item.id}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+      onPress={() => onOpen(item)}
+      style={styles.row}
+    >
+      <EpisodeThumb
+        variant="artwork"
+        width={layout.nextThumbWidth}
+        uri={item.coverUrl}
+        title={item.title}
+        family={coverFamilyFor(item.id)}
+        durationLabel={durationBadge(item)}
+        progress={progressFraction(item)}
+      />
+      <View style={styles.text}>
+        <Text style={styles.title} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={styles.meta}>{episodeMeta(item)}</Text>
+      </View>
+    </PressableScale>
+  );
+  const later = items.filter((item) => item.id !== nextInSeries?.id);
   return (
     <View style={styles.section}>
-      <SectionHeader title={mn.player.next} action={{ label: mn.home.all, onPress: onAll }} />
-      {items.map((item) => (
-        <PressableScale
-          key={item.id}
-          accessibilityRole="button"
-          accessibilityLabel={item.title}
-          onPress={() => onOpen(item)}
-          style={styles.row}
-        >
-          <EpisodeThumb
-            variant="artwork"
-            width={layout.nextThumbWidth}
-            uri={item.coverUrl}
-            title={item.title}
-            family={coverFamilyFor(item.id)}
-            durationLabel={durationBadge(item)}
-            progress={progressFraction(item)}
-          />
-          <View style={styles.text}>
-            <Text style={styles.title} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <Text style={styles.meta}>{episodeMeta(item)}</Text>
-          </View>
-        </PressableScale>
-      ))}
+      {nextInSeries ? (
+        <>
+          <SectionHeader title={mn.player.nextInSeries} />
+          {row(nextInSeries)}
+        </>
+      ) : null}
+      {later.length > 0 ? (
+        <>
+          <SectionHeader title={mn.player.next} action={{ label: mn.home.all, onPress: onAll }} />
+          {later.map(row)}
+        </>
+      ) : null}
     </View>
   );
 }
