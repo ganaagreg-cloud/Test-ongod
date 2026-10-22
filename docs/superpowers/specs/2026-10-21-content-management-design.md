@@ -73,13 +73,13 @@ free items without paying or logging in, and sees the members-only items locked,
 
 ### Organising
 
-| Concept | Per item | Ordered | Purpose |
-|---|---|---|---|
-| Ангилал (category) | exactly one | categories ordered (existing) | where it lives |
-| Цуврал (series) | zero or one, with a part number | by part number | "part 3 of 12"; series page; "next part" after finishing |
-| Жагсаалт (playlist) | any number | admin drag order | curated lists, e.g. "Шилдэг 10" |
-| Шошго (tags) | any number | no | topics; search and filters |
-| Онцлох (featured) | via a built-in playlist | admin drag order | top row of Нүүр |
+| Concept             | Per item                        | Ordered                       | Purpose                                                  |
+| ------------------- | ------------------------------- | ----------------------------- | -------------------------------------------------------- |
+| Ангилал (category)  | exactly one                     | categories ordered (existing) | where it lives                                           |
+| Цуврал (series)     | zero or one, with a part number | by part number                | "part 3 of 12"; series page; "next part" after finishing |
+| Жагсаалт (playlist) | any number                      | admin drag order              | curated lists, e.g. "Шилдэг 10"                          |
+| Шошго (tags)        | any number                      | no                            | topics; search and filters                               |
+| Онцлох (featured)   | via a built-in playlist         | admin drag order              | top row of Нүүр                                          |
 
 Онцлох is a built-in playlist that cannot be deleted, not a separate feature (Claude's proposal,
 accepted).

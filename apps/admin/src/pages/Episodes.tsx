@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { BULK_MAX_IDS, type AdminEpisodeDto, type EpisodeStatus } from '@ongod/shared';
 import { Button, Chip, Input } from '@ongod/ui-web';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   categoriesQuery,
@@ -182,11 +182,14 @@ export function EpisodesPage() {
     items: {},
   });
   const selected = selection.key === selectionKey ? selection.items : NO_SELECTION;
-  const setSelected = (update: (current: Record<string, string>) => Record<string, string>) =>
-    setSelection((state) => ({
-      key: selectionKey,
-      items: update(state.key === selectionKey ? state.items : NO_SELECTION),
-    }));
+  const setSelected = useCallback(
+    (update: (current: Record<string, string>) => Record<string, string>) =>
+      setSelection((state) => ({
+        key: selectionKey,
+        items: update(state.key === selectionKey ? state.items : NO_SELECTION),
+      })),
+    [selectionKey],
+  );
 
   const categories = useQuery(categoriesQuery());
   const seriesList = useQuery(seriesListQuery());
@@ -217,7 +220,8 @@ export function EpisodesPage() {
         (episode) =>
           setSelected((current) => {
             if (episode.id in current) {
-              const { [episode.id]: _removed, ...rest } = current;
+              const rest = { ...current };
+              delete rest[episode.id];
               return rest;
             }
             if (Object.keys(current).length >= BULK_MAX_IDS) return current;
@@ -233,7 +237,7 @@ export function EpisodesPage() {
             return next;
           }),
       ),
-    [items, selected],
+    [items, selected, setSelected],
   );
 
   return (

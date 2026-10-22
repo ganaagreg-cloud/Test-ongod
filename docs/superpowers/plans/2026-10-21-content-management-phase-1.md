@@ -38,6 +38,7 @@
 ### Task 1: Decisions and docs before code
 
 **Files:**
+
 - Create: `docs/decisions/ADR-0042-content-organisation-and-publish-push.md`
 - Modify: `docs/SPEC.md` (Surfaces admin line, workflow G, Data model)
 - Modify: `docs/client/changes.md` (new entry)
@@ -52,6 +53,7 @@
 ### Task 2: Schema, migration, tags API
 
 **Files:**
+
 - Modify: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/20261021090000_content_organisation/migration.sql` (via `pnpm --filter @ongod/api exec prisma migrate dev --name content_organisation`, then rename the folder timestamp if needed)
 - Create: `apps/api/src/admin/tags.ts`
@@ -60,6 +62,7 @@
 - Test: `apps/api/test/admin-tags.test.ts`; extend `apps/api/test/catalog-helpers.ts` with `makeSeries`, `makePlaylist`, `makeTag`
 
 **Interfaces:**
+
 - Produces (schema):
   - `Episode`: `seriesId String?`, `seriesPart Int?`, `notifyOnPublish Boolean @default(true)`, `pushText String? @db.Text`; `@@unique([seriesId, seriesPart])`, `@@index([seriesId])`; relations `series Series? (onDelete: SetNull)`, `tags EpisodeTag[]`, `playlistItems PlaylistItem[]`.
   - `Series { id cuid, title String, slug String @unique, description String @db.Text @default(""), coverPath String?, createdAt }`.
@@ -82,11 +85,13 @@
 ### Task 3: Series API and item fields
 
 **Files:**
+
 - Create: `apps/api/src/admin/series.ts`
 - Modify: `apps/api/src/admin/content.ts` (create/update/DTO), `apps/api/src/routes/admin-content.ts`, `packages/shared/src/admin-content.ts`
 - Test: `apps/api/test/admin-series.test.ts`
 
 **Interfaces:**
+
 - Produces (shared): `adminSeriesSchema = {id, title, slug, description, coverUrl: string|null, episodeCount}`; `adminSeriesDetailSchema = adminSeriesSchema & {episodes: Array<{id,title,status,seriesPart}>}` (ordered by part); `createSeriesRequestSchema {title, slug, description?}`; `updateSeriesRequestSchema` (partial, non-empty); `reorderSeriesRequestSchema {episodeIds: id[] (1..500)}`.
 - Extends `adminEpisodeSchema` with `series: {id,title}|null`, `seriesPart: number|null`, `tags: Array<{id,name}>`, `notifyOnPublish: boolean`, `pushText: string|null`.
 - Extends `createEpisodeRequestSchema` with optional `seriesId: id|null`, `seriesPart: int 1..9999 | null`, `tagIds: id[] (max 20)`, `notifyOnPublish: boolean`, `pushText: string trim max 180 | null`. `updateEpisodeRequestSchema` stays `.partial()` of it.
@@ -108,11 +113,13 @@
 ### Task 4: Playlists API (incl. Онцлох)
 
 **Files:**
+
 - Create: `apps/api/src/admin/playlists.ts`
 - Modify: `apps/api/src/routes/admin-content.ts`, `packages/shared/src/admin-content.ts`
 - Test: `apps/api/test/admin-playlists.test.ts`
 
 **Interfaces:**
+
 - Produces (shared): `adminPlaylistSchema = {id, title, slug, description, coverUrl|null, showOnHome, homeOrder, isFeatured, episodeCount}`; `adminPlaylistDetailSchema = adminPlaylistSchema & {episodes: Array<{id,title,status,position}>}`; `createPlaylistRequestSchema {title, slug, description?, showOnHome?}`; `updatePlaylistRequestSchema` partial non-empty; `playlistItemsRequestSchema {episodeIds: id[] 1..100}`; `reorderPlaylistRequestSchema {episodeIds}`; `reorderHomeRequestSchema {playlistIds}`.
 - Produces (API): `createPlaylistService({db, media}) → { ensureFeatured(), list(), get(id), create, update, remove, addItems(actor,id,episodeIds), removeItem(actor,id,episodeId), reorder(actor,id,episodeIds), reorderHome(actor,playlistIds), setCover }`. `FEATURED_PLAYLIST_ID = 'featured'` exported. Routes: `GET/POST /v1/admin/playlists`, `GET/PATCH/DELETE /v1/admin/playlists/:id`, `POST /v1/admin/playlists/:id/items`, `DELETE /v1/admin/playlists/:id/items/:episodeId`, `POST /v1/admin/playlists/:id/reorder`, `POST /v1/admin/playlists/home-order`, `POST /v1/admin/playlists/:id/cover`.
 
@@ -132,11 +139,13 @@
 ### Task 5: Admin list filters, calendar, duplicate, preview, bulk
 
 **Files:**
+
 - Modify: `apps/api/src/admin/content.ts`, `apps/api/src/routes/admin-content.ts`, `packages/shared/src/admin-content.ts`
 - Create: `apps/api/src/admin/bulk.ts`
 - Test: `apps/api/test/admin-content-tools.test.ts`
 
 **Interfaces:**
+
 - Extends `listAdminEpisodesQuerySchema`: `seriesId?`, `tagId?`, `playlistId?`, `mediaStatus?: mediaStatusSchema | 'NONE'`, `sort?: 'created'|'published'|'scheduled'` (default `created`, always desc), `from?`/`to?` ISO datetimes (filter on `scheduledFor` OR `publishedAt` in range, for the calendar).
 - Produces: `POST /v1/admin/episodes/:id/duplicate → 201 {episode}`; `POST /v1/admin/episodes/:id/preview → {url, expiresAt, kind}` (admin-only signed URL, any status, `cache-control: no-store`); `POST /v1/admin/episodes/bulk`.
 - `bulkRequestSchema = { ids: id[] 1..100, action: discriminatedUnion('type', [ {type:'setCategory', categoryId}, {type:'addToPlaylist', playlistId}, {type:'addTag', tagId}, {type:'removeTag', tagId}, {type:'publish'}, {type:'archive'} ]) }` → `{ updated: number }`.
@@ -160,11 +169,13 @@
 ### Task 6: Push on publish and the scheduled-video fix
 
 **Files:**
+
 - Create: `apps/api/src/push/publish.ts`
 - Modify: `apps/api/src/admin/content.ts` (`publish`), `apps/api/src/admin/bulk.ts`, `apps/api/src/cron/tasks.ts` (`publishScheduledEpisodes`), `apps/api/src/auth/service.ts` (`logout`), `apps/api/src/i18n/mn.ts`
 - Test: `apps/api/test/publish-push.test.ts`; extend `apps/api/test/cron.test.ts`
 
 **Interfaces:**
+
 - Produces: `enqueuePublishPush(tx: JobWriter, episodes: Array<{id, title, pushText: string|null, notifyOnPublish: boolean}>, now: Date): Promise<number>` (returns users queued). Audience: users with `accessUntil > now`, `status: 'ACTIVE'`, and at least one `Session` with `revokedAt: null` and `expiresAt > now`. One episode → title `mn.push.newEpisode.title`, body = `pushText ?? episode.title`, `data: {episodeId}`. Several → body `mn.push.newEpisodes.body(n)` = `${n} шинэ анги нэмэгдлээ` (listeners see it, and the app says "анги"; the design's "бичлэг" wording was admin wording), `data: {}`. Items with `notifyOnPublish: false` are left out; none left → nothing queued.
 
 - [ ] **Step 1: Write failing tests:**
@@ -182,10 +193,12 @@
 ### Task 7: Catalog: home rows, series, playlists, tags
 
 **Files:**
+
 - Modify: `apps/api/src/catalog/service.ts`, `apps/api/src/routes/catalog.ts`, `packages/shared/src/catalog.ts`
 - Test: extend `apps/api/test/catalog.test.ts`; create `apps/api/test/catalog-collections.test.ts`
 
 **Interfaces:**
+
 - Extends `episodeItemSchema`: `series: {id, title, part: number|null} | null`, `tags: Array<{id, name, slug}>`.
 - Extends `episodeDetailSchema`: `nextInSeries: EpisodeItem | null` (next published part).
 - Extends `homeResponseSchema` (additive): `featured: EpisodeItem[]`, `playlists: Array<{id, title, slug, items: EpisodeItem[]}>` (home playlists by `homeOrder`, each max `HOME_ROW` items, empty ones omitted).
@@ -209,11 +222,13 @@
 ### Task 8: Admin UI: nav, Цуврал, Жагсаалт, Шошго pages
 
 **Files:**
+
 - Modify: `apps/admin/src/App.tsx`, `apps/admin/src/layout/Shell.tsx`, `apps/admin/src/api/queries.ts`, `apps/admin/src/i18n/mn.ts`, `apps/admin/src/admin.css` (tokens only)
 - Create: `apps/admin/src/pages/Series.tsx`, `SeriesEdit.tsx`, `Playlists.tsx`, `PlaylistEdit.tsx`, `Tags.tsx`; `apps/admin/src/components/SortableList.tsx`
 - Test: extend `apps/admin/e2e/admin.spec.ts`
 
 **Interfaces:**
+
 - Consumes: Task 2–4 endpoints and shared schemas.
 - Produces: routes `series`, `series/new`, `series/:id`, `playlists`, `playlists/new`, `playlists/:id`, `tags`; nav order Хяналтын самбар, Төлбөр, Хэрэглэгчид, Контент, Цуврал, Жагсаалт, Ангилал, Шошго, Үйлдлийн түүх. `SortableList<T>({items, getId, render, onReorder(ids)})`: drag plus keyboard (Up/Down buttons, like the category page's moveUp/moveDown).
 
@@ -226,10 +241,12 @@
 ### Task 9: Admin UI: Контент form, list tools, calendar, preview, duplicate, bulk
 
 **Files:**
+
 - Modify: `apps/admin/src/pages/Episodes.tsx`, `EpisodeEdit.tsx`, `apps/admin/src/api/queries.ts`, `apps/admin/src/i18n/mn.ts`, `apps/admin/src/admin.css`
 - Create: `apps/admin/src/components/TagPicker.tsx`, `BulkBar.tsx`, `ContentCalendar.tsx`, `MediaPreview.tsx`
 
 **Interfaces:**
+
 - Consumes: Tasks 3, 5, 6 endpoints.
 - `TagPicker({value: string[], onChange})`: type to filter, Enter creates a tag through `POST /admin/tags`.
 - `BulkBar({selectedIds, onDone})`: shows when ≥1 row selected; actions per `bulkRequestSchema`; publish and archive ask for confirmation; errors list the failing items by title.
@@ -245,11 +262,13 @@
 ### Task 10: Mobile: Нүүр rows, series and playlist screens, tag filter
 
 **Files:**
+
 - Modify: `apps/mobile/app/(app)/(tabs)/home.tsx`, `apps/mobile/app/(app)/(tabs)/library.tsx`, `apps/mobile/app/(app)/player/[id].tsx`, `apps/mobile/src/api/endpoints.ts`, `apps/mobile/src/data/queries.ts`, `apps/mobile/src/i18n/mn.ts`, `apps/mobile/src/screens/navigation.ts`
 - Create: `apps/mobile/app/(app)/series/[id].tsx`, `apps/mobile/app/(app)/playlist/[id].tsx`, `apps/mobile/src/screens/home/homeRows.ts`
 - Test: extend `apps/mobile/test/screens.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 7 responses.
 - Produces: `homeRows(home: HomeResponse, loggedIn: boolean): HomeRow[]` where `HomeRow = {kind:'featured'|'continue'|'thisWeek'|'playlist'|'latest'|'categories', key: string, title: string, ...}` in the order Онцлох, Үргэлжлүүлэх, Энэ 7 хоногт, playlists, Шинэ, categories, dropping empty rows.
 
