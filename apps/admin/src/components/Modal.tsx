@@ -34,7 +34,9 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       ref={ref}
       className="admin-modal"
       aria-labelledby={titleId}
-      onClose={() => open && onClose()}
+      // The close event arrives a moment after dialog.close(): if the dialog was opened again in
+      // between, that event is stale and must not close it.
+      onClose={() => open && !ref.current?.open && onClose()}
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}

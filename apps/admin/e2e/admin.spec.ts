@@ -545,7 +545,12 @@ test('content: series, part and tags are saved; filter by tag; bulk tag; duplica
 
   // the list: filter by the tag, the series column shows the series
   await sidebar(mn.nav.episodes).click();
+  // The search is debounced and a changed filter clears the selection: let it apply before ticking rows.
+  const searched = page.waitForResponse(
+    (res) => res.url().includes('/v1/admin/episodes') && res.url().includes('q=' + stamp),
+  );
   await page.getByLabel(mn.episodes.searchLabel).fill(String(stamp));
+  await searched;
   await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagOne });
   const rowOf = (title: string) => page.getByRole('row').filter({ hasText: title });
   await expect(rowOf(first)).toBeVisible();

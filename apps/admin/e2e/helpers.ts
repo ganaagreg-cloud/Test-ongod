@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
+import { createConnection } from 'mysql2/promise';
 import type { mn as Mn } from '../src/i18n/mn';
 
 export const ORIGIN = process.env.ADMIN_E2E_URL ?? 'http://localhost:3000';
@@ -68,7 +69,32 @@ export interface Customer {
   name: string;
 }
 
-/** A new customer who has verified their email, picked a plan and pressed "Төлсөн". */
+/** DATABASE_URL from the local .env. Read here, never printed. */
+const databaseUrl = () => {
+  const line = readFileSync(new URL('../../../.env', import.meta.url), 'utf8')
+    .split(/\r?\n/)
+    .find((l) => l.startsWith('DATABASE_URL='));
+  if (!line) throw new Error('DATABASE_URL is not set in .env');
+  return line.slice('DATABASE_URL='.length).replace(/^"(.*)"$/, '$1');
+};
+
+/**
+ * New requests are paid at the QPay checkout (ADR-0041); "Төлсөн" and the receipt queue exist only
+ * for old bank-transfer requests (paymentProvider NONE). The admin payments queue still has to
+ * work for those, so the fixture turns the new request into one.
+ */
+async function makeLegacyBankRequest(subscriptionId: string) {
+  const db = await createConnection(databaseUrl());
+  try {
+    await db.execute("UPDATE Subscription SET paymentProvider = 'NONE' WHERE id = ?", [
+      subscriptionId,
+    ]);
+  } finally {
+    await db.end();
+  }
+}
+
+/** A new customer who has verified their email and pressed "Төлсөн" on an old bank request. */
 export async function customerWithSubmittedPayment(tag: string): Promise<Customer> {
   const stamp = Date.now();
   const username = `e2e.${tag}.${stamp}`;
@@ -101,6 +127,8 @@ export async function customerWithSubmittedPayment(tag: string): Promise<Custome
     { planId: plans.plans[0]!.id },
     token,
   );
+
+  await makeLegacyBankRequest(created.subscription.id);
 
   const form = new FormData();
   form.set('payerNote', `E2E тэмдэглэл ${tag}`);
