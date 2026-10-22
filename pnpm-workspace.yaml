@@ -7,3 +7,10 @@ onlyBuiltDependencies:
   - argon2
   - esbuild
   - prisma
+
+# Security advisories in transitive database drivers (audit 2026-10-22). Remove an entry once
+# Prisma itself depends on a patched version.
+overrides:
+  mariadb: 3.5.4
+  mysql2: 3.24.6
+  deepmerge-ts: 8.0.2
