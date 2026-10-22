@@ -61,6 +61,7 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 - Нүүр (dark): greeting + bell; HeroCarousel of the latest 3 episodes; "Үргэлжлүүлэх" card with animated progress; "Шинэ" horizontal list; "Сэдвээр сонсох" category cards; "Энэ 7 хоногт" next-release card with countdown; the header collapses into a glass bar after 70 pt of scroll.
 - Сан (CREAM): search (forest focus ring), ChipRow, sort Segmented (Шинэ / Хуучин / Урт), 4:3 EpisodeRows, 650 ms skeleton on filter change, infinite scroll.
 - Player (dark, opens as a sheet, drag down to close): replaces the old Episode detail. 16:9 artwork on top (slow Ken Burns while playing, play overlay on pause), scrubber with times, title (display) and meta, one control row (speed chip that cycles 1x/1.25x/1.5x/2x, −15, gold play/pause, +30, sleep timer sheet 15/30/45 min or end of episode), collapsible "Тайлбар" card, "Дараагийн" list. For a video episode the picture area is the video (16:9, radius hero) with a fullscreen button; fullscreen turns to landscape. Background playback and the sleep timer for video follow open question #17.
+- Цуврал and Жагсаалт screens (CREAM, [[ADR-0042-content-organisation-and-publish-push|ADR-0042]]): 16:9 cover (`aspect.artwork`, `radius.hero`, `themes.cream.brand` behind it), title, description (`themes.cream.textSecondary`), then the episode list; a series shows "N-р хэсэг" per row. The Player shows "Дараагийн хэсэг" in the "Дараагийн" list when the series has a next part. Tag chips in Сан use the same ChipRow as categories. Нүүр row order: Онцлох, Үргэлжлүүлэх, Энэ 7 хоногт, home playlists, Шинэ, categories; empty rows are dropped.
 - Хадгалсан: saved list; empty state = bookmark dropping onto the mountain line.
 - Профайл (dark): name, @username, access card (gold sheen, days-left ring, "Идэвхтэй · 2027.10.08 хүртэл" or "Идэвхгүй"), NumberTicker stats (episodes finished, hours), menu: Тохиргоо, Төхөөрөмжүүд, Мэдэгдэл, Тусламж, Үйлчилгээний нөхцөл, Нууцлалын бодлого; notification switch.
 - Тохиргоо: username, phone, email, password change, "Бүртгэл устгах" (destructive, double confirm), "Гарах".
@@ -75,7 +76,14 @@ Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login
 
 Decisions: [[ADR-0014-admin-light-theme|ADR-0014]] · Facts: [[R-admin-light-contrast]]
 
-Light, dense, functional. Dashboard counters, Payments queue (table + side panel with receipt image), Users, Episodes, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
+Light, dense, functional. Dashboard counters, Payments queue (table + side panel with receipt image), Users, Контент (episodes), Цуврал, Жагсаалт, Шошго, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
+
+Контент tools ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]), all through CSS variables:
+
+- Bulk bar (`.admin-bulk`): above the list when at least one row is selected; surface card, `--color-hairline` border, `--radius-card`, `--space-md` padding. Publish and archive ask for confirmation; a failed bulk lists the failing items by title and changes nothing.
+- Calendar (`.admin-cal`): month grid with 1px hairline gaps on a hairline background; day cells on `--color-surface`, minimum height two touch targets. Each item is a `ui-badge` chip in its status tone (same tones as the list); clicking opens the episode.
+- Media preview: audio or video element with a signed URL on the edit page when the media is READY.
+- Tag picker: type to filter, Enter creates a tag.
 
 Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme="light">`). It has the same token keys as the dark theme, so components work in both. The app's cream surface (`themes.cream`) is a separate set.
 
