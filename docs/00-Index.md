@@ -68,6 +68,7 @@ tags: [index]
 | ADR-0044 | [[ADR-0044-free-items-and-activate-message-in-app]]       | accepted                                           |
 | ADR-0045 | [[ADR-0045-audit-hardening-limits-refresh-jobs-payments]] | accepted                                           |
 | ADR-0046 | [[ADR-0046-remove-bank-transfer-path]]                    | accepted                                           |
+| ADR-0047 | [[ADR-0047-wire-payment-sync-window]]                     | accepted                                           |
 
 ## Research
 

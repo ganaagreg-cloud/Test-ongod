@@ -1,7 +1,7 @@
 ---
 id: ADR-0045
 title: 'Hardening after the 2026-10-24 audit: rate-limit keys, refresh grace, job locks, payment sync'
-status: accepted
+status: 'accepted (item 3 superseded by [[ADR-0047-wire-payment-sync-window|ADR-0047]])'
 date: '2026-10-24'
 tags: [adr, area/auth, area/backend, area/payments]
 ---
