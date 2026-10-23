@@ -135,6 +135,18 @@ export function accessState(accessUntil: string | null | undefined, now: Date): 
   return { active: true, daysLeft, fraction: Math.min(1, daysLeft / 365) };
 }
 
+/**
+ * A paid item the member cannot play: its picture is blurred in lists (ADR-0044). A free item is
+ * never locked. Same rule as the server: access ending at or before now is no access.
+ */
+export function isLocked(
+  item: Pick<EpisodeItem, 'isFree'>,
+  accessUntil: string | null | undefined,
+  now: Date,
+): boolean {
+  return !item.isFree && !accessState(accessUntil, now).active;
+}
+
 /** Whole hours for the profile stat (the ticker rolls whole digits). */
 export function listenedHours(seconds: number): number {
   return Math.round(Math.max(0, seconds) / 3600);

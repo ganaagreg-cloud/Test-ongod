@@ -5,9 +5,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { EpisodeItem } from '@ongod/shared';
 import { colors, layout, motion, nativeFontFamily, nativeTextStyle, spacing } from '@ongod/tokens';
 import { player, usePlayerState } from '../../../src/audio/player';
+import { useAuth } from '../../../src/auth/AuthContext';
 import { useEpisode, useToggleSaved } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
-import { clockLabel, episodeMeta, resumeAt } from '../../../src/lib/episode';
+import { clockLabel, episodeMeta, isLocked, resumeAt } from '../../../src/lib/episode';
 import { failureOf, startEpisode, type StartFailure } from '../../../src/playback/nowPlaying';
 import { NoAccessSheet } from '../../../src/screens/NoAccessSheet';
 import { openLibrary } from '../../../src/screens/navigation';
@@ -40,6 +41,7 @@ export default function PlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const toast = useToast();
+  const { user } = useAuth();
   const episode = useEpisode(id);
   const state = usePlayerState();
   const toggleSaved = useToggleSaved();
@@ -57,6 +59,7 @@ export default function PlayerScreen() {
   const refused = loaded && state.error?.code === 'NO_ACCESS' && state.error !== dismissed;
   const noAccess = noAccessOpen || refused;
   const item = episode.data;
+  const lockedOf = (target: EpisodeItem) => isLocked(target, user?.accessUntil, new Date());
 
   const explain = useCallback(
     (failure: StartFailure) => {
@@ -163,6 +166,7 @@ export default function PlayerScreen() {
               family={coverFamilyFor(item.id)}
               playing={playing || busy}
               video={loaded && state.kind === 'VIDEO'}
+              locked={lockedOf(item)}
               onPlay={toggle}
             />
           </Enter>
@@ -213,6 +217,7 @@ export default function PlayerScreen() {
             <NextList
               items={item.next}
               nextInSeries={item.nextInSeries}
+              isItemLocked={lockedOf}
               onOpen={(next) =>
                 router.replace({ pathname: '/player/[id]', params: { id: next.id } })
               }

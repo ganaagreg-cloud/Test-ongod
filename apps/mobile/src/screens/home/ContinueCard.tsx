@@ -32,7 +32,16 @@ const GROW_DELAY_MS = 500;
 const GROW_MS = 1200;
 
 /** "Үргэлжлүүлэх": the last half-heard episode, one tap resumes it. */
-export function ContinueCard({ item, onPress }: { item: EpisodeItem; onPress: () => void }) {
+export function ContinueCard({
+  item,
+  onPress,
+  locked,
+}: {
+  item: EpisodeItem;
+  onPress: () => void;
+  /** Paid item without access: the picture is blurred. */
+  locked?: boolean;
+}) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useSurface();
   const fraction = progressFraction(item) ?? 0;
@@ -60,6 +69,7 @@ export function ContinueCard({ item, onPress }: { item: EpisodeItem; onPress: ()
         title={item.title}
         family={coverFamilyFor(item.id)}
         durationLabel={durationBadge(item)}
+        locked={locked}
       />
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={2}>

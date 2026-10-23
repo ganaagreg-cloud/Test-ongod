@@ -2,9 +2,10 @@ import type { ReactElement } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import type { EpisodeItem } from '@ongod/shared';
 import { layout, spacing } from '@ongod/tokens';
+import { useAuth } from '../auth/AuthContext';
 import { useToggleSaved } from '../data/queries';
 import { mn } from '../i18n/mn';
-import { durationBadge, episodeMeta, rowProgress } from '../lib/episode';
+import { durationBadge, episodeMeta, isLocked, rowProgress } from '../lib/episode';
 import { coverFamilyFor, EpisodeRow, EpisodeRowSkeleton, useSurface } from '../ui';
 
 /** Skeleton rows while a list loads (no spinners on lists, DESIGN "Skeleton"). */
@@ -39,6 +40,8 @@ export function EpisodeList({
 }) {
   const { colors } = useSurface();
   const toggleSaved = useToggleSaved();
+  const { user } = useAuth();
+  const now = new Date();
   return (
     <FlatList
       data={loading ? [] : items}
@@ -77,6 +80,7 @@ export function EpisodeList({
           coverUri={item.thumbUrl ?? item.coverUrl}
           durationLabel={durationBadge(item)}
           family={coverFamilyFor(item.id)}
+          locked={isLocked(item, user?.accessUntil, now)}
           progress={rowProgress(item)}
           save={{
             saved: item.saved,

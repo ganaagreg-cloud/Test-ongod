@@ -14,7 +14,7 @@ import { colors, glass, layout, motion, nativeTextStyle, spacing } from '@ongod/
 import { useAuth } from '../../../src/auth/AuthContext';
 import { keys, useHome } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
-import { durationBadge, greeting } from '../../../src/lib/episode';
+import { durationBadge, greeting, isLocked } from '../../../src/lib/episode';
 import { ContinueCard } from '../../../src/screens/home/ContinueCard';
 import { homeRows, type HomeRow } from '../../../src/screens/home/homeRows';
 import { NextReleaseCard } from '../../../src/screens/home/NextReleaseCard';
@@ -47,6 +47,7 @@ export default function Home() {
   const bottom = useBottomSpace();
   const home = useHome();
   const [refreshing, setRefreshing] = useState(false);
+  const lockedOf = (item: EpisodeItem) => isLocked(item, user?.accessUntil, new Date());
   const scrollY = useSharedValue(0);
 
   // Back on this tab (e.g. after listening): fetch again if the data is old, once per focus.
@@ -108,6 +109,7 @@ export default function Home() {
             durationLabel={durationBadge(item) ?? ''}
             coverUri={item.coverUrl}
             family={coverFamilyFor(item.id)}
+            locked={lockedOf(item)}
             width={layout.cardWidth}
             onPress={() => open(item)}
           />
@@ -126,6 +128,7 @@ export default function Home() {
           meta: item.durationSec ? formatDurationMn(item.durationSec) : item.category.name,
           imageUri: item.coverUrl,
           family: coverFamilyFor(item.id),
+          locked: lockedOf(item),
         }));
         const byId = new Map(row.items.map((item) => [item.id, item]));
         return (
@@ -152,7 +155,11 @@ export default function Home() {
         return (
           <Enter key={row.key} index={index} style={styles.section}>
             <SectionHeader title={row.title} />
-            <ContinueCard item={resume} onPress={() => open(resume, true)} />
+            <ContinueCard
+              item={resume}
+              locked={lockedOf(resume)}
+              onPress={() => open(resume, true)}
+            />
           </Enter>
         );
       }

@@ -105,6 +105,9 @@ Built in parallel with gate A. Needs the seeded catalog (`pnpm --filter @ongod/a
 | 52  | A    | Тохиргоо: change name or phone and save (Профайл shows it); email change sends a code to the new address and the code finishes it; password change; devices list marks "Энэ төхөөрөмж"                                                                          |        |
 | 53  | A    | "Бүртгэл устгах" (throwaway account only): two confirmations, then Welcome; the same login is refused afterwards                                                                                                                                                |        |
 | 54  | A    | A video episode in the Player: the picture area is the video, fullscreen turns landscape (as rows 36–40)                                                                                                                                                        |        |
+| 55  | A    | Free items (ADR-0043, ADR-0044), account without access: in Нүүр, Сан and "Дараагийн" the pictures of paid items are blurred (no lock icon, no text on them); a free item shows its picture sharp; the Player picture of a paid item is blurred too             |        |
+| 56  | A    | Same account: a free item plays (audio and video) with no sheet; a paid item opens the "Таны эрх идэвхгүй байна" sheet. After "Эрхээ шалгах" turns green (access granted in the admin), the blur is gone everywhere                                             |        |
+| 57  | A    | The no-access sheet shows one plain line "Онгод Premium, та багцаа идэвхжүүлнэ үү" above the text: not a button, not a link, no price, no plan name, nothing to tap                                                                                             |        |
 
 ### Social sign-in and push (gate B, only with `SOCIAL_LOGIN=true` and real client IDs)
 

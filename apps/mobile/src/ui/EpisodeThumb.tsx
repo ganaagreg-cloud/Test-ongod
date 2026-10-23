@@ -10,6 +10,7 @@ import {
   type CoverFamily,
 } from '@ongod/tokens';
 import { Artwork } from './Artwork';
+import { LockedBlur } from './LockedBlur';
 
 export interface EpisodeThumbProps {
   /** `thumbnail` = 4:3 list crop (112 wide); `artwork` = the full 16:9 picture. */
@@ -24,6 +25,8 @@ export interface EpisodeThumbProps {
   /** Started episodes: 0..1, drawn as a line along the bottom. */
   progress?: number | undefined;
   width?: DimensionValue;
+  /** A paid item the member cannot play: the picture is blurred (ADR-0044). No icon. */
+  locked?: boolean | undefined;
 }
 
 /**
@@ -39,6 +42,7 @@ export function EpisodeThumb({
   durationLabel,
   progress,
   width,
+  locked,
 }: EpisodeThumbProps) {
   const isThumb = variant === 'thumbnail';
   const dark = themes.dark;
@@ -62,6 +66,7 @@ export function EpisodeThumb({
         size={isThumb ? 'small' : 'large'}
         {...(family && { family })}
       />
+      {locked ? <LockedBlur /> : null}
       {durationLabel ? (
         <View style={[styles.badge, { backgroundColor: withAlpha(dark.bg, 0.72) }]}>
           <Text style={[styles.badgeText, { color: dark.textPrimary }]}>{durationLabel}</Text>

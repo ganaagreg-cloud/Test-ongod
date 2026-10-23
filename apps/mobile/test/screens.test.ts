@@ -12,6 +12,7 @@ import {
   durationBadge,
   episodeMeta,
   greeting,
+  isLocked,
   listenedHours,
   pagesWithSaved,
   progressFraction,
@@ -113,6 +114,29 @@ test('access: inactive without an end date or after it, days left while active',
   const hours = accessState(new Date(now.getTime() + 3 * 3600_000).toISOString(), now);
   assert.equal(hours.daysLeft, 1, 'a few hours left still counts as a day');
   assert.equal(accessState(new Date(now.getTime() + 800 * DAY).toISOString(), now).fraction, 1);
+});
+
+test('isLocked is false for a free item whatever the access', () => {
+  const now = new Date('2026-10-19T00:00:00.000Z');
+  assert.equal(isLocked({ isFree: true }, null, now), false);
+  assert.equal(isLocked({ isFree: true }, '2026-10-01T00:00:00.000Z', now), false);
+});
+
+test('isLocked is true for a paid item with null access', () => {
+  const now = new Date('2026-10-19T00:00:00.000Z');
+  assert.equal(isLocked({ isFree: false }, null, now), true);
+  assert.equal(isLocked({ isFree: false }, undefined, now), true);
+});
+
+test('isLocked is true when accessUntil equals now', () => {
+  const now = new Date('2026-10-19T00:00:00.000Z');
+  assert.equal(isLocked({ isFree: false }, now.toISOString(), now), true);
+});
+
+test('isLocked is false for a paid item with access until tomorrow', () => {
+  const now = new Date('2026-10-19T00:00:00.000Z');
+  const tomorrow = new Date(now.getTime() + DAY).toISOString();
+  assert.equal(isLocked({ isFree: false }, tomorrow, now), false);
 });
 
 test('listening hours are whole hours', () => {

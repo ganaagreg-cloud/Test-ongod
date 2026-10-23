@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { mn } from '../src/i18n/mn';
 
 // CLAUDE.md and ADR-0006: the mobile apps (iOS AND Android) never show prices, bank details,
 // plans or payment buttons. Payment happens only in the portal. This looks for payment words in
@@ -18,8 +19,19 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/**
+ * ADR-0044: the one approved exception. The no-access sheet shows this line (text only: no
+ * button, no link, no price, no plan name). Exactly this string is removed before the patterns
+ * run; any other use of "багц" still fails.
+ */
+const ACTIVATE_TEXT = 'Онгод Premium, та багцаа идэвхжүүлнэ үү';
+
 const stripComments = (code: string) =>
-  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  code
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .split(ACTIVATE_TEXT)
+    .join('');
 
 const files = [...sourceFiles(join(root, 'src')), ...sourceFiles(join(root, 'app'))];
 
@@ -57,6 +69,15 @@ for (const [label, pattern] of FORBIDDEN) {
 test('the API wrapper has no payment endpoints', () => {
   const endpoints = stripComments(readFileSync(join(root, 'src/api/endpoints.ts'), 'utf8'));
   assert.doesNotMatch(endpoints, /\/subscriptions|\/plans|\/payments|\/admin/);
+});
+
+test('the activate text is the only allowed hit', () => {
+  const hits = files.flatMap((file) => {
+    const count = readFileSync(file, 'utf8').split(ACTIVATE_TEXT).length - 1;
+    return count > 0 ? [`${file.replace(root, '').replaceAll('\\', '/')}:${count}`] : [];
+  });
+  assert.deepEqual(hits, ['src/i18n/mn.ts:1']);
+  assert.equal(mn.noAccess.activate, ACTIVATE_TEXT);
 });
 
 test('the check does catch payment text', () => {

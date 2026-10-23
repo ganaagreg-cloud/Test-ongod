@@ -1,6 +1,6 @@
 // Shown when playback is refused because access is not active (DESIGN "No-access state",
 // NoAccess.dc.html). Store-safe: one button that re-reads the access, nothing else. NO price, NO
-// link, NO payment text (ADR-0006).
+// link, NO payment text (ADR-0006); the one exception is the plain activate line (ADR-0044).
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -97,6 +97,7 @@ export function NoAccessSheet({
             <Icon name={ok ? 'check' : 'info'} color={ok ? colors.success : colors.accent} />
           </View>
         </View>
+        {ok ? null : <Text style={styles.text}>{mn.noAccess.activate}</Text>}
         <Text style={styles.text}>
           {ok && until ? mn.noAccess.activeText(formatDate(until)) : mn.noAccess.text}
         </Text>

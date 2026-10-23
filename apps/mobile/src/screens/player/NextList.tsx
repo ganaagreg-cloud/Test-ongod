@@ -18,12 +18,15 @@ export function NextList({
   nextInSeries,
   onOpen,
   onAll,
+  isItemLocked,
 }: {
   items: readonly EpisodeItem[];
   /** The next part of the series this episode belongs to: shown first, before the list. */
   nextInSeries?: EpisodeItem | null | undefined;
   onOpen: (item: EpisodeItem) => void;
   onAll: () => void;
+  /** Paid item without access: its picture is blurred. */
+  isItemLocked?: (item: EpisodeItem) => boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   if (items.length === 0 && !nextInSeries) return null;
@@ -43,6 +46,7 @@ export function NextList({
         family={coverFamilyFor(item.id)}
         durationLabel={durationBadge(item)}
         progress={progressFraction(item)}
+        locked={isItemLocked?.(item) ?? false}
       />
       <View style={styles.text}>
         <Text style={styles.title} numberOfLines={2}>

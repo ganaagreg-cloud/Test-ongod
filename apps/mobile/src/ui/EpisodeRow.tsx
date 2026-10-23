@@ -30,6 +30,8 @@ export interface EpisodeRowProps {
   /** "№ 022" on the placeholder cover. */
   number?: string | undefined;
   family?: CoverFamily;
+  /** Paid item without access: the picture is blurred. */
+  locked?: boolean | undefined;
   /** Started episodes: value 0..1 (drawn on the thumbnail). */
   progress?: { value: number; label: string } | undefined;
   /** The saved bookmark; `label` names the action ("Хадгалах" / "Хадгалснаас хасах"). */
@@ -47,6 +49,7 @@ export function EpisodeRow({
   durationLabel,
   number,
   family,
+  locked,
   progress,
   save,
   onPress,
@@ -71,6 +74,7 @@ export function EpisodeRow({
           uri={coverUri}
           durationLabel={durationLabel}
           progress={progress?.value}
+          locked={locked}
           {...(family && { family })}
         />
         <View style={styles.text}>

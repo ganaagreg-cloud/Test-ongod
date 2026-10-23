@@ -17,6 +17,8 @@ export interface EpisodeCardProps {
   coverUri?: string | null | undefined;
   number?: string | undefined;
   family?: CoverFamily;
+  /** Paid item without access: the picture is blurred. */
+  locked?: boolean | undefined;
   onPress?: (() => void) | undefined;
   /** Card width (horizontal lists); the picture is 16:9. */
   width?: number;
@@ -29,6 +31,7 @@ export function EpisodeCard({
   coverUri,
   number,
   family,
+  locked,
   onPress,
   width,
 }: EpisodeCardProps) {
@@ -47,6 +50,7 @@ export function EpisodeCard({
         title={title}
         number={number}
         durationLabel={durationLabel}
+        locked={locked}
         {...(family && { family })}
       />
       <Text style={styles.title} numberOfLines={2}>

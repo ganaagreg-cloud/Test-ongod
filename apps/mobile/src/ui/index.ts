@@ -11,6 +11,7 @@ export { EpisodeCard, type EpisodeCardProps } from './EpisodeCard';
 export { EpisodeRow, type EpisodeRowProps } from './EpisodeRow';
 export { EpisodeThumb, type EpisodeThumbProps } from './EpisodeThumb';
 export { Equalizer } from './Equalizer';
+export { LockedBlur } from './LockedBlur';
 export { Glass, floatingShadow, goldGlowShadow } from './Glass';
 export { HeroCarousel, type HeroItem } from './HeroCarousel';
 export { Icon, MountainLine } from './Icon';

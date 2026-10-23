@@ -33,6 +33,7 @@ import {
   type CoverFamily,
 } from '@ongod/tokens';
 import { Artwork } from './Artwork';
+import { LockedBlur } from './LockedBlur';
 import { Icon } from './Icon';
 import { goldGlowShadow } from './Glass';
 import { springs, useAmbientActive } from './motion';
@@ -49,6 +50,8 @@ export interface HeroItem {
   /** The episode's 16:9 picture. */
   imageUri?: string | null | undefined;
   family?: CoverFamily;
+  /** Paid item without access: the picture is blurred. */
+  locked?: boolean | undefined;
 }
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<HeroItem>);
@@ -248,6 +251,7 @@ function Slide({
       >
         <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
           <Artwork uri={item.imageUri} size="large" {...(item.family && { family: item.family })} />
+          {item.locked ? <LockedBlur /> : null}
         </Animated.View>
         <LinearGradient
           colors={[withAlpha(dark.bg, 0), withAlpha(dark.bg, 0.55), withAlpha(dark.bg, 0.95)]}

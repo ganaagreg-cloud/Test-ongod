@@ -221,6 +221,8 @@ export const mn = {
   /** The no-access sheet (DESIGN: "Эрхээ шалгах" only; no price, no link, no payment text). */
   noAccess: {
     title: 'Таны эрх идэвхгүй байна',
+    /** ADR-0044: the one allowed line about the plan; text only, no button, no link. */
+    activate: 'Онгод Premium, та багцаа идэвхжүүлнэ үү',
     text: 'Эрх тань идэвхжсэн бол доорх товчийг дарж шинэчилнэ үү.',
     check: 'Эрхээ шалгах',
     checking: 'Шалгаж байна…',

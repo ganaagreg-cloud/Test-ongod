@@ -22,6 +22,7 @@ import {
 import { mn } from '../../i18n/mn';
 import {
   Artwork,
+  LockedBlur,
   Icon,
   PressableScale,
   useAmbientActive,
@@ -45,6 +46,7 @@ export function PlayerPicture({
   family,
   playing,
   video,
+  locked,
   onPlay,
 }: {
   uri: string | null;
@@ -52,6 +54,8 @@ export function PlayerPicture({
   family: CoverFamily;
   playing: boolean;
   video: boolean;
+  /** Paid item without access: the picture is blurred. */
+  locked?: boolean;
   onPlay: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
@@ -88,6 +92,7 @@ export function PlayerPicture({
     <View style={[styles.frame, styles.clip]}>
       <Animated.View style={[StyleSheet.absoluteFill, zoomStyle]}>
         <Artwork uri={uri} title={title} family={family} size="large" />
+        {locked ? <LockedBlur /> : null}
       </Animated.View>
       <LinearGradient
         colors={[withAlpha(colors.bg, 0.35), withAlpha(colors.bg, 0), withAlpha(colors.bg, 0.6)]}
