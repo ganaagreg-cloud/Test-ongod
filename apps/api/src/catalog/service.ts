@@ -132,6 +132,7 @@ export function createCatalogService(deps: CatalogDeps) {
       durationSec: ep.mediaAssets[0]?.durationSec ?? null,
       mediaKind: ep.mediaAssets[0]?.kind ?? null,
       publishedAt: (ep.publishedAt ?? ep.createdAt).toISOString(),
+      isFree: ep.isFree,
       progress,
       saved,
       series: ep.series ? { id: ep.series.id, title: ep.series.title, part: ep.seriesPart } : null,
@@ -437,15 +438,26 @@ export function createCatalogService(deps: CatalogDeps) {
     },
 
     /**
-     * SPEC G / acceptance: playback needs active access and a registered device. The URL is valid
-     * for 4 hours but never past the end of access, so expired access stops playback (ADR-0021).
+     * SPEC G / acceptance: playback needs a login, a registered device, and either active access
+     * or a published free item (ADR-0043). Without access, anything that is not a published free
+     * item is 403 NO_ACCESS, checked first, so unpublished items do not leak. A member's URL is
+     * valid for 4 hours but never past the end of access, so expired access stops paid playback
+     * (ADR-0021); a free play without access gets the full 4 hours (never an already-expired URL).
      */
     async play(auth: { user: User; session: Session }, episodeId: string): Promise<PlayResponse> {
       const now = clock();
       const { user, session } = auth;
 
-      if (!user.accessUntil || user.accessUntil.getTime() <= now.getTime()) {
-        throw new AppError(403, 'NO_ACCESS');
+      const accessUntil =
+        user.accessUntil != null && user.accessUntil.getTime() > now.getTime()
+          ? user.accessUntil
+          : null;
+      if (!accessUntil) {
+        const free = await db.episode.findFirst({
+          where: { AND: [publishedWhere(now), { id: episodeId, isFree: true }] },
+          select: { id: true },
+        });
+        if (!free) throw new AppError(403, 'NO_ACCESS');
       }
       const device = await db.device.findUnique({
         where: { userId_deviceId: { userId: user.id, deviceId: session.deviceId } },
@@ -466,9 +478,8 @@ export function createCatalogService(deps: CatalogDeps) {
         throw new AppError(503, 'SERVICE_UNAVAILABLE');
       }
 
-      const expiresAt = new Date(
-        Math.min(now.getTime() + PLAY_URL_TTL_MS, user.accessUntil.getTime()),
-      );
+      const ttlEnd = now.getTime() + PLAY_URL_TTL_MS;
+      const expiresAt = new Date(accessUntil ? Math.min(ttlEnd, accessUntil.getTime()) : ttlEnd);
       await db.device.update({ where: { id: device.id }, data: { lastSeenAt: now } });
       return {
         kind: asset.kind,

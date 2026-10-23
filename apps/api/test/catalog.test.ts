@@ -131,6 +131,21 @@ describe('episode list', () => {
     expect(JSON.stringify(body)).not.toContain('audio.mp3');
   });
 
+  it('episode list items carry isFree', async () => {
+    const user = await memberOn(app);
+    const cat = await makeCategory();
+    const free = await makeEpisode(cat.id, { isFree: true });
+    const paid = await makeEpisode(cat.id);
+
+    const res = await get('/v1/episodes', user.accessToken);
+    expect(res.statusCode).toBe(200);
+    const byId = new Map(
+      res.json().items.map((i: { id: string; isFree: boolean }) => [i.id, i.isFree]),
+    );
+    expect(byId.get(free.id)).toBe(true);
+    expect(byId.get(paid.id)).toBe(false);
+  });
+
   it('sorts by newest, oldest and longest', async () => {
     const user = await memberOn(app);
     const cat = await makeCategory();

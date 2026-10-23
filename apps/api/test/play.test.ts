@@ -124,6 +124,85 @@ describe('POST /v1/episodes/:id/play: access rules', () => {
   });
 });
 
+describe('free items', () => {
+  async function freeEpisode(over: Parameters<typeof makeEpisode>[1] = {}) {
+    const cat = await makeCategory();
+    return makeEpisode(cat.id, { isFree: true, ...over });
+  }
+
+  it('a user with no access plays a published free item', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode();
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.url).toEqual(expect.any(String));
+    expect(body.expiresAt).toBe(new Date(now.getTime() + 4 * HOUR).toISOString());
+  });
+
+  it('a user with expired access gets a url that expires at now + 4h, not in the past', async () => {
+    const user = await memberOn(app, { accessUntil: new Date(now.getTime() - DAY) });
+    const episode = await freeEpisode();
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.expiresAt).toBe(new Date(now.getTime() + 4 * HOUR).toISOString());
+    expect(Date.parse(body.expiresAt)).toBeGreaterThan(now.getTime());
+  });
+
+  it('a user with no access is refused a paid item', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const { episode } = await readyEpisode();
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('NO_ACCESS');
+  });
+
+  it('a draft free item is refused', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode({ status: 'DRAFT' });
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('NO_ACCESS');
+  });
+
+  it('an archived free item is refused', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode({
+      status: 'ARCHIVED',
+      publishedAt: new Date(now.getTime() - DAY),
+    });
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('NO_ACCESS');
+  });
+
+  it('a free item on an unregistered device', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode();
+    await testDb.device.deleteMany({ where: { userId: user.userId } });
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('DEVICE_NOT_REGISTERED');
+  });
+
+  it('a member still gets min(4h, accessUntil)', async () => {
+    const accessUntil = new Date(now.getTime() + HOUR);
+    const user = await memberOn(app, { accessUntil });
+    const episode = await freeEpisode();
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().expiresAt).toBe(accessUntil.toISOString());
+  });
+
+  it('an anonymous request is 401', async () => {
+    const episode = await freeEpisode();
+    const res = await app.inject({ method: 'POST', url: `/v1/episodes/${episode.id}/play` });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('UNAUTHORIZED');
+  });
+});
+
 describe('POST /v1/episodes/:id/play: the signed URL', () => {
   it('returns a Bunny token URL for the READY audio, valid 4 hours, never cached', async () => {
     const user = await memberOn(app);

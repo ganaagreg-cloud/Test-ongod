@@ -55,6 +55,8 @@ export const episodeItemSchema = z.object({
   /** AUDIO or VIDEO (ADR-0038); null until the episode has a READY media file. */
   mediaKind: mediaKindSchema.nullable(),
   publishedAt: z.iso.datetime(),
+  /** Playable by any logged-in user, without active access (ADR-0043, ADR-0044). */
+  isFree: z.boolean(),
   /** This user's progress, or null if never played. */
   progress: z
     .object({ positionSec: z.number().int().nonnegative(), completed: z.boolean() })
