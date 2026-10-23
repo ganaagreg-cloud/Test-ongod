@@ -66,7 +66,7 @@ tags: [index]
 | ADR-0042 | [[ADR-0042-content-organisation-and-publish-push]]        | accepted                                           |
 | ADR-0043 | [[ADR-0043-allow-free-users-and-free-content]]            | accepted                                           |
 | ADR-0044 | [[ADR-0044-free-items-and-activate-message-in-app]]       | accepted                                           |
-| ADR-0045 | [[ADR-0045-audit-hardening-limits-refresh-jobs-payments]] | accepted                                           |
+| ADR-0045 | [[ADR-0045-audit-hardening-limits-refresh-jobs-payments]] | accepted (item 3 amended by ADR-0047)              |
 | ADR-0046 | [[ADR-0046-remove-bank-transfer-path]]                    | accepted                                           |
 | ADR-0047 | [[ADR-0047-wire-payment-sync-window]]                     | accepted                                           |
 
