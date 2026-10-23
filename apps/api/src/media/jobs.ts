@@ -168,6 +168,20 @@ export function createMediaJobs(deps: {
     }
   }
 
+  /** Marks an audio or video asset FAILED with a reason; only from a state where that still makes sense. */
+  const failMedia = (assetId: string, reason: string) =>
+    db.mediaAsset.updateMany({
+      where: { id: assetId, status: { in: ['PROCESSING', 'UPLOADING'] } },
+      data: { status: 'FAILED', failReason: reason },
+    });
+  /**
+   * The upload job's worker stopped and it has no attempts left (ADR-0045): the asset would stay
+   * PROCESSING and block a new upload, so it fails with a reason and the admin can retry.
+   */
+  const failOnLockTimeout = async ({ assetId }: { assetId: string }) => {
+    await failMedia(assetId, mn.media.failLockTimeout);
+  };
+
   /**
    * Stored audio: read the length, send the file to storage, mark the asset READY, drop older
    * audio of the same episode (a re-upload replaces it). A failure marks the asset FAILED with a
@@ -175,6 +189,7 @@ export function createMediaJobs(deps: {
    */
   const audioUpload = defineJob({
     ...audioUploadSpec,
+    onLockTimeout: failOnLockTimeout,
     async handle({ assetId }, { attempt, log }) {
       const asset = await db.mediaAsset.findUnique({ where: { id: assetId } });
       // Deleted meanwhile (episode removed), or already done by an earlier run: nothing to do.
@@ -213,10 +228,7 @@ export function createMediaJobs(deps: {
       } catch (err) {
         const unfixable = err instanceof PermanentJobError;
         if (unfixable || attempt >= audioUploadSpec.maxAttempts) {
-          await db.mediaAsset.updateMany({
-            where: { id: assetId, status: { in: ['PROCESSING', 'UPLOADING'] } },
-            data: { status: 'FAILED', failReason: failReasonFor(err) },
-          });
+          await failMedia(assetId, failReasonFor(err));
         }
         // A bad file is the uploader's problem: the admin sees the reason and the Retry button,
         // and the owner gets no alert email. Storage errors still retry, and alert if they last.
@@ -337,13 +349,6 @@ export function createMediaJobs(deps: {
     },
   });
 
-  /** Marks a video FAILED with a reason; only from a state where that still makes sense. */
-  const failVideo = (assetId: string, reason: string) =>
-    db.mediaAsset.updateMany({
-      where: { id: assetId, status: { in: ['PROCESSING', 'UPLOADING'] } },
-      data: { status: 'FAILED', failReason: reason },
-    });
-
   /**
    * Video: create the Stream video (its id is stored at once, so a retry reuses it), send the
    * file, then hand over to the status job. The local file stays until the video is READY, so a
@@ -351,6 +356,7 @@ export function createMediaJobs(deps: {
    */
   const videoUpload = defineJob({
     ...videoUploadSpec,
+    onLockTimeout: failOnLockTimeout,
     async handle({ assetId }, { attempt }) {
       const asset = await db.mediaAsset.findUnique({
         where: { id: assetId },
@@ -383,7 +389,7 @@ export function createMediaJobs(deps: {
       } catch (err) {
         const unfixable = err instanceof PermanentJobError;
         if (unfixable || attempt >= videoUploadSpec.maxAttempts) {
-          await failVideo(assetId, failReasonFor(err));
+          await failMedia(assetId, failReasonFor(err));
         }
         if (!unfixable) throw err;
       }
@@ -401,23 +407,23 @@ export function createMediaJobs(deps: {
       const asset = await db.mediaAsset.findUnique({ where: { id: assetId } });
       if (!asset || asset.status !== 'PROCESSING' || asset.path === PENDING_PATH) return;
       if (!stream) {
-        await failVideo(assetId, mn.media.failStreamNotConfigured);
+        await failMedia(assetId, mn.media.failStreamNotConfigured);
         return;
       }
 
       const video = await stream.getVideo(asset.path);
       if (!video) {
-        await failVideo(assetId, mn.media.failVideoGone);
+        await failMedia(assetId, mn.media.failVideoGone);
         return;
       }
       const state = classifyStreamVideo(video);
       if (state === 'failed') {
-        await failVideo(assetId, mn.media.failVideoProcessing);
+        await failMedia(assetId, mn.media.failVideoProcessing);
         return;
       }
       if (state === 'processing') {
         if (now().getTime() - new Date(startedAt).getTime() > VIDEO_PROCESSING_LIMIT_MS) {
-          await failVideo(assetId, mn.media.failVideoTimeout);
+          await failMedia(assetId, mn.media.failVideoTimeout);
           return;
         }
         await enqueue(

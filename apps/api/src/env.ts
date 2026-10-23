@@ -61,6 +61,8 @@ export const envSchema = z
 
     JOB_WORKER_ENABLED: bool.default(true),
     JOB_POLL_INTERVAL_MS: z.coerce.number().int().min(100).default(2000),
+    /** A RUNNING job older than this (from its own start) is reclaimed (ADR-0045). 2 hours. */
+    JOB_LOCK_TIMEOUT_MS: z.coerce.number().int().positive().default(7_200_000),
     CRON_SECRET: z.string().min(32),
 
     SOCIAL_LOGIN: bool.default(false),

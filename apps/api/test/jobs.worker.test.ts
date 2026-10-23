@@ -223,3 +223,208 @@ describe('JobWorker', () => {
     expect(row.lastError).toContain('Lock timed out');
   });
 });
+
+// ADR-0045 item 2: a job's lock starts when the job starts, the batch runs in parallel, the lock
+// timeout is long enough for a big video upload, and a job failed by lock timeout runs its hook.
+describe('JobWorker locks (ADR-0045)', () => {
+  /** A promise and its opener, to hold a handler until the test lets it go. */
+  function gate() {
+    let open!: () => void;
+    const opened = new Promise<void>((r) => (open = r));
+    return { open, opened };
+  }
+  /** The test clock starts a second ahead, so jobs enqueued just now are already due. */
+  const startClock = () => Date.now() + 1000;
+  const lockOf = async (id: string) =>
+    (await testDb.job.findUniqueOrThrow({ where: { id } })).lockedAt!.getTime();
+
+  it('moves each job lock to its own start, so a recovery meanwhile does not requeue it', async () => {
+    let clock = startClock();
+    const now = () => new Date(clock);
+    const bStarted = gate();
+    const releaseB = gate();
+    const runs: string[] = [];
+    const locks: Record<string, number> = {};
+    const a = defineJob({
+      type: 'test.a',
+      schema: z.object({}),
+      async handle(_p, ctx) {
+        runs.push('a');
+        locks.a = await lockOf(ctx.jobId);
+        await bStarted.opened;
+        // 80 s after the claim but 30 s after the jobs started: stale only if the lock still
+        // pointed at the claim. A fresh worker (the cron tick) runs the recovery.
+        clock += 30_000;
+        expect(await makeWorker(registry, { lockTimeoutMs: 60_000, now }).claim()).toHaveLength(0);
+        releaseB.open();
+      },
+    });
+    const b = defineJob({
+      type: 'test.b',
+      schema: z.object({}),
+      async handle(_p, ctx) {
+        runs.push('b');
+        locks.b = await lockOf(ctx.jobId);
+        bStarted.open();
+        await releaseB.opened;
+      },
+    });
+    const registry = new JobRegistry().register(a, b);
+    await enqueue(testDb, a, {});
+    await enqueue(testDb, b, {});
+    const worker = makeWorker(registry, { lockTimeoutMs: 60_000, now });
+
+    const claimAt = clock;
+    const jobs = await worker.claim(2);
+    expect(jobs).toHaveLength(2);
+    clock += 50_000; // the batch starts 50 s after the claim
+    await worker.run(jobs);
+
+    expect(runs.sort()).toEqual(['a', 'b']);
+    expect(locks.a).toBeGreaterThanOrEqual(claimAt + 50_000);
+    expect(locks.b).toBeGreaterThanOrEqual(claimAt + 50_000);
+    expect(await testDb.job.count({ where: { status: 'DONE' } })).toBe(2);
+  });
+
+  it('does not reclaim a job that runs longer than 15 minutes but shorter than the timeout', async () => {
+    let clock = startClock();
+    const now = () => new Date(clock);
+    const runs: string[] = [];
+    const def = defineJob({
+      type: 'test.long',
+      schema: z.object({}),
+      async handle(_p, ctx) {
+        runs.push(ctx.jobId);
+        clock += 20 * 60_000;
+        // Another worker (the cron tick) with the default timeout finds nothing to recover.
+        expect(await makeWorker(registry, { now }).claim()).toHaveLength(0);
+      },
+    });
+    const registry = new JobRegistry().register(def);
+    const job = await enqueue(testDb, def, {});
+
+    expect(await makeWorker(registry, { now }).runOnce()).toBe(1);
+    expect(runs).toEqual([job.id]);
+    expect(await testDb.job.findUniqueOrThrow({ where: { id: job.id } })).toMatchObject({
+      status: 'DONE',
+      attempts: 1,
+    });
+  });
+
+  it('runs a claimed batch in parallel', async () => {
+    const started: number[] = [];
+    const bothStarted = gate();
+    const def = defineJob({
+      type: 'test.parallel',
+      schema: z.object({ n: z.number() }),
+      async handle({ n }) {
+        started.push(n);
+        if (started.length === 2) bothStarted.open();
+        // Each waits for the other to start: a one-by-one batch never gets past this.
+        await Promise.race([
+          bothStarted.opened,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('not parallel')), 3000)),
+        ]);
+      },
+    });
+    await enqueue(testDb, def, { n: 1 });
+    await enqueue(testDb, def, { n: 2 });
+
+    expect(await makeWorker(new JobRegistry().register(def)).runOnce()).toBe(2);
+    expect(started.sort()).toEqual([1, 2]);
+    expect(await testDb.job.count({ where: { status: 'DONE' } })).toBe(2);
+  });
+
+  it('skips a job whose lock was taken by someone else between claim and start', async () => {
+    const { def, runs } = recordingJob('test.lost');
+    const job = await enqueue(testDb, def, { n: 1 });
+    const worker = makeWorker(new JobRegistry().register(def));
+
+    const jobs = await worker.claim();
+    expect(jobs).toHaveLength(1);
+    // Reclaimed and restarted elsewhere meanwhile: the lock is now someone else's.
+    const theirs = new Date(Date.now() + 5000);
+    await testDb.job.update({ where: { id: job.id }, data: { lockedAt: theirs } });
+    await worker.run(jobs);
+
+    expect(runs).toHaveLength(0);
+    const row = await testDb.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect(row).toMatchObject({ status: 'RUNNING', lockedAt: theirs });
+  });
+
+  it('runs every queued email once while a slow job runs and the cron tick drains too', async () => {
+    let clock = startClock();
+    const now = () => new Date(clock);
+    const emails: string[] = [];
+    const slowRuns: string[] = [];
+    const email = defineJob({
+      type: 'test.email',
+      schema: z.object({ n: z.number() }),
+      async handle(_p, ctx) {
+        await new Promise((r) => setTimeout(r, 20));
+        emails.push(ctx.jobId);
+      },
+    });
+    const slow = defineJob({
+      type: 'test.video',
+      schema: z.object({}),
+      async handle(_p, ctx) {
+        slowRuns.push(ctx.jobId);
+        clock += 20 * 60_000; // a 20-minute upload
+        await cronWorker.drain(5000); // the cron tick arrives meanwhile
+      },
+    });
+    const registry = new JobRegistry().register(email, slow);
+    const loopWorker = makeWorker(registry, { now });
+    const cronWorker = makeWorker(registry, { now });
+    await enqueue(testDb, slow, {}, { runAt: new Date(Date.now() - 1000) });
+    for (let n = 0; n < 4; n++) await enqueue(testDb, email, { n });
+
+    await Promise.all([loopWorker.runOnce(), cronWorker.drain(5000)]);
+
+    expect(slowRuns).toHaveLength(1);
+    expect(emails).toHaveLength(4);
+    expect(new Set(emails).size).toBe(4);
+    expect(await testDb.job.count({ where: { status: 'DONE' } })).toBe(5);
+  });
+
+  it('runs the lock-timeout hook of each job failed by recovery, even when one hook throws', async () => {
+    const hooked: unknown[] = [];
+    const bad = defineJob({
+      type: 'test.bad-hook',
+      schema: z.object({ n: z.number() }),
+      handle: async () => {},
+      onLockTimeout: async () => {
+        throw new Error('hook broke');
+      },
+    });
+    const good = defineJob({
+      type: 'test.good-hook',
+      schema: z.object({ n: z.number() }),
+      handle: async () => {},
+      onLockTimeout: async (payload, ctx) => void hooked.push([payload, ctx.jobId]),
+    });
+    let clock = startClock();
+    const worker = makeWorker(new JobRegistry().register(bad, good), {
+      lockTimeoutMs: 60_000,
+      now: () => new Date(clock),
+    });
+    const past = (ms: number) => new Date(Date.now() - ms);
+    const j1 = await enqueue(testDb, bad, { n: 1 }, { maxAttempts: 1, runAt: past(3000) });
+    const j2 = await enqueue(testDb, good, { n: 2 }, { maxAttempts: 1, runAt: past(2000) });
+    // Still has an attempt left: requeued, no hook.
+    const j3 = await enqueue(testDb, good, { n: 3 }, { maxAttempts: 2, runAt: past(1000) });
+
+    expect(await worker.claim()).toHaveLength(3); // then the process "crashes"
+    clock += 61_000;
+    expect(await worker.claim(0)).toHaveLength(0); // only the recovery
+
+    const rows = await testDb.job.findMany({ where: { id: { in: [j1.id, j2.id, j3.id] } } });
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(byId[j1.id]).toMatchObject({ status: 'FAILED', lockedAt: null });
+    expect(byId[j2.id]).toMatchObject({ status: 'FAILED', lockedAt: null });
+    expect(byId[j2.id]!.lastError).toContain('Lock timed out');
+    expect(byId[j3.id]).toMatchObject({ status: 'QUEUED', lockedAt: null });
+    expect(hooked).toEqual([[{ n: 2 }, j2.id]]);
+  });
+});

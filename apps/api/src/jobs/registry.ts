@@ -15,6 +15,12 @@ export interface JobDefinition<S extends z.ZodType = z.ZodType> {
   /** Defaults to 5. */
   maxAttempts?: number;
   handle(payload: z.infer<S>, ctx: JobContext): Promise<void>;
+  /**
+   * Runs once when stale-job recovery fails this job for good (its worker stopped and it has no
+   * attempts left), e.g. to mark the media it was processing FAILED. Best-effort: an error is
+   * logged and does not stop the recovery.
+   */
+  onLockTimeout?(payload: z.infer<S>, ctx: JobContext): Promise<void>;
 }
 
 /** Identity helper that keeps the payload type tied to the schema. */

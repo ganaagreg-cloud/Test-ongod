@@ -30,6 +30,7 @@ const worker = new JobWorker(
   logger.child({ component: 'jobs' }),
   {
     pollIntervalMs: env.JOB_POLL_INTERVAL_MS,
+    lockTimeoutMs: env.JOB_LOCK_TIMEOUT_MS,
     report: (err, job) => {
       sentry?.(err);
       void alerts.jobFailed(err, job);

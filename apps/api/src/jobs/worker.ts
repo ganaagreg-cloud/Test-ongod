@@ -9,7 +9,10 @@ export interface WorkerOptions {
   /** Jobs claimed per round. */
   batchSize?: number;
   pollIntervalMs?: number;
-  /** A RUNNING job locked longer than this is assumed dead and claimed again. */
+  /**
+   * A RUNNING job whose lock (set when the job starts) is older than this is assumed dead and
+   * claimed again. Long enough for a big video upload (ADR-0045). Defaults to 2 hours.
+   */
   lockTimeoutMs?: number;
   backoff?: BackoffOptions;
   now?: () => Date;
@@ -18,6 +21,10 @@ export interface WorkerOptions {
 }
 
 const MAX_ERROR_LENGTH = 2000;
+const DEFAULT_LOCK_TIMEOUT_MS = 2 * 60 * 60_000;
+/** Jobs failed one by one per recovery round (the rest wait for the next round). */
+const MAX_FAILED_PER_RECOVERY = 100;
+const LOCK_TIMED_OUT = 'Lock timed out (worker stopped?)';
 
 /**
  * In-process worker for the Job table. Safe to run in several processes at once:
@@ -42,15 +49,16 @@ export class JobWorker {
   ) {
     this.batchSize = opts.batchSize ?? 5;
     this.pollIntervalMs = opts.pollIntervalMs ?? 2000;
-    this.lockTimeoutMs = opts.lockTimeoutMs ?? 15 * 60_000;
+    this.lockTimeoutMs = opts.lockTimeoutMs ?? DEFAULT_LOCK_TIMEOUT_MS;
     this.backoff = opts.backoff ?? defaultBackoff;
     this.now = opts.now ?? (() => new Date());
   }
 
   /**
-   * Jobs still RUNNING after the lock timeout belong to a worker that died. Requeue them,
-   * or fail them if they have used all attempts (so a job that crashes the process cannot
-   * loop forever). The dead worker can no longer finish them: see finish().
+   * Jobs still RUNNING after the lock timeout belong to a worker that died. Requeue them, or fail
+   * them if they have used all attempts (so a job that crashes the process cannot loop forever).
+   * A job failed here runs its definition's onLockTimeout hook (e.g. the media it was sending is
+   * marked FAILED, ADR-0045). The dead worker can no longer finish them: see finish().
    *
    * Throttled and best-effort: it runs at most once per interval, in READ COMMITTED (no gap
    * locks, so it cannot deadlock with claims), and a failure only skips this round.
@@ -64,32 +72,57 @@ export class JobWorker {
       status: 'RUNNING' as const,
       lockedAt: { lt: new Date(now.getTime() - this.lockTimeoutMs) },
     };
+    const readCommitted = { isolationLevel: 'ReadCommitted' as const };
     try {
-      const [exhausted, requeued] = await this.db.$transaction(
+      const exhausted = await this.db.job.findMany({
+        where: { ...stale, attempts: { gte: this.db.job.fields.maxAttempts } },
+        orderBy: { lockedAt: 'asc' },
+        take: MAX_FAILED_PER_RECOVERY,
+      });
+      let failed = 0;
+      for (const job of exhausted) {
+        // Only the recovery that actually fails the job (same lock) runs the hook.
+        const [res] = await this.db.$transaction(
+          [
+            this.db.job.updateMany({
+              where: { id: job.id, status: 'RUNNING', lockedAt: job.lockedAt },
+              data: { status: 'FAILED', lockedAt: null, lastError: LOCK_TIMED_OUT },
+            }),
+          ],
+          readCommitted,
+        );
+        if (res.count === 0) continue;
+        failed++;
+        await this.runLockTimeoutHook(job);
+      }
+
+      const [requeued] = await this.db.$transaction(
         [
           this.db.job.updateMany({
-            where: { ...stale, attempts: { gte: this.db.job.fields.maxAttempts } },
-            data: {
-              status: 'FAILED',
-              lockedAt: null,
-              lastError: 'Lock timed out (worker stopped?)',
-            },
-          }),
-          this.db.job.updateMany({
-            where: stale,
+            where: { ...stale, attempts: { lt: this.db.job.fields.maxAttempts } },
             data: { status: 'QUEUED', lockedAt: null, runAt: now },
           }),
         ],
-        { isolationLevel: 'ReadCommitted' },
+        readCommitted,
       );
-      if (exhausted.count + requeued.count > 0) {
-        this.log.warn(
-          { failed: exhausted.count, requeued: requeued.count },
-          'recovered stale jobs',
-        );
+      if (failed + requeued.count > 0) {
+        this.log.warn({ failed, requeued: requeued.count }, 'recovered stale jobs');
       }
     } catch (err) {
       this.log.warn({ err }, 'stale job recovery skipped');
+    }
+  }
+
+  /** Never throws: a broken hook must not block the recovery of other jobs. */
+  private async runLockTimeoutHook(job: Job): Promise<void> {
+    const log = this.log.child({ jobId: job.id, jobType: job.type, attempt: job.attempts });
+    try {
+      const def = this.registry.get(job.type);
+      if (!def?.onLockTimeout) return;
+      const payload = def.schema.parse(JSON.parse(job.payload));
+      await def.onLockTimeout(payload, { db: this.db, log, jobId: job.id, attempt: job.attempts });
+    } catch (err) {
+      log.error({ err }, 'lock-timeout hook failed');
     }
   }
 
@@ -125,8 +158,21 @@ export class JobWorker {
   /** Claims one batch and runs it. Returns the number of jobs processed. */
   async runOnce(): Promise<number> {
     const jobs = await this.claim();
-    for (const job of jobs) await this.execute(job);
+    await this.run(jobs);
     return jobs.length;
+  }
+
+  /**
+   * Runs claimed jobs in parallel, so a long job (a video upload) does not hold back the rest of
+   * its batch. Never throws.
+   */
+  async run(jobs: Job[]): Promise<void> {
+    const results = await Promise.allSettled(jobs.map((job) => this.execute(job)));
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        this.log.error({ err: r.reason, jobId: jobs[i]!.id }, 'job run failed');
+      }
+    });
   }
 
   /** Processes due jobs until none are left or the time budget is used up (cron tick). */
@@ -141,8 +187,29 @@ export class JobWorker {
     return total;
   }
 
-  private async execute(job: Job): Promise<void> {
-    const log = this.log.child({ jobId: job.id, jobType: job.type, attempt: job.attempts });
+  /**
+   * Moves the lock to this moment (the timeout counts from the job's own start, not from the
+   * claim of its batch), then runs the job. A job whose lock was taken meanwhile is skipped.
+   */
+  private async execute(claimed: Job): Promise<void> {
+    const log = this.log.child({
+      jobId: claimed.id,
+      jobType: claimed.type,
+      attempt: claimed.attempts,
+    });
+    // At least 1 ms later than the claim, so the update always changes the row (DATETIME(3)).
+    const startedAt = new Date(
+      Math.max(this.now().getTime(), (claimed.lockedAt?.getTime() ?? 0) + 1),
+    );
+    const moved = await this.db.job.updateMany({
+      where: { id: claimed.id, status: 'RUNNING', lockedAt: claimed.lockedAt },
+      data: { lockedAt: startedAt },
+    });
+    if (moved.count === 0) {
+      log.warn('job lock lost before start, skipped');
+      return;
+    }
+    const job: Job = { ...claimed, lockedAt: startedAt };
     try {
       const def = this.registry.get(job.type);
       if (!def) throw new PermanentJobError(`Unknown job type: ${job.type}`);

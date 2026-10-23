@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_VIDEO_BYTES } from '@ongod/shared';
 import { mn } from '../src/i18n/mn';
 import { classifyStreamVideo } from '../src/lib/bunnyStream';
+import { JobRegistry } from '../src/jobs/registry';
+import { JobWorker } from '../src/jobs/worker';
 import { createMediaJobs, enqueueVideoUpload } from '../src/media/jobs';
 import type { MediaRuntime } from '../src/media/storage';
 import { call, makeAdmin } from './admin-helpers';
@@ -250,6 +252,73 @@ describe('video upload over tus, processed by Bunny Stream', () => {
     expect(res.statusCode).toBe(204);
     await runMediaJobs(runtime);
     expect(stream.deleted).toContain(ready!.path);
+  });
+
+  it('an upload whose worker stopped with no attempts left fails with a reason; a new upload and Retry work (ADR-0045)', async () => {
+    await upload(videoBytes());
+    const [asset] = await assets();
+    expect(asset!.status).toBe('PROCESSING');
+    // The process died during the last attempt, three hours ago.
+    const job = await testDb.job.findFirstOrThrow({ where: { type: 'media.video-upload' } });
+    await testDb.job.update({
+      where: { id: job.id },
+      data: {
+        status: 'RUNNING',
+        attempts: job.maxAttempts,
+        lockedAt: new Date(Date.now() - 3 * HOUR),
+      },
+    });
+    const registry = new JobRegistry().register(
+      ...createMediaJobs({
+        db: testDb,
+        storage: runtime.storage,
+        dirs: runtime.dirs,
+        stream: stream.client,
+      }),
+    );
+    expect(await new JobWorker(testDb, registry, logger).claim(0)).toHaveLength(0); // recovery
+
+    expect(await testDb.job.findUniqueOrThrow({ where: { id: job.id } })).toMatchObject({
+      status: 'FAILED',
+    });
+    expect((await assets())[0]).toMatchObject({
+      status: 'FAILED',
+      failReason: mn.media.failLockTimeout,
+    });
+    expect((await adminEpisode()).media).toMatchObject({ status: 'FAILED' });
+
+    // No longer PROCESSING: Retry (which needs FAILED) is offered, and a new file is accepted
+    // instead of the 409 a stuck PROCESSING asset caused.
+    const created = await tusClient(base, adminToken).create(100, meta('again.mp4'));
+    expect(created.status).toBe(201);
+  });
+
+  it('Retry works after an upload failed by lock timeout (ADR-0045)', async () => {
+    await upload(videoBytes());
+    const job = await testDb.job.findFirstOrThrow({ where: { type: 'media.video-upload' } });
+    await testDb.job.update({
+      where: { id: job.id },
+      data: {
+        status: 'RUNNING',
+        attempts: job.maxAttempts,
+        lockedAt: new Date(Date.now() - 3 * HOUR),
+      },
+    });
+    const registry = new JobRegistry().register(
+      ...createMediaJobs({
+        db: testDb,
+        storage: runtime.storage,
+        dirs: runtime.dirs,
+        stream: stream.client,
+      }),
+    );
+    await new JobWorker(testDb, registry, logger).claim(0);
+    expect((await assets())[0]!.status).toBe('FAILED');
+
+    const res = await call(app, 'POST', `/v1/admin/episodes/${episodeId}/media/retry`, adminToken);
+    expect(res.statusCode).toBe(200);
+    await runMediaJobs(runtime);
+    expect((await assets())[0]).toMatchObject({ status: 'READY', failReason: null });
   });
 
   it('a job for a deleted asset or a finished video does nothing', async () => {
