@@ -26,6 +26,8 @@ export const adminCategorySchema = z.object({
   slug: z.string(),
   sortOrder: z.number().int(),
   episodeCount: z.number().int(),
+  /** Signed URL of the 16:9 category picture, null until one is uploaded. */
+  coverUrl: z.string().nullable(),
 });
 export type AdminCategoryDto = z.infer<typeof adminCategorySchema>;
 export const adminCategoriesResponseSchema = z.object({ categories: z.array(adminCategorySchema) });

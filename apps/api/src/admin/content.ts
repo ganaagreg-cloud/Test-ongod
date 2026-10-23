@@ -14,6 +14,7 @@ import type { User } from '../generated/prisma/client';
 import { isUniqueViolation, lockUser } from '../auth/service';
 import { escapeLike } from '../lib/like';
 import {
+  enqueueCategoryCoverUpload,
   enqueueCoverUpload,
   enqueueMediaUpload,
   enqueueStorageDelete,
@@ -109,6 +110,7 @@ export function createContentService(deps: {
     name: string;
     slug: string;
     sortOrder: number;
+    coverPath: string | null;
     _count: { episodes: number };
   }): AdminCategoryDto => ({
     id: c.id,
@@ -116,6 +118,7 @@ export function createContentService(deps: {
     slug: c.slug,
     sortOrder: c.sortOrder,
     episodeCount: c._count.episodes,
+    coverUrl: c.coverPath ? media.cover(c.coverPath, now()).coverUrl : null,
   });
 
   const loadCategory = async (id: string) => {
@@ -279,8 +282,23 @@ export function createContentService(deps: {
         if (!found) throw new AppError(404, 'NOT_FOUND');
         if (found._count.episodes > 0) throw new AppError(409, 'CATEGORY_NOT_EMPTY');
         await tx.category.delete({ where: { id } });
+        if (found.coverPath) {
+          await enqueueStorageDelete(tx, [found.coverPath, thumbPathOf(found.coverPath)]);
+        }
         await audit(tx, actor.id, 'category.delete', 'Category', id, { slug: found.slug });
       });
+    },
+
+    /** Resizes to the two covers (fast, local), then a job stores them and points the category at them. */
+    async setCategoryCover(actor: User, id: string, image: Buffer) {
+      await loadCategory(id);
+      const coverId = randomUUID();
+      await processCover(image, dirs, coverId);
+      await db.$transaction(async (tx) => {
+        await enqueueCategoryCoverUpload(tx, id, coverId);
+        await audit(tx, actor.id, 'category.cover', 'Category', id, { coverId });
+      });
+      return loadCategory(id);
     },
 
     /** `ids` must be every category, in the new order. */

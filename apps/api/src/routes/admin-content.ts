@@ -130,6 +130,12 @@ export async function adminContentRoutes(
     return reply.code(204).send();
   });
 
+  app.post('/admin/categories/:id/cover', async (req, reply) => {
+    const { id } = contentIdParamsSchema.parse(req.params);
+    const category = await content.setCategoryCover(authOf(req).user, id, await readCover(req));
+    return reply.code(202).send(adminCategoryResponseSchema.parse({ category }));
+  });
+
   // ---- tags ----
   app.get('/admin/tags', async () => adminTagsResponseSchema.parse({ tags: await tags.list() }));
 
