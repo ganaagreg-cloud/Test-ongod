@@ -36,6 +36,7 @@
 ### Task 1: `isFree` on the episode (schema, shared, admin API)
 
 **Files:**
+
 - Modify: `apps/api/prisma/schema.prisma` (Episode, next to `notifyOnPublish`)
 - Create: `apps/api/prisma/migrations/20261023100000_episode_is_free/migration.sql`
 - Modify: `packages/shared/src/admin-content.ts` (`adminEpisodeSchema`, `createEpisodeRequestSchema`)
@@ -44,22 +45,25 @@
 - Test: `apps/api/test/admin-content-tools.test.ts`
 
 **Interfaces:**
+
 - Produces: column `Episode.isFree Boolean @default(false)`; `AdminEpisodeDto.isFree: boolean`; `CreateEpisodeRequest.isFree?: boolean` and the same on update (the update schema is `.partial()` of create); `makeEpisode({ isFree })`.
 
 - [ ] **Step 1: Write the failing tests** in `admin-content-tools.test.ts`, describe `free items`: `creates an item as paid by default` (POST without `isFree` → `episode.isFree === false`); `an admin marks an item free and back` (PATCH `{ isFree: true }` → true, then `{ isFree: false }` → false, one audit row per change); `a USER cannot set isFree` (403); `duplicate starts paid` (source `isFree: true` → copy `isFree === false`).
 - [ ] **Step 2: Run** `pnpm --filter @ongod/api exec vitest run test/admin-content-tools.test.ts -t "free items"`. Expected: FAIL (unknown field).
-- [ ] **Step 3: Implement** the column and migration (`ALTER TABLE \`Episode\` ADD COLUMN \`isFree\` BOOLEAN NOT NULL DEFAULT false;`), the two shared schemas (`isFree: z.boolean()` on the DTO, `z.boolean().optional()` on create), and pass it through create, update (same `!== undefined` pattern as `notifyOnPublish`) and the DTO mapper. Duplicate sets nothing, so it takes the default. Run `pnpm --filter @ongod/api db:deploy` and `db:generate`.
+- [ ] **Step 3: Implement** the column and migration (`ALTER TABLE \`Episode\` ADD COLUMN \`isFree\` BOOLEAN NOT NULL DEFAULT false;`), the two shared schemas (`isFree: z.boolean()`on the DTO,`z.boolean().optional()`on create), and pass it through create, update (same`!== undefined`pattern as`notifyOnPublish`) and the DTO mapper. Duplicate sets nothing, so it takes the default. Run `pnpm --filter @ongod/api db:deploy`and`db:generate`.
 - [ ] **Step 4: Run** the same command plus `pnpm --filter @ongod/api typecheck`. Expected: PASS.
 - [ ] **Step 5: Commit** `feat(api): Episode.isFree and admin set/unset (ADR-0043)`.
 
 ### Task 2: Catalog item `isFree` and the play rule
 
 **Files:**
+
 - Modify: `packages/shared/src/catalog.ts` (`episodeItemSchema`: `isFree: z.boolean()`)
 - Modify: `apps/api/src/catalog/service.ts` (item mapper near line 133: `isFree: ep.isFree`, and make sure every select that feeds it includes `isFree`; `play()` near line 443)
 - Test: `apps/api/test/play.test.ts`, `apps/api/test/catalog.test.ts`
 
 **Interfaces:**
+
 - Consumes: Task 1 column and `makeEpisode({ isFree })`.
 - Produces: `EpisodeItem.isFree: boolean` in every list and detail response; `play()` behavior below.
 
@@ -72,10 +76,12 @@
 ### Task 3: Admin switch
 
 **Files:**
+
 - Modify: `apps/admin/src/pages/EpisodeEdit.tsx` (a checkbox in the details form), `apps/admin/src/pages/Episodes.tsx` (a "Үнэгүй" badge column, `ui-badge` info tone), `apps/admin/src/i18n/mn.ts` (`episodes.free: 'Үнэгүй'`, `episodes.freeHint: 'Нэвтэрсэн бүх хэрэглэгч сонсож болно'`)
 - Test: `apps/admin/e2e/admin.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `AdminEpisodeDto.isFree`, `UpdateEpisodeRequest.isFree` (Task 1).
 
 - [ ] **Step 1: Write the failing e2e** `free: mark an item free, see the badge, mark it paid again`: open an episode, tick `mn.episodes.free`, save, assert the toast and the badge in the list, untick, save, badge gone.
@@ -87,6 +93,7 @@
 ### Task 4: Mobile — blurred cover and the activate text
 
 **Files:**
+
 - Modify: `apps/mobile/src/lib/episode.ts` (add `isLocked`)
 - Modify: `apps/mobile/src/ui/EpisodeThumb.tsx` (`locked?: boolean` prop: a `BlurView` over the picture, same intensity constant as `ui/Glass.tsx`, no icon), and pass it through `ui/EpisodeRow.tsx`, `ui/EpisodeCard.tsx`, `screens/home/ContinueCard.tsx`, `screens/player/NextList.tsx`, plus the Home hero and the Player picture wherever an `EpisodeItem` cover is drawn (search `EpisodeThumb` and `Artwork` usages with an episode)
 - Modify: `apps/mobile/src/i18n/mn.ts` (`noAccess.activate`), `apps/mobile/src/screens/NoAccessSheet.tsx` (one plain `<Text>` line above the existing text)
@@ -94,6 +101,7 @@
 - Test: `apps/mobile/test/screens.test.ts`
 
 **Interfaces:**
+
 - Consumes: `EpisodeItem.isFree` (Task 2); `useAuth().user.accessUntil` and `accessState` from `lib/episode.ts`.
 - Produces: `isLocked(item: Pick<EpisodeItem, 'isFree'>, accessUntil: string | null | undefined, now: Date): boolean` — true when the item is not free and access is not active.
 
@@ -106,6 +114,7 @@
 ### Task 5: Docs, full verification, log
 
 **Files:**
+
 - Modify: `docs/SPEC.md` (data model Episode: add `isFree`; workflow G: one line on free items), `docs/DESIGN.md` (admin screens: the free switch and badge), `docs/client/changes.md` (the 2026-10-21 entry: free content now included, price still blank for Ganaa), `docs/log/2026-10-23.md` or the day's log via `/log`
 
 - [ ] **Step 1:** Make the SPEC/DESIGN/`changes.md` edits above (no new decision; they restate ADR-0043/0044).
