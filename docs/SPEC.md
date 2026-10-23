@@ -33,7 +33,7 @@ E. Admin approval (old bank-transfer requests and manual grants only; QPay payme
 
 F. Access ends: 14 days before -> push + email, once. At expiry -> playback is refused; the app shows the no-access state.
 
-G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Optionally one series (with part number), any playlists and tags. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push on publish to users with active access and a non-revoked session (logout clears that device's push token) (now, scheduled, or one combined push for a bulk publish), switchable per item with optional custom text. Admin: filters, bulk actions, preview, duplicate, calendar. Decision: [[ADR-0042-content-organisation-and-publish-push|ADR-0042]].
+G. Content: an admin creates an episode (title, description, category, cover, one audio or video file via resumable upload; a new file replaces the old one), with an optional scheduled time. Optionally one series (with part number), any playlists and tags. Status Draft -> Scheduled -> Published. Media status Uploading -> Processing -> Ready / Failed (reason + retry). Push on publish to users with active access and a non-revoked session (logout clears that device's push token) (now, scheduled, or one combined push for a bulk publish), switchable per item with optional custom text. Admin: filters, bulk actions, preview, duplicate, calendar. An item can be marked free: a free item plays for any logged-in user without active access (login and a registered device still required); a paid item without access shows the activate text ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]). Decision: [[ADR-0042-content-organisation-and-publish-push|ADR-0042]].
 
 H. Account: change password, change email (re-verify), forgot password (email code), delete account (soft delete, revoke sessions, anonymize personal data, keep payment records).
 
@@ -53,7 +53,7 @@ Subscription(id, userId, planId, status PENDING_PAYMENT|PAYMENT_SUBMITTED|ACTIVE
 Payment(id, subscriptionId, method BANK_TRANSFER|QPAY|MANUAL_GRANT, amountMnt, providerRef?, status, createdAt)
 WebhookEvent(id, type, receivedAt) (Wire event ids, so a retried webhook is handled once)
 Category(id, name, slug uniq, sortOrder, coverPath?)
-Episode(id, categoryId, title, description, coverPath, status DRAFT|SCHEDULED|PUBLISHED|ARCHIVED, scheduledFor?, publishedAt?, seriesId?, seriesPart?, notifyOnPublish, pushText?, createdAt)
+Episode(id, categoryId, title, description, coverPath, status DRAFT|SCHEDULED|PUBLISHED|ARCHIVED, scheduledFor?, publishedAt?, seriesId?, seriesPart?, isFree (boolean, default false), notifyOnPublish, pushText?, createdAt)
 Series(id, title, slug uniq, description, coverPath?, createdAt) (uniq(seriesId, seriesPart) on Episode)
 Playlist(id, title, slug uniq, description?, coverPath?, showOnHome, homeOrder, isFeatured, createdAt) (one built-in isFeatured row, Онцлох, not deletable)
 PlaylistItem(playlistId, episodeId, position; pk(playlistId, episodeId))

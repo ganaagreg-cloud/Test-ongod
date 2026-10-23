@@ -65,7 +65,7 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 - Хадгалсан: saved list; empty state = bookmark dropping onto the mountain line.
 - Профайл (dark): name, @username, access card (gold sheen, days-left ring, "Идэвхтэй · 2027.10.08 хүртэл" or "Идэвхгүй"), NumberTicker stats (episodes finished, hours), menu: Тохиргоо, Төхөөрөмжүүд, Мэдэгдэл, Тусламж, Үйлчилгээний нөхцөл, Нууцлалын бодлого; notification switch.
 - Тохиргоо: username, phone, email, password change, "Бүртгэл устгах" (destructive, double confirm), "Гарах".
-- No-access state (when playing without access): sheet "Таны эрх идэвхгүй байна" + "Эрхээ шалгах" (refresh) only, then loading, then still-inactive (shake + warning) or active (ring burst + check + "Тоглуулах"). A paid item without access also shows the text "Онгод Premium, та багцаа идэвхжүүлнэ үү" and a blurred cover (no lock icon) ([[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]). NO price, NO link, NO button, NO plan name, NO bank details.
+- No-access state (when playing without access): sheet "Таны эрх идэвхгүй байна" + "Эрхээ шалгах" (refresh) only, then loading, then still-inactive (shake + warning) or active (ring burst + check + "Тоглуулах"). A paid item without access also shows the text "Онгод Premium, та багцаа идэвхжүүлнэ үү" and a blurred cover (blur intensity token; Android: dark veil at the `glass.androidOpacity` token; no lock icon) ([[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]). NO price, NO link, NO button, NO plan name, NO bank details.
 - Update required, Offline/error states.
 
 # Portal screens (web, same tokens as CSS vars)
@@ -84,6 +84,7 @@ Light, dense, functional. Dashboard counters, Payments queue (table + side panel
 - Calendar (`.admin-cal`): month grid with 1px hairline gaps on a hairline background; day cells on `--color-surface`, minimum height two touch targets. Each item is a `ui-badge` chip in its status tone (same tones as the list); clicking opens the episode.
 - Media preview: audio or video element with a signed URL on the edit page when the media is READY.
 - Tag picker: type to filter, Enter creates a tag.
+- Free item ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]]): checkbox "Үнэгүй" on the episode edit page with the hint "Нэвтэрсэн бүх хэрэглэгч сонсож болно"; in the Контент list a `ui-badge` "Үнэгүй" in the info tone. CSS variables only.
 
 Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme="light">`). It has the same token keys as the dark theme, so components work in both. The app's cream surface (`themes.cream`) is a separate set.
 
