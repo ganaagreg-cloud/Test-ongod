@@ -70,13 +70,13 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 
 # Portal screens (web, same tokens as CSS vars)
 
-Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login, Email code, Plans, Pay (bank details + copy buttons + large referenceCode + steps), Submitted (status timeline: Хүлээгдэж байна → Шалгаж байна → Идэвхжсэн), My account (status, end date, renew), Privacy, Terms, Delete account.
+Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login, Email code, Plans, Pay (amount + QPay button, then waits for the payment), Status (active: Хүлээгдэж байна → Идэвхжсэн with the end date; otherwise closed + choose a plan), My account (status, end date, renew), Privacy, Terms, Delete account.
 
 # Admin screens
 
 Decisions: [[ADR-0014-admin-light-theme|ADR-0014]] · Facts: [[R-admin-light-contrast]]
 
-Light, dense, functional. Dashboard counters, Payments queue (table + side panel with receipt image), Users, Контент (episodes), Цуврал, Жагсаалт, Шошго, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
+Light, dense, functional. Dashboard counters, Payments (list of all requests: table + side panel with history, status filter, CSV export; no queue or receipt panel, [[ADR-0046-remove-bank-transfer-path|ADR-0046]]), Users, Контент (episodes), Цуврал, Жагсаалт, Шошго, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
 
 Контент tools ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]), all through CSS variables:
 
