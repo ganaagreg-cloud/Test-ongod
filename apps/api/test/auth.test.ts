@@ -522,6 +522,32 @@ describe('SPEC B: refresh', () => {
       expect((await refresh(app, graced.json().refreshToken)).statusCode).toBe(401);
     });
 
+    it('the successor revoked by a grace use cannot get grace itself', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(200);
+      const res = await refresh(app, lost.refreshToken);
+      expect(res.statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+    });
+
+    it('a grace-made session rotates normally and its own rotation gets grace once', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      await refresh(app, s.refreshToken);
+      const graced = (await refresh(app, s.refreshToken)).json();
+      const next = await refresh(app, graced.refreshToken);
+      expect(next.statusCode).toBe(200);
+      expect(await liveInFamily(s.refreshToken)).toBe(1);
+      // Lost response of that normal rotation: the graced token gets grace once ...
+      expect((await refresh(app, graced.refreshToken)).statusCode).toBe(200);
+      expect(await liveInFamily(s.refreshToken)).toBe(1);
+      // ... and not twice.
+      expect((await refresh(app, graced.refreshToken)).statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+    });
+
     it('an older reuse (two rotations ago) revokes the family', async () => {
       const app = await authApp();
       const s = await signedIn(app);

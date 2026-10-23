@@ -13,7 +13,8 @@ Draft. Host details are not confirmed yet ([[R-hosting-limits]], [[ADR-0003-host
 
 All keys are listed in `.env.example`; who generates each one, what a leak or a rotation does, and the handover rules are in [[SECRETS]]. Production specifics:
 
-- `NODE_ENV=production`, `SERVE_STATIC=true`, `TRUST_PROXY=true` (behind the host's proxy)
+- `NODE_ENV=production`, `SERVE_STATIC=true`, `TRUST_PROXY=true` (behind the host's proxy). `TRUST_PROXY=true` trusts every hop of `X-Forwarded-For`: on the host, verify that the proxy overwrites that header (send a request with a fake `X-Forwarded-For` and check the logged IP). If it does not, a client can pick its own IP, the per-IP and identifier+IP rate limits can be dodged, and only `AUTH_RATE_LIMIT_IDENTIFIER_CEILING` holds ([[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]])
+- Known limit: two portal tabs refreshing at the same moment can leave the cookie holding a revoked refresh token, so the member must log in again (the same as before ADR-0045)
 - `DATABASE_URL` (production MySQL), `CRON_SECRET` (32+ random characters)
 - SMTP provider values (`SMTP_*`, `MAIL_FROM`)
 - Monitoring: `LOG_FILE`, `ALERT_EMAILS` ([[ADR-0016-monitoring-logs-alert-emails|ADR-0016]])

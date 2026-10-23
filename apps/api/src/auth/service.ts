@@ -391,7 +391,8 @@ export function createAuthService(deps: { db: Db; env: Env }) {
      * lost. The successor is revoked and a new session is issued instead. A rotation stamps the
      * successor's createdAt with the old session's revokedAt, which is how the direct successor
      * is recognised; after a grace use that successor is revoked, so a second use of the same
-     * old token (or any older token) finds none and revokes the family.
+     * old token (or any older token) finds none and revokes the family. The grace-made session is
+     * stamped revokedAt + 1 ms, so the successor it revoked cannot get grace either.
      */
     async refresh(token: string, deviceId: string): Promise<TokenPair> {
       const hash = hashRefreshToken(token);
@@ -462,8 +463,10 @@ export function createAuthService(deps: { db: Db; env: Env }) {
           userId: session.userId,
           deviceId,
           familyId: session.familyId,
-          // Marks the new session as the direct successor of the one just revoked (grace).
-          createdAt: now,
+          // A normal rotation marks the new session as the direct successor of the one it
+          // revoked (createdAt == revokedAt). A grace-made session is stamped 1 ms later, so the
+          // successor it revoked never matches and cannot get grace itself.
+          createdAt: successorId ? new Date(now.getTime() + 1) : now,
         });
         return { kind: 'ok', userId: session.userId, ...next } as const;
       });
