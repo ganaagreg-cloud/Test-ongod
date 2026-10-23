@@ -65,7 +65,7 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 - Хадгалсан: saved list; empty state = bookmark dropping onto the mountain line.
 - Профайл (dark): name, @username, access card (gold sheen, days-left ring, "Идэвхтэй · 2027.10.08 хүртэл" or "Идэвхгүй"), NumberTicker stats (episodes finished, hours), menu: Тохиргоо, Төхөөрөмжүүд, Мэдэгдэл, Тусламж, Үйлчилгээний нөхцөл, Нууцлалын бодлого; notification switch.
 - Тохиргоо: username, phone, email, password change, "Бүртгэл устгах" (destructive, double confirm), "Гарах".
-- No-access state (when playing without access): sheet "Таны эрх идэвхгүй байна" + "Эрхээ шалгах" (refresh) only, then loading, then still-inactive (shake + warning) or active (ring burst + check + "Тоглуулах"). NO price, NO link, NO payment text.
+- No-access state (when playing without access): sheet "Таны эрх идэвхгүй байна" + "Эрхээ шалгах" (refresh) only, then loading, then still-inactive (shake + warning) or active (ring burst + check + "Тоглуулах"). A paid item without access also shows the text "Онгод Premium, та багцаа идэвхжүүлнэ үү" and a blurred cover (no lock icon) ([[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]). NO price, NO link, NO button, NO plan name, NO bank details.
 - Update required, Offline/error states.
 
 # Portal screens (web, same tokens as CSS vars)
@@ -112,7 +112,7 @@ Dark-theme values for the shared keys: primary = accent, onPrimary = onAccent, a
 
 - Copy any other app's logo, colors or layout (common patterns such as a floating tab bar are fine).
 - Use cream anywhere except the browsing screens and keep the tab bar dark.
-- Show prices, plans, bank details, "buy" or "restore purchase" in the apps.
+- Show prices, plan names, bank details, links to pay, or "buy" or "restore purchase" buttons in the apps.
 - Use lock icons per episode.
 - Put gold text or thin gold icons on cream.
 - Use textTertiary on brand or heritage surfaces.

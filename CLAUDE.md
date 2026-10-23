@@ -9,7 +9,7 @@ Rules:
 - Secrets only in env. Keep .env.example updated with placeholders. Never print or commit secrets.
 - All Bunny settings come from env, so the Bunny account can be swapped by changing env only.
 - One Node process serves everything: API at /v1, portal at /, admin at /admin (shared hosting, one process).
-- The mobile apps (iOS AND Android) never show prices, bank details, plans or payment buttons. Payment happens only in the portal.
+- The mobile apps (iOS AND Android) never show prices, bank details, plan names, links to pay or payment buttons. The only payment-related text allowed is the plain activate message for paid items without access (ADR-0044). Payment happens only in the portal.
 - Auth uses proven primitives only: argon2id, google-auth-library, jose + Apple JWKS, and opaque refresh tokens stored as SHA-256 hashes with rotation and reuse detection. No custom crypto.
 - Every state change that grants or removes access runs in a DB transaction with a status precondition (idempotent).
 - Slow work (Bunny upload, email, push) goes through the Job table, never inside a request.

@@ -13,7 +13,7 @@ Paid yearly access to a library of episodes, plus free items the owner marks fre
 
 Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fastify-prisma-mysql-single-process|ADR-0002]] · [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]] · [[ADR-0014-admin-light-theme|ADR-0014]]
 
-- Mobile app (iOS + Android): sign up, log in, browse, play, save, profile, settings, delete account. No payment UI.
+- Mobile app (iOS + Android): sign up, log in, browse, play, save, profile, settings, delete account. No payment UI (only a plain text telling a user without access to activate their package, [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]).
 - Portal (web, mobile-first): sign up, log in, plans, pay with QPay (via Wire, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]), subscription status, privacy policy, terms, account deletion page.
 - Admin (web): payments queue, users, content (Контент), series (Цуврал), playlists (Жагсаалт), categories, tags (Шошго), uploads, dashboard, audit log ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]). Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
 
@@ -86,4 +86,4 @@ Tracked in: [[LAUNCH_CHECKLIST]]
 - The 3rd device is refused.
 - Expired access stops playback.
 - A backup has been restored once on a clean server.
-- Store review: the demo account works, and there is no payment UI in the apps.
+- Store review: the demo account works, and there is no price, plan name, link or payment button in the apps.

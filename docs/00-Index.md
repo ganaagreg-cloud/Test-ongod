@@ -65,6 +65,7 @@ tags: [index]
 | ADR-0041 | [[ADR-0041-qpay-via-wire-replaces-bank-transfer]]     | accepted               |
 | ADR-0042 | [[ADR-0042-content-organisation-and-publish-push]]    | accepted               |
 | ADR-0043 | [[ADR-0043-allow-free-users-and-free-content]]        | accepted               |
+| ADR-0044 | [[ADR-0044-free-items-and-activate-message-in-app]]   | accepted               |
 
 ## Research
 
