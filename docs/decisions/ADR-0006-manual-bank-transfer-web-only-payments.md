@@ -1,7 +1,7 @@
 ---
 id: ADR-0006
 title: Manual bank transfer approved in admin; payment UI only in the web portal
-status: accepted
+status: 'accepted (the bank-transfer part superseded by ADR-0041 and [[ADR-0046-remove-bank-transfer-path|ADR-0046]]; payment UI only in the web portal still stands)'
 date: 2026-10-08
 tags: [adr, area/payments, area/mobile]
 ---

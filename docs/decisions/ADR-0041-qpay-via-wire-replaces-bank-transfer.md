@@ -1,7 +1,7 @@
 ---
 id: ADR-0041
 title: 'QPay through Wire replaces manual bank transfer (web portal only)'
-status: accepted
+status: 'accepted (the handling of old bank requests superseded by [[ADR-0046-remove-bank-transfer-path|ADR-0046]])'
 date: '2026-10-19'
 tags: [adr, area/payments, area/api, area/portal]
 ---
