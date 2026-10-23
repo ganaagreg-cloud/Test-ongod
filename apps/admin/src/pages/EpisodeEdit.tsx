@@ -183,6 +183,7 @@ function DetailsForm({
   const [seriesId, setSeriesId] = useState(initial?.series?.id ?? '');
   const [part, setPart] = useState(initial?.seriesPart != null ? String(initial.seriesPart) : '');
   const [tagIds, setTagIds] = useState<string[]>(initial?.tags.map((tag) => tag.id) ?? []);
+  const [isFree, setIsFree] = useState(initial?.isFree ?? false);
   const [error, setError] = useState<string>();
 
   const list = categories.data?.categories ?? [];
@@ -203,6 +204,7 @@ function DetailsForm({
         // Empty part: the server takes the next free number. Unchanged part: leave it alone.
         ...(seriesId && part.trim() !== '' && partChanged ? { seriesPart: Number(part) } : {}),
         tagIds,
+        isFree,
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : mn.common.errorGeneric);
@@ -269,6 +271,17 @@ function DetailsForm({
         ) : null}
       </div>
       <TagPicker value={tagIds} onChange={setTagIds} />
+      <div>
+        <label className="admin-check">
+          <input
+            type="checkbox"
+            checked={isFree}
+            onChange={(event) => setIsFree(event.target.checked)}
+          />
+          <span>{t.free}</span>
+        </label>
+        <p className="admin-hint">{t.freeHint}</p>
+      </div>
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <div>
         <Button type="submit" loading={pending} disabled={!valid}>

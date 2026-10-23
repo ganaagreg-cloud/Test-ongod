@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { BULK_MAX_IDS, type AdminEpisodeDto, type EpisodeStatus } from '@ongod/shared';
-import { Button, Chip, Input } from '@ongod/ui-web';
+import { Badge, Button, Chip, Input } from '@ongod/ui-web';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
@@ -112,7 +112,12 @@ function buildColumns(
     col.display({
       id: 'status',
       header: mn.episodes.columns.status,
-      cell: ({ row }) => <EpisodeBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <span className="admin-media-cell">
+          <EpisodeBadge status={row.original.status} />
+          {row.original.isFree ? <Badge tone="info">{mn.episodes.free}</Badge> : null}
+        </span>
+      ),
     }),
     col.display({
       id: 'audio',

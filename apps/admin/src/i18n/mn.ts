@@ -292,6 +292,8 @@ export const mn = {
     publishedAt: (date: string) => `Нийтэлсэн: ${date}`,
     created: 'Бичлэгийг үүсгэлээ. Одоо ковер, аудиогоо оруулна уу.',
     noAudio: 'Файлгүй',
+    free: 'Үнэгүй',
+    freeHint: 'Нэвтэрсэн бүх хэрэглэгч сонсож болно',
     form: {
       createTitle: 'Шинэ бичлэг',
       editTitle: 'Бичлэг засах',

@@ -606,6 +606,35 @@ test('content: series, part and tags are saved; filter by tag; bulk tag; duplica
   }
 });
 
+test('free: mark an item free, see the badge, mark it paid again', async () => {
+  const stamp = Date.now();
+  const title = await createDraft('Free', stamp);
+  const checkbox = page.getByLabel(mn.episodes.free, { exact: true });
+  const listRow = async () => {
+    await sidebar(mn.nav.episodes).click();
+    await page.getByLabel(mn.episodes.searchLabel).fill(title);
+    return page.getByRole('row').filter({ hasText: title });
+  };
+
+  await expect(checkbox).not.toBeChecked();
+  await checkbox.check();
+  await page.getByRole('button', { name: mn.common.save }).first().click();
+  await expect(toast(mn.common.saved)).toBeVisible();
+  let row = await listRow();
+  await expect(row.locator('.ui-badge', { hasText: mn.episodes.free })).toBeVisible();
+
+  await row.click();
+  await expect(checkbox).toBeChecked();
+  await checkbox.uncheck();
+  await page.getByRole('button', { name: mn.common.save }).first().click();
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+  row = await listRow();
+  await expect(row).toBeVisible();
+  await expect(row.locator('.ui-badge', { hasText: mn.episodes.free })).toHaveCount(0);
+
+  await deleteDraft(title);
+});
+
 test('content: the calendar shows a scheduled item on its day and opens it', async () => {
   const stamp = Date.now();
   const title = await createDraft('Cal', stamp);
