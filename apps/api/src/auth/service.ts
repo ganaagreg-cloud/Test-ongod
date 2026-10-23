@@ -163,7 +163,10 @@ export function createAuthService(deps: { db: Db; env: Env }) {
 
   // ---- sessions ----
 
-  async function createSession(tx: Tx, p: { userId: string; deviceId: string; familyId?: string }) {
+  async function createSession(
+    tx: Tx,
+    p: { userId: string; deviceId: string; familyId?: string; createdAt?: Date },
+  ) {
     const refreshToken = newRefreshToken();
     const session = await tx.session.create({
       data: {
@@ -172,6 +175,7 @@ export function createAuthService(deps: { db: Db; env: Env }) {
         refreshTokenHash: hashRefreshToken(refreshToken),
         familyId: p.familyId ?? crypto.randomUUID(),
         expiresAt: new Date(Date.now() + refreshTtlMs),
+        ...(p.createdAt ? { createdAt: p.createdAt } : {}),
       },
     });
     return { session, refreshToken };
@@ -381,6 +385,13 @@ export function createAuthService(deps: { db: Db; env: Env }) {
     /**
      * Rotation with reuse detection. A token that was already rotated or revoked, or used from
      * another device, revokes the whole family (the revoke is committed, then 401 is returned).
+     *
+     * Grace (ADR-0045 item 4): a token rotated less than REFRESH_GRACE_SECONDS ago, sent again
+     * from the same device while its direct successor is still live, means the response was
+     * lost. The successor is revoked and a new session is issued instead. A rotation stamps the
+     * successor's createdAt with the old session's revokedAt, which is how the direct successor
+     * is recognised; after a grace use that successor is revoked, so a second use of the same
+     * old token (or any older token) finds none and revokes the family.
      */
     async refresh(token: string, deviceId: string): Promise<TokenPair> {
       const hash = hashRefreshToken(token);
@@ -404,17 +415,41 @@ export function createAuthService(deps: { db: Db; env: Env }) {
             data: { revokedAt: now },
           });
 
-        if (session.revokedAt || session.deviceId !== deviceId) {
+        if (session.deviceId !== deviceId) {
           await revokeFamily();
           return { kind: 'reuse' } as const;
+        }
+
+        // Grace: the direct successor of a just-rotated token, still live.
+        let successorId: string | undefined;
+        if (session.revokedAt) {
+          const graceMs = env.REFRESH_GRACE_SECONDS * 1000;
+          const successor =
+            now.getTime() - session.revokedAt.getTime() < graceMs
+              ? await tx.session.findFirst({
+                  where: {
+                    familyId: session.familyId,
+                    deviceId,
+                    revokedAt: null,
+                    createdAt: session.revokedAt,
+                  },
+                  orderBy: { createdAt: 'desc' },
+                  select: { id: true },
+                })
+              : null;
+          if (!successor) {
+            await revokeFamily();
+            return { kind: 'reuse' } as const;
+          }
+          successorId = successor.id;
         }
         if (session.expiresAt <= now) return { kind: 'invalid' } as const;
         if (session.user.status === 'DELETED') return { kind: 'invalid' } as const;
         if (session.user.status === 'DISABLED') return { kind: 'disabled' } as const;
 
-        // Status precondition: only one request can rotate a given token.
+        // Status precondition: only one request can rotate a given token (or its successor).
         const rotated = await tx.session.updateMany({
-          where: { id: session.id, revokedAt: null },
+          where: { id: successorId ?? session.id, revokedAt: null },
           data: { revokedAt: now },
         });
         if (rotated.count !== 1) {
@@ -427,6 +462,8 @@ export function createAuthService(deps: { db: Db; env: Env }) {
           userId: session.userId,
           deviceId,
           familyId: session.familyId,
+          // Marks the new session as the direct successor of the one just revoked (grace).
+          createdAt: now,
         });
         return { kind: 'ok', userId: session.userId, ...next } as const;
       });

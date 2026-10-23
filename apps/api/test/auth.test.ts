@@ -443,8 +443,27 @@ describe('SPEC B: refresh', () => {
     expect(sessions.filter((x) => !x.revokedAt)).toHaveLength(1);
   });
 
-  it('revokes the whole family when a rotated token is reused', async () => {
-    const app = await authApp();
+  const sessionOf = (token: string) =>
+    testDb.session.findUniqueOrThrow({ where: { refreshTokenHash: hashRefreshToken(token) } });
+  const liveInFamily = async (token: string) =>
+    testDb.session.count({
+      where: { familyId: (await sessionOf(token)).familyId, revokedAt: null },
+    });
+  /** Moves a rotation back in time: the old session's revokedAt and its successor's createdAt. */
+  async function ageRotation(oldToken: string, newToken: string, ms: number) {
+    const [old, next] = [await sessionOf(oldToken), await sessionOf(newToken)];
+    await testDb.session.update({
+      where: { id: old.id },
+      data: { revokedAt: new Date(old.revokedAt!.getTime() - ms) },
+    });
+    await testDb.session.update({
+      where: { id: next.id },
+      data: { createdAt: new Date(next.createdAt.getTime() - ms) },
+    });
+  }
+
+  it('revokes the whole family when a rotated token is reused (no grace)', async () => {
+    const app = await authApp({ REFRESH_GRACE_SECONDS: '0' });
     const s = await signedIn(app);
     const rotated = (await refresh(app, s.refreshToken)).json();
     const another = await loginOn(app, EMAIL, device(2));
@@ -461,14 +480,143 @@ describe('SPEC B: refresh', () => {
     expect((await refresh(app, another.refreshToken, device(2))).statusCode).toBe(200);
   });
 
-  it('lets only one of two parallel refreshes with the same token succeed, and revokes the family', async () => {
-    const app = await authApp();
+  it('without grace, lets only one of two parallel refreshes with the same token succeed', async () => {
+    const app = await authApp({ REFRESH_GRACE_SECONDS: '0' });
     const s = await signedIn(app);
     const results = await Promise.all([refresh(app, s.refreshToken), refresh(app, s.refreshToken)]);
     expect(results.map((r) => r.statusCode).sort()).toEqual([200, 401]);
     const winner = results.find((r) => r.statusCode === 200)!.json();
     expect((await refresh(app, winner.refreshToken)).statusCode).toBe(401);
     expect(await testDb.session.count({ where: { revokedAt: null } })).toBe(0);
+  });
+
+  describe('grace after a lost response (ADR-0045 item 4)', () => {
+    it('the old token again from the same device within the grace gets new tokens', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json(); // the app never sees this
+      const retry = await refresh(app, s.refreshToken);
+      expect(retry.statusCode).toBe(200);
+      const next = retry.json();
+      expect(next.refreshToken).not.toBe(lost.refreshToken);
+      // The successor from the lost rotation is revoked; only the new session is live.
+      expect((await sessionOf(lost.refreshToken)).revokedAt).not.toBeNull();
+      expect((await sessionOf(next.refreshToken)).revokedAt).toBeNull();
+      expect(await liveInFamily(next.refreshToken)).toBe(1);
+      expect((await send(app, 'GET', '/v1/me', next.accessToken)).statusCode).toBe(200);
+      expect((await send(app, 'GET', '/v1/me', lost.accessToken)).statusCode).toBe(401);
+      // The new token keeps working.
+      expect((await refresh(app, next.refreshToken)).statusCode).toBe(200);
+    });
+
+    it('a second grace use of the same old token revokes the family', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      await refresh(app, s.refreshToken);
+      const graced = await refresh(app, s.refreshToken);
+      expect(graced.statusCode).toBe(200);
+      const again = await refresh(app, s.refreshToken);
+      expect(again.statusCode).toBe(401);
+      expect(again.json().error.code).toBe('UNAUTHORIZED');
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+      expect((await refresh(app, graced.json().refreshToken)).statusCode).toBe(401);
+    });
+
+    it('an older reuse (two rotations ago) revokes the family', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const second = (await refresh(app, s.refreshToken)).json();
+      const third = (await refresh(app, second.refreshToken)).json();
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+      expect((await refresh(app, third.refreshToken)).statusCode).toBe(401);
+    });
+
+    it('the old token after the window revokes the family', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      await ageRotation(s.refreshToken, lost.refreshToken, 11_000);
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+      expect((await refresh(app, lost.refreshToken)).statusCode).toBe(401);
+    });
+
+    it('just inside the window still works', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      await ageRotation(s.refreshToken, lost.refreshToken, 8_000);
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(200);
+    });
+
+    it('the old token from another device within the window revokes the family', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      expect((await refresh(app, s.refreshToken, device(7))).statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+      expect((await refresh(app, lost.refreshToken)).statusCode).toBe(401);
+      expect(await testDb.device.count({ where: { deviceId: device(7).deviceId } })).toBe(0);
+    });
+
+    it('REFRESH_GRACE_SECONDS=0 keeps the strict rule', async () => {
+      const app = await authApp({ REFRESH_GRACE_SECONDS: '0' });
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(401);
+      expect(await liveInFamily(s.refreshToken)).toBe(0);
+      expect((await refresh(app, lost.refreshToken)).statusCode).toBe(401);
+    });
+
+    it('enforces the device limit on the grace path (and rolls back)', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      const lost = (await refresh(app, s.refreshToken)).json();
+      await testDb.device.deleteMany({ where: { deviceId: device(1).deviceId } });
+      await testDb.device.createMany({
+        data: [
+          { userId: s.userId, deviceId: device(2).deviceId, platform: 'ios' },
+          { userId: s.userId, deviceId: device(3).deviceId, platform: 'ios' },
+        ],
+      });
+      const res = await refresh(app, s.refreshToken);
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.code).toBe('DEVICE_LIMIT');
+      // Rolled back: the lost successor is still the one live session.
+      expect((await sessionOf(lost.refreshToken)).revokedAt).toBeNull();
+      expect(await liveInFamily(s.refreshToken)).toBe(1);
+    });
+
+    it('refuses a disabled or deleted user on the grace path', async () => {
+      const app = await authApp();
+      const s = await signedIn(app);
+      await refresh(app, s.refreshToken);
+      await testDb.user.update({ where: { id: s.userId }, data: { status: 'DISABLED' } });
+      const disabled = await refresh(app, s.refreshToken);
+      expect(disabled.statusCode).toBe(403);
+      expect(disabled.json().error.code).toBe('ACCOUNT_DISABLED');
+      await testDb.user.update({ where: { id: s.userId }, data: { status: 'DELETED' } });
+      expect((await refresh(app, s.refreshToken)).statusCode).toBe(401);
+      expect(await testDb.session.count({ where: { userId: s.userId } })).toBe(2);
+    });
+
+    it('two parallel refreshes with the same token: both succeed, one live session remains', async () => {
+      // The user lock serialises them: the first rotates, the second takes the grace path and
+      // revokes the first one's successor. Documented outcome: [200, 200], one live session.
+      const app = await authApp();
+      const s = await signedIn(app);
+      const results = await Promise.all([
+        refresh(app, s.refreshToken),
+        refresh(app, s.refreshToken),
+      ]);
+      expect(results.map((r) => r.statusCode)).toEqual([200, 200]);
+      expect(await liveInFamily(s.refreshToken)).toBe(1);
+      const live = await Promise.all(
+        results.map(async (r) => (await sessionOf(r.json().refreshToken)).revokedAt === null),
+      );
+      expect(live.filter(Boolean)).toHaveLength(1);
+    });
   });
 
   it('treats a token presented from another device as theft and revokes the family', async () => {

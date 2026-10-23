@@ -72,6 +72,8 @@ export const envSchema = z
     JWT_ACCESS_SECRET: z.string().min(32),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
+    /** A just-rotated refresh token sent again within this many seconds is a lost response, not theft (ADR-0045). 0 disables it. */
+    REFRESH_GRACE_SECONDS: z.coerce.number().int().min(0).default(10),
     /**
      * Login/register/code endpoints: attempts per window, per IP, per identifier and IP, and
      * per identifier alone (the higher ceiling, across all IPs; ADR-0045).
