@@ -510,6 +510,15 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: adminSeriesDetailResponseSchema },
     },
   ),
+  'POST /v1/admin/categories/:id/cover': admin(
+    'Upload the category picture (JPEG, PNG, WebP, up to 10 MB)',
+    {
+      description:
+        'multipart/form-data, field `cover`. Centre-cropped to 16:9 (1280x720 and 640x360), then stored by a job.',
+      multipart: { fields: z.object({}), file: 'cover' },
+      responses: { 202: adminCategoryResponseSchema },
+    },
+  ),
   'POST /v1/admin/series/:id/cover': admin(
     'Upload the series cover (JPEG, PNG, WebP, up to 10 MB)',
     {
