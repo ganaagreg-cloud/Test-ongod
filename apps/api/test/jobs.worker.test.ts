@@ -388,13 +388,13 @@ describe('JobWorker locks (ADR-0045)', () => {
     expect(await testDb.job.count({ where: { status: 'DONE' } })).toBe(5);
   });
 
-  it('runs the lock-timeout hook of each job failed by recovery, even when one hook throws', async () => {
+  it('runs the give-up hook of each job failed by recovery, even when one hook throws', async () => {
     const hooked: unknown[] = [];
     const bad = defineJob({
       type: 'test.bad-hook',
       schema: z.object({ n: z.number() }),
       handle: async () => {},
-      onLockTimeout: async () => {
+      onGiveUp: async () => {
         throw new Error('hook broke');
       },
     });
@@ -402,30 +402,84 @@ describe('JobWorker locks (ADR-0045)', () => {
       type: 'test.good-hook',
       schema: z.object({ n: z.number() }),
       handle: async () => {},
-      onLockTimeout: async (payload, ctx) => void hooked.push([payload, ctx.jobId]),
+      onGiveUp: async (payload, ctx) => void hooked.push([payload, ctx.jobId, ctx.reason]),
     });
     let clock = startClock();
     const worker = makeWorker(new JobRegistry().register(bad, good), {
       lockTimeoutMs: 60_000,
       now: () => new Date(clock),
     });
-    const past = (ms: number) => new Date(Date.now() - ms);
-    const j1 = await enqueue(testDb, bad, { n: 1 }, { maxAttempts: 1, runAt: past(3000) });
-    const j2 = await enqueue(testDb, good, { n: 2 }, { maxAttempts: 1, runAt: past(2000) });
+    const j1 = await enqueue(testDb, good, { n: 1 }, { maxAttempts: 1 });
+    const j2 = await enqueue(testDb, bad, { n: 2 }, { maxAttempts: 1 });
+    const j3 = await enqueue(testDb, good, { n: 3 }, { maxAttempts: 1 });
     // Still has an attempt left: requeued, no hook.
-    const j3 = await enqueue(testDb, good, { n: 3 }, { maxAttempts: 2, runAt: past(1000) });
+    const j4 = await enqueue(testDb, good, { n: 4 }, { maxAttempts: 2 });
 
-    expect(await worker.claim()).toHaveLength(3); // then the process "crashes"
+    // Claimed one by one, a second apart, so recovery handles them in this order: the throwing
+    // hook is in the middle. Then the process "crashes".
+    for (const id of [j1.id, j2.id, j3.id, j4.id]) {
+      await testDb.job.updateMany({
+        where: { id: { not: id }, status: 'QUEUED' },
+        data: { runAt: new Date(clock + 3_600_000) },
+      });
+      await testDb.job.update({ where: { id }, data: { runAt: new Date(clock - 1000) } });
+      expect((await worker.claim(1)).map((j) => j.id)).toEqual([id]);
+      clock += 1000;
+    }
     clock += 61_000;
     expect(await worker.claim(0)).toHaveLength(0); // only the recovery
 
-    const rows = await testDb.job.findMany({ where: { id: { in: [j1.id, j2.id, j3.id] } } });
+    const rows = await testDb.job.findMany({ where: { id: { in: [j1.id, j2.id, j3.id, j4.id] } } });
     const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
-    expect(byId[j1.id]).toMatchObject({ status: 'FAILED', lockedAt: null });
-    expect(byId[j2.id]).toMatchObject({ status: 'FAILED', lockedAt: null });
-    expect(byId[j2.id]!.lastError).toContain('Lock timed out');
-    expect(byId[j3.id]).toMatchObject({ status: 'QUEUED', lockedAt: null });
-    expect(hooked).toEqual([[{ n: 2 }, j2.id]]);
+    for (const j of [j1, j2, j3]) {
+      expect(byId[j.id]).toMatchObject({ status: 'FAILED', lockedAt: null });
+      expect(byId[j.id]!.lastError).toContain('Lock timed out');
+    }
+    expect(byId[j4.id]).toMatchObject({ status: 'QUEUED', lockedAt: null });
+    expect(hooked).toEqual([
+      [{ n: 1 }, j1.id, 'lock-timeout'],
+      [{ n: 3 }, j3.id, 'lock-timeout'],
+    ]);
+  });
+
+  it('runs the give-up hook once when a job fails for good, never on a retry', async () => {
+    const hooked: unknown[] = [];
+    const flaky = defineJob({
+      type: 'test.giveup-flaky',
+      schema: z.object({ n: z.number() }),
+      handle: async () => {
+        throw new Error('temporary');
+      },
+      onGiveUp: async (payload, ctx) => void hooked.push([payload, ctx.reason]),
+    });
+    const permanent = defineJob({
+      type: 'test.giveup-permanent',
+      schema: z.object({ n: z.number() }),
+      handle: async () => {
+        throw new PermanentJobError('never');
+      },
+      onGiveUp: async (payload, ctx) => void hooked.push([payload, ctx.reason]),
+    });
+    let clock = startClock();
+    const worker = makeWorker(new JobRegistry().register(flaky, permanent), {
+      now: () => new Date(clock),
+    });
+    const f = await enqueue(testDb, flaky, { n: 1 }, { maxAttempts: 2 });
+
+    await worker.runOnce(); // attempt 1 of 2: retried, no hook
+    expect((await testDb.job.findUniqueOrThrow({ where: { id: f.id } })).status).toBe('QUEUED');
+    expect(hooked).toEqual([]);
+    clock += 60_000;
+    await worker.runOnce(); // attempt 2 of 2: gives up
+    expect((await testDb.job.findUniqueOrThrow({ where: { id: f.id } })).status).toBe('FAILED');
+    expect(hooked).toEqual([[{ n: 1 }, 'failed']]);
+
+    await enqueue(testDb, permanent, { n: 2 });
+    await worker.runOnce();
+    expect(hooked).toEqual([
+      [{ n: 1 }, 'failed'],
+      [{ n: 2 }, 'failed'],
+    ]);
   });
 });
 

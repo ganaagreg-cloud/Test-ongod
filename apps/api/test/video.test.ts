@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_VIDEO_BYTES } from '@ongod/shared';
 import { mn } from '../src/i18n/mn';
 import { classifyStreamVideo } from '../src/lib/bunnyStream';
-import { JobRegistry } from '../src/jobs/registry';
+import { JobRegistry, PermanentJobError } from '../src/jobs/registry';
 import { JobWorker } from '../src/jobs/worker';
 import { createMediaJobs, enqueueVideoUpload } from '../src/media/jobs';
 import type { MediaRuntime } from '../src/media/storage';
@@ -291,6 +291,58 @@ describe('video upload over tus, processed by Bunny Stream', () => {
     // instead of the 409 a stuck PROCESSING asset caused.
     const created = await tusClient(base, adminToken).create(100, meta('again.mp4'));
     expect(created.status).toBe(201);
+  });
+
+  describe('a status check that gives up frees the asset (ADR-0045)', () => {
+    /** Runs the upload job, which hands over to one status check that runs at once. */
+    const statusJob = () => testDb.job.findFirstOrThrow({ where: { type: 'media.video-status' } });
+
+    it('Bunny errors until the attempts run out: FAILED with a reason, and a new upload is accepted', async () => {
+      stream.client.getVideo = async () => {
+        throw new Error('bunny 500');
+      };
+      await upload(videoBytes());
+      // Last attempt: the status job may run once more.
+      await runMediaJobs(runtime);
+      const job = await statusJob();
+      expect(job.status).toBe('QUEUED');
+      await testDb.job.update({
+        where: { id: job.id },
+        data: { maxAttempts: job.attempts + 1, runAt: new Date(Date.now() - 1000) },
+      });
+      await runMediaJobs(runtime);
+
+      expect((await statusJob()).status).toBe('FAILED');
+      expect((await assets())[0]).toMatchObject({
+        status: 'FAILED',
+        failReason: mn.media.failJobGaveUp,
+      });
+      const created = await tusClient(base, adminToken).create(100, meta('again.mp4'));
+      expect(created.status).toBe(201);
+    });
+
+    it('a permanent error: FAILED at once', async () => {
+      stream.client.getVideo = async () => {
+        throw new PermanentJobError('cannot ever work');
+      };
+      await upload(videoBytes());
+      await runMediaJobs(runtime);
+      expect((await statusJob()).status).toBe('FAILED');
+      expect((await assets())[0]).toMatchObject({
+        status: 'FAILED',
+        failReason: mn.media.failJobGaveUp,
+      });
+    });
+
+    it('an error with attempts left: still PROCESSING, the check is retried', async () => {
+      stream.client.getVideo = async () => {
+        throw new Error('bunny 500');
+      };
+      await upload(videoBytes());
+      await runMediaJobs(runtime);
+      expect(await statusJob()).toMatchObject({ status: 'QUEUED', attempts: 1 });
+      expect((await assets())[0]).toMatchObject({ status: 'PROCESSING', failReason: null });
+    });
   });
 
   it('Retry works after an upload failed by lock timeout (ADR-0045)', async () => {

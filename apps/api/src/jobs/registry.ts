@@ -9,6 +9,11 @@ export interface JobContext {
   attempt: number;
 }
 
+export interface GiveUpContext extends JobContext {
+  /** 'failed': attempts used up or a permanent error. 'lock-timeout': its worker stopped. */
+  reason: 'failed' | 'lock-timeout';
+}
+
 export interface JobDefinition<S extends z.ZodType = z.ZodType> {
   type: string;
   schema: S;
@@ -16,11 +21,11 @@ export interface JobDefinition<S extends z.ZodType = z.ZodType> {
   maxAttempts?: number;
   handle(payload: z.infer<S>, ctx: JobContext): Promise<void>;
   /**
-   * Runs once when stale-job recovery fails this job for good (its worker stopped and it has no
-   * attempts left), e.g. to mark the media it was processing FAILED. Best-effort: an error is
-   * logged and does not stop the recovery.
+   * Runs once when the job ends FAILED for good: attempts used up, a permanent error, or failed
+   * by lock-timeout recovery (ADR-0045), e.g. to mark the media it was processing FAILED. Never
+   * on a failure that will still be retried. Best-effort: an error is logged and ignored.
    */
-  onLockTimeout?(payload: z.infer<S>, ctx: JobContext): Promise<void>;
+  onGiveUp?(payload: z.infer<S>, ctx: GiveUpContext): Promise<void>;
 }
 
 /** Identity helper that keeps the payload type tied to the schema. */

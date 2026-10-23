@@ -3,7 +3,7 @@ import { ZodError } from 'zod';
 import type { Db } from '../db';
 import type { Job } from '../generated/prisma/client';
 import { backoffMs, defaultBackoff, type BackoffOptions } from './backoff';
-import { PermanentJobError, type JobRegistry } from './registry';
+import { PermanentJobError, type GiveUpContext, type JobRegistry } from './registry';
 
 export interface WorkerOptions {
   /** Jobs claimed per round. */
@@ -21,6 +21,13 @@ export interface WorkerOptions {
 }
 
 const MAX_ERROR_LENGTH = 2000;
+const safeJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
 const DEFAULT_LOCK_TIMEOUT_MS = 2 * 60 * 60_000;
 /** Jobs failed one by one per recovery round (the rest wait for the next round). */
 const MAX_FAILED_PER_RECOVERY = 100;
@@ -59,7 +66,7 @@ export class JobWorker {
   /**
    * Jobs still RUNNING after the lock timeout belong to a worker that died. Requeue them, or fail
    * them if they have used all attempts (so a job that crashes the process cannot loop forever).
-   * A job failed here runs its definition's onLockTimeout hook (e.g. the media it was sending is
+   * A job failed here runs its definition's onGiveUp hook (e.g. the media it was sending is
    * marked FAILED, ADR-0045). The dead worker can no longer finish them: see finish().
    *
    * Throttled and best-effort: it runs at most once per interval, in READ COMMITTED (no gap
@@ -95,7 +102,7 @@ export class JobWorker {
         );
         if (res.count === 0) continue;
         failed++;
-        await this.runLockTimeoutHook(job);
+        await this.giveUp(job, 'lock-timeout');
       }
 
       const [requeued] = await this.db.$transaction(
@@ -115,16 +122,26 @@ export class JobWorker {
     }
   }
 
-  /** Never throws: a broken hook must not block the recovery of other jobs. */
-  private async runLockTimeoutHook(job: Job): Promise<void> {
+  /**
+   * Runs the job type's onGiveUp hook after the job was marked FAILED for good. Never throws: a
+   * broken hook must not block the recovery of other jobs or the worker loop.
+   */
+  private async giveUp(job: Job, reason: GiveUpContext['reason']): Promise<void> {
     const log = this.log.child({ jobId: job.id, jobType: job.type, attempt: job.attempts });
     try {
       const def = this.registry.get(job.type);
-      if (!def?.onLockTimeout) return;
-      const payload = def.schema.parse(JSON.parse(job.payload));
-      await def.onLockTimeout(payload, { db: this.db, log, jobId: job.id, attempt: job.attempts });
+      if (!def?.onGiveUp) return;
+      const parsed = def.schema.safeParse(safeJson(job.payload));
+      if (!parsed.success) return; // nothing to act on
+      await def.onGiveUp(parsed.data, {
+        db: this.db,
+        log,
+        jobId: job.id,
+        attempt: job.attempts,
+        reason,
+      });
     } catch (err) {
-      log.error({ err }, 'lock-timeout hook failed');
+      log.error({ err }, 'give-up hook failed');
     }
   }
 
@@ -228,9 +245,11 @@ export class JobWorker {
       );
 
       if (permanent || job.attempts >= job.maxAttempts) {
-        await this.finish(job, { status: 'FAILED', lockedAt: null, lastError });
+        const failed = await this.finish(job, { status: 'FAILED', lockedAt: null, lastError });
         log.error({ err }, 'job failed permanently');
         this.opts.report?.(err, job);
+        // Only the run that still owned the job marks it FAILED, so the hook runs once.
+        if (failed.count === 1) await this.giveUp(job, 'failed');
       } else {
         const runAt = new Date(this.now().getTime() + backoffMs(job.attempts, this.backoff));
         await this.finish(job, { status: 'QUEUED', lockedAt: null, lastError, runAt });

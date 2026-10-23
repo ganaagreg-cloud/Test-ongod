@@ -5,7 +5,12 @@ import { z } from 'zod';
 import type { Db } from '../db';
 import { mn } from '../i18n/mn';
 import { enqueue, type JobWriter } from '../jobs/queue';
-import { defineJob, PermanentJobError, type JobDefinition } from '../jobs/registry';
+import {
+  defineJob,
+  PermanentJobError,
+  type GiveUpContext,
+  type JobDefinition,
+} from '../jobs/registry';
 import { thumbPathOf } from '../catalog/media';
 import { classifyStreamVideo, type StreamClient } from '../lib/bunnyStream';
 import { coverFiles } from './cover';
@@ -169,17 +174,23 @@ export function createMediaJobs(deps: {
   }
 
   /** Marks an audio or video asset FAILED with a reason; only from a state where that still makes sense. */
-  const failMedia = (assetId: string, reason: string) =>
+  const failMedia = (
+    assetId: string,
+    reason: string,
+    from: Array<'PROCESSING' | 'UPLOADING'> = ['PROCESSING', 'UPLOADING'],
+  ) =>
     db.mediaAsset.updateMany({
-      where: { id: assetId, status: { in: ['PROCESSING', 'UPLOADING'] } },
+      where: { id: assetId, status: { in: from } },
       data: { status: 'FAILED', failReason: reason },
     });
   /**
-   * The upload job's worker stopped and it has no attempts left (ADR-0045): the asset would stay
-   * PROCESSING and block a new upload, so it fails with a reason and the admin can retry.
+   * The job gave up for good (attempts used up, a permanent error, or its worker stopped,
+   * ADR-0045): an asset left PROCESSING would block a new upload, so it fails with a reason and
+   * the admin can retry. Only from PROCESSING: a READY or already FAILED asset is left alone.
    */
-  const failOnLockTimeout = async ({ assetId }: { assetId: string }) => {
-    await failMedia(assetId, mn.media.failLockTimeout);
+  const failOnGiveUp = async ({ assetId }: { assetId: string }, { reason }: GiveUpContext) => {
+    const why = reason === 'lock-timeout' ? mn.media.failLockTimeout : mn.media.failJobGaveUp;
+    await failMedia(assetId, why, ['PROCESSING']);
   };
 
   /**
@@ -189,7 +200,7 @@ export function createMediaJobs(deps: {
    */
   const audioUpload = defineJob({
     ...audioUploadSpec,
-    onLockTimeout: failOnLockTimeout,
+    onGiveUp: failOnGiveUp,
     async handle({ assetId }, { attempt, log }) {
       const asset = await db.mediaAsset.findUnique({ where: { id: assetId } });
       // Deleted meanwhile (episode removed), or already done by an earlier run: nothing to do.
@@ -356,7 +367,7 @@ export function createMediaJobs(deps: {
    */
   const videoUpload = defineJob({
     ...videoUploadSpec,
-    onLockTimeout: failOnLockTimeout,
+    onGiveUp: failOnGiveUp,
     async handle({ assetId }, { attempt }) {
       const asset = await db.mediaAsset.findUnique({
         where: { id: assetId },
@@ -403,6 +414,7 @@ export function createMediaJobs(deps: {
    */
   const videoStatus = defineJob({
     ...videoStatusSpec,
+    onGiveUp: failOnGiveUp,
     async handle({ assetId, startedAt }, { log }) {
       const asset = await db.mediaAsset.findUnique({ where: { id: assetId } });
       if (!asset || asset.status !== 'PROCESSING' || asset.path === PENDING_PATH) return;
