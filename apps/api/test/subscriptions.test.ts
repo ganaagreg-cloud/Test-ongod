@@ -66,10 +66,13 @@ describe('POST /v1/subscriptions', () => {
     expect(body.subscription).toMatchObject({
       status: 'PENDING_PAYMENT',
       amountMnt: 120_000,
-      hasReceipt: false,
       plan: { id: plan.id, durationDays: 365 },
     });
-    // No look-alike characters (0/O, 1/I/L) in the code people type into a bank app.
+    // The bank-transfer fields are gone from the DTO (ADR-0046).
+    for (const field of ['hasReceipt', 'payerNote', 'transferAt', 'submittedAt', 'rejectReason']) {
+      expect(body.subscription).not.toHaveProperty(field);
+    }
+    // No look-alike characters (0/O, 1/I/L) in the code people may read out or type.
     expect(body.subscription.referenceCode).toMatch(/^ONG-[2-9A-HJKMNP-Z]{5}$/);
     expect(body.subscription).toMatchObject({
       paymentProvider: 'MOCK',

@@ -11,7 +11,7 @@ export interface TimelineStep {
 }
 
 /**
- * Vertical status timeline (portal "Submitted": Хүлээгдэж байна → Шалгаж байна → Идэвхжсэн).
+ * Vertical status timeline (portal status page: Хүлээгдэж байна → Идэвхжсэн).
  * `stateLabels` are read out by screen readers next to each label, so state never relies on color.
  */
 export function Timeline({

@@ -19,8 +19,7 @@ export default function Account() {
   const accessUntil =
     user.accessUntil && new Date(user.accessUntil) > new Date() ? user.accessUntil : null;
   const subscription = current.data?.subscription;
-  const open =
-    subscription?.status === 'PENDING_PAYMENT' || subscription?.status === 'PAYMENT_SUBMITTED';
+  const open = subscription?.status === 'PENDING_PAYMENT';
 
   return (
     <div className="portal-page portal-narrow">
@@ -79,26 +78,13 @@ export default function Account() {
             {subscription ? (
               <p>
                 <span className="portal-code">{subscription.referenceCode}</span>{' '}
-                <Badge
-                  tone={
-                    subscription.status === 'ACTIVE'
-                      ? 'success'
-                      : subscription.status === 'REJECTED'
-                        ? 'danger'
-                        : subscription.status === 'PAYMENT_SUBMITTED'
-                          ? 'info'
-                          : 'neutral'
-                  }
-                >
+                <Badge tone={subscription.status === 'ACTIVE' ? 'success' : 'neutral'}>
                   {mn.account.statuses[subscription.status]}
                 </Badge>
               </p>
             ) : null}
             {open ? (
-              <Link
-                to={subscription?.status === 'PAYMENT_SUBMITTED' ? '/status' : '/pay'}
-                className="portal-linkbutton"
-              >
+              <Link to="/pay" className="portal-linkbutton">
                 {mn.account.openRequestAction}
               </Link>
             ) : (

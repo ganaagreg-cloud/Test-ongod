@@ -5,6 +5,10 @@ import { z } from 'zod';
 export const PENDING_PAYMENT_TTL_DAYS = 7;
 export const REMINDER_DAYS_BEFORE_END = 14;
 
+/**
+ * Every status a row can have. PAYMENT_SUBMITTED and REJECTED belonged to the removed
+ * bank-transfer path (ADR-0046): nothing creates them, but an old row still parses.
+ */
 export const subscriptionStatusSchema = z.enum([
   'PENDING_PAYMENT',
   'PAYMENT_SUBMITTED',
@@ -28,18 +32,13 @@ export const plansResponseSchema = z.object({ plans: z.array(planSchema) });
 export const subscriptionSchema = z.object({
   id: z.string(),
   status: subscriptionStatusSchema,
-  /** ONG-XXXXX: the transfer description. */
+  /** ONG-XXXXX: the request's reference code. */
   referenceCode: z.string(),
   amountMnt: z.number().int().nonnegative(),
   plan: planSchema.pick({ id: true, name: true, durationDays: true }),
-  payerNote: z.string().nullable(),
-  transferAt: z.iso.datetime().nullable(),
-  hasReceipt: z.boolean(),
-  submittedAt: z.iso.datetime().nullable(),
   startsAt: z.iso.datetime().nullable(),
   endsAt: z.iso.datetime().nullable(),
-  rejectReason: z.string().nullable(),
-  /** WIRE = QPay through Wire, MOCK = development checkout, NONE = an old bank-transfer request. */
+  /** WIRE = QPay through Wire, MOCK = development checkout, NONE = a manual grant (or an old row). */
   paymentProvider: z.enum(['WIRE', 'MOCK', 'NONE']),
   /** Where to pay; only while the request is PENDING_PAYMENT. */
   checkoutUrl: z.string().nullable(),

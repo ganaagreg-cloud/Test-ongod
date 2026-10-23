@@ -88,9 +88,7 @@ export default function Pay() {
   }
 
   if (!subscription) return <Navigate to="/plans" replace />;
-  if (subscription.status === 'ACTIVE' || subscription.status === 'PAYMENT_SUBMITTED') {
-    return <Navigate to="/status" replace />;
-  }
+  if (subscription.status === 'ACTIVE') return <Navigate to="/status" replace />;
   if (subscription.status !== 'PENDING_PAYMENT') {
     // Cancelled at the checkout, expired or closed: start again.
     return <Navigate to="/plans" replace />;

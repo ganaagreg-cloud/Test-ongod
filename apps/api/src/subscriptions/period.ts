@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { DAY_MS } from '../lib/dates';
 
-/** No 0/O, 1/I/L: the code is read from a bank statement and typed by hand (ADR-0007). */
+/** No 0/O, 1/I/L: the code may be read out or typed by hand (ADR-0007). */
 const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const CODE_LENGTH = 5;
 
