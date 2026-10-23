@@ -1,8 +1,4 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
-import { createReceiptStore, type ReceiptStore } from '../src/subscriptions/receipts';
 import { generateReferenceCode } from '../src/subscriptions/period';
 import { authApp, device, signedIn, type Signed } from './auth-helpers';
 import { testDb, type testEnv } from './helpers';
@@ -18,14 +14,12 @@ export const png = () =>
     Buffer.alloc(64, 1),
   ]);
 
-/** An app with its own empty receipts folder, so tests can look at what was stored. */
+/** An app for the payment and admin tests, optionally with a fixed clock. */
 export async function paymentApp(
   opts: { now?: () => Date; env?: Parameters<typeof testEnv>[0] } = {},
 ) {
-  const dir = mkdtempSync(join(tmpdir(), 'ongod-receipts-'));
-  const receipts: ReceiptStore = createReceiptStore(dir);
-  const app = await authApp(opts.env ?? {}, { receipts, ...(opts.now ? { now: opts.now } : {}) });
-  return { app, dir, receipts };
+  const app = await authApp(opts.env ?? {}, opts.now ? { now: opts.now } : {});
+  return { app };
 }
 
 export const call = (

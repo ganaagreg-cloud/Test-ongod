@@ -7,27 +7,18 @@ import { DAY_MS } from '../lib/dates';
 import type { PaymentService } from '../payments/service';
 import { toSubscriptionDto } from './dto';
 import { generateReferenceCode } from './period';
-import type { ReceiptStore, ReceiptType } from './receipts';
 
-const OPEN_STATUSES = ['PENDING_PAYMENT', 'PAYMENT_SUBMITTED'] as const;
+/** The only open state: QPay requests are paid at the checkout (ADR-0041, ADR-0046). */
+const OPEN_STATUSES = ['PENDING_PAYMENT'] as const;
 const CODE_RETRIES = 5;
-/** A transfer time slightly in the future is a clock difference, not a lie. */
-const CLOCK_SKEW_MS = 60 * 60_000;
 
-export interface SubmitInput {
-  payerNote?: string | undefined;
-  transferAt: string;
-  receipt?: { data: Buffer; type: ReceiptType } | undefined;
-}
-
-/** Portal side of SPEC D: plans, apply (QPay checkout), status. The old "Төлсөн" path stays for old requests. */
+/** Portal side of SPEC D: plans, apply (QPay checkout), status. */
 export function createSubscriptionService(deps: {
   db: Db;
   payments: PaymentService;
-  receipts: ReceiptStore;
   now?: (() => Date) | undefined;
 }) {
-  const { db, payments, receipts } = deps;
+  const { db, payments } = deps;
   const now = deps.now ?? (() => new Date());
   const pendingCutoff = (at: Date) => new Date(at.getTime() - PENDING_PAYMENT_TTL_DAYS * DAY_MS);
 
@@ -143,55 +134,6 @@ export function createSubscriptionService(deps: {
         subscription: sub ? toSubscriptionDto(sub) : null,
         accessUntil: accessUntil?.toISOString() ?? null,
       };
-    },
-
-    /** "Төлсөн": PENDING_PAYMENT -> PAYMENT_SUBMITTED, once. */
-    async submitted(user: User, id: string, input: SubmitInput): Promise<SubscriptionDto> {
-      const at = now();
-      const transferAt = new Date(input.transferAt);
-      if (transferAt.getTime() > at.getTime() + CLOCK_SKEW_MS) {
-        throw new AppError(400, 'VALIDATION_ERROR');
-      }
-
-      const found = await db.subscription.findFirst({ where: { id, userId: user.id } });
-      if (!found) throw new AppError(404, 'NOT_FOUND');
-      // "Төлсөн" is only for old bank-transfer requests; a QPay request is paid at the checkout.
-      if (found.status !== 'PENDING_PAYMENT' || found.paymentProvider !== 'NONE') {
-        throw new AppError(409, 'SUBSCRIPTION_STATE');
-      }
-      if (found.createdAt < pendingCutoff(at)) throw new AppError(409, 'SUBSCRIPTION_EXPIRED');
-
-      const key = input.receipt
-        ? await receipts.save(input.receipt.data, input.receipt.type.ext)
-        : null;
-      try {
-        // Status precondition: a double tap or two tabs submit only once.
-        const updated = await db.subscription.updateMany({
-          where: {
-            id,
-            userId: user.id,
-            status: 'PENDING_PAYMENT',
-            createdAt: { gte: pendingCutoff(at) },
-          },
-          data: {
-            status: 'PAYMENT_SUBMITTED',
-            payerNote: input.payerNote ?? null,
-            transferAt,
-            proofImagePath: key,
-            submittedAt: at,
-          },
-        });
-        if (updated.count !== 1) throw new AppError(409, 'SUBSCRIPTION_STATE');
-      } catch (err) {
-        if (key) await receipts.remove(key).catch(() => undefined);
-        throw err;
-      }
-
-      const fresh = await db.subscription.findUniqueOrThrow({
-        where: { id },
-        include: { plan: true },
-      });
-      return toSubscriptionDto(fresh);
     },
   };
 }

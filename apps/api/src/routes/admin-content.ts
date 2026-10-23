@@ -44,8 +44,8 @@ import type { SeriesService } from '../admin/series';
 import type { TagService } from '../admin/tags';
 import { authOf } from '../auth/guard';
 import { AppError } from '../errors';
+import { sniffImage } from '../lib/image';
 import { ADMIN_HEADER, type TusUploads } from '../media/tus';
-import { sniffImage } from '../subscriptions/receipts';
 
 const isMultipartError = (err: unknown, code: string) =>
   typeof err === 'object' && err !== null && (err as { code?: unknown }).code === code;

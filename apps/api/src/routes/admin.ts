@@ -63,16 +63,6 @@ export async function adminRoutes(
       return historyResponseSchema.parse(await queries.subscriptionHistory(id));
     });
 
-    admin.get('/admin/subscriptions/:id/receipt', async (req, reply) => {
-      const { id } = adminIdParamsSchema.parse(req.params);
-      const file = await queries.getReceipt(id);
-      return reply
-        .type(file.mime)
-        .header('content-disposition', 'inline')
-        .header('content-security-policy', "default-src 'none'; sandbox")
-        .send(file.data);
-    });
-
     admin.post('/admin/subscriptions/:id/approve', async (req) => {
       const { id } = adminIdParamsSchema.parse(req.params);
       const subscription = await decisions.approve(authOf(req).user, id);

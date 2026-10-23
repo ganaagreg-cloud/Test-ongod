@@ -25,14 +25,6 @@ export const BUNNY_TEST = {
   BUNNY_STREAM_TOKEN_KEY: 'test-stream-token-key-0123456789',
 };
 
-/** Fake bank account and a throw-away receipts folder (never the real ./data/receipts). */
-export const PAYMENT_TEST = {
-  BANK_NAME: 'Хаан банк',
-  BANK_ACCOUNT: '5000123456',
-  BANK_ACCOUNT_HOLDER: 'Бат Болд',
-  RECEIPTS_DIR: join(tmpdir(), 'ongod-test-receipts'),
-};
-
 export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env {
   return parseEnv({
     NODE_ENV: 'test',
@@ -45,7 +37,6 @@ export function testEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     MAIL_FROM: 'Онгод <no-reply@example.com>',
     CORS_ORIGINS: 'http://localhost:5173',
     ...BUNNY_TEST,
-    ...PAYMENT_TEST,
     ...overrides,
   });
 }

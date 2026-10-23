@@ -80,8 +80,8 @@ describe('API docs (development only)', () => {
     const err = spec.paths['/v1/me'].get.responses.default.content['application/json'].schema;
     expect(err.properties.error.properties).toHaveProperty('code');
 
-    const upload = spec.paths['/v1/subscriptions/{id}/submitted'].post.requestBody.content;
-    expect(upload['multipart/form-data'].schema.properties.receipt).toMatchObject({
+    const upload = spec.paths['/v1/admin/categories/{id}/cover'].post.requestBody.content;
+    expect(upload['multipart/form-data'].schema.properties.cover).toMatchObject({
       format: 'binary',
     });
 

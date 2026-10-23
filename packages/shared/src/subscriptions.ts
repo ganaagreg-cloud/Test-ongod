@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 // /v1/plans and /v1/subscriptions (SPEC D). Portal only: the mobile apps never call these.
 
-export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
 export const PENDING_PAYMENT_TTL_DAYS = 7;
 export const REMINDER_DAYS_BEFORE_END = 14;
 
@@ -58,14 +57,6 @@ export const currentSubscriptionResponseSchema = z.object({
 });
 
 export const subscriptionParamsSchema = z.object({ id: z.string().min(1).max(64) });
-
-const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
-
-/** The text fields of POST /v1/subscriptions/:id/submitted (multipart; the file is `receipt`). */
-export const submitPaymentFieldsSchema = z.object({
-  payerNote: z.preprocess(emptyToUndefined, z.string().trim().max(1000).optional()),
-  transferAt: z.iso.datetime({ offset: true }),
-});
 
 /** POST /v1/subscriptions/:id/mock (development only): the mock checkout's two buttons. */
 export const mockPaymentRequestSchema = z.object({ outcome: z.enum(['success', 'cancel']) });

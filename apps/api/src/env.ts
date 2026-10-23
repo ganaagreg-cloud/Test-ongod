@@ -126,13 +126,6 @@ export const envSchema = z
     /** Cron payment sync (ADR-0047): no new Wire call starts after this much of a tick. 20 s. */
     WIRE_SYNC_BUDGET_MS: z.coerce.number().int().positive().default(20_000),
 
-    // Old bank-transfer details (ADR-0006, replaced by ADR-0041). No longer shown or required.
-    BANK_NAME: z.preprocess(emptyToUndefined, z.string().optional()),
-    BANK_ACCOUNT: z.preprocess(emptyToUndefined, z.string().optional()),
-    BANK_ACCOUNT_HOLDER: z.preprocess(emptyToUndefined, z.string().optional()),
-
-    /** Private folder for payment receipt images. Never inside the static (public) folders. */
-    RECEIPTS_DIR: z.string().min(1).default('./data/receipts'),
     /**
      * Private working folder for uploads: tus chunks, finished audio waiting for Bunny, covers
      * waiting for Bunny. Never inside a static folder. Without Bunny settings (development only)

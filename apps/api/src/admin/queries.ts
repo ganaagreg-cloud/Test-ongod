@@ -6,7 +6,6 @@ import { mn } from '../i18n/mn';
 import { DAY_MS, ubDate, ubDateTime, ubDayStart } from '../lib/dates';
 import { escapeLike } from '../lib/like';
 import { toAdminSubscriptionDto, toSubscriptionDto } from '../subscriptions/dto';
-import type { ReceiptStore } from '../subscriptions/receipts';
 import { audit } from './audit';
 
 type Page = { page: number; limit: number };
@@ -57,12 +56,8 @@ function csvCell(value: string | number | null): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function createAdminQueries(deps: {
-  db: Db;
-  receipts: ReceiptStore;
-  now?: (() => Date) | undefined;
-}) {
-  const { db, receipts } = deps;
+export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefined }) {
+  const { db } = deps;
   const now = deps.now ?? (() => new Date());
   const skipTake = ({ page, limit }: Page) => ({ skip: (page - 1) * limit, take: limit });
 
@@ -110,18 +105,6 @@ export function createAdminQueries(deps: {
         take: 100,
       });
       return { items: entries.map(toAuditDto) };
-    },
-
-    /** Admin only. Never cached, never a public URL. */
-    async getReceipt(id: string) {
-      const sub = await db.subscription.findUnique({
-        where: { id },
-        select: { proofImagePath: true },
-      });
-      if (!sub?.proofImagePath) throw new AppError(404, 'NOT_FOUND');
-      const file = await receipts.read(sub.proofImagePath);
-      if (!file) throw new AppError(404, 'NOT_FOUND');
-      return file;
     },
 
     async listUsers(query: { q?: string | undefined } & Page) {

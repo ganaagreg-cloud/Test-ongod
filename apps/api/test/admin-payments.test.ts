@@ -8,13 +8,11 @@ import {
   call,
   jobsOf,
   notifyEmails,
-  jpeg,
   makeActive,
   makeAdmin,
   makeMember,
   makePlan,
   makeSubmitted,
-  multipart,
   paymentApp,
 } from './admin-helpers';
 import type { Signed } from './auth-helpers';
@@ -573,59 +571,16 @@ describe('queue and search', () => {
   });
 });
 
-describe('receipt image (admin only, never public)', () => {
-  it('the admin gets the stored bytes with the right type; nobody else can', async () => {
+describe('removed bank-transfer endpoints (ADR-0046)', () => {
+  it('has no receipt endpoint: 404 even for a row that still has an old file path', async () => {
     const plan = await makePlan();
     const member = await makeMember(app);
-    const { subscription } = (
-      await call(app, 'POST', '/v1/subscriptions', member.accessToken, { planId: plan.id })
-    ).json();
-    // "Төлсөн" is only for old bank-transfer requests (ADR-0041).
-    await testDb.subscription.update({
-      where: { id: subscription.id },
-      data: { paymentProvider: 'NONE', checkoutUrl: null },
-    });
-    const image = jpeg(3000);
-    const { payload, headers } = await multipart(
-      { transferAt: new Date(Date.now() - 60_000).toISOString() },
-      { name: 'r.jpg', data: image },
-    );
-    const sent = await app.inject({
-      method: 'POST',
-      url: `/v1/subscriptions/${subscription.id}/submitted`,
-      payload,
-      headers: { ...headers, authorization: `Bearer ${member.accessToken}` },
-    });
-    expect(sent.statusCode).toBe(200);
-
-    const url = `/v1/admin/subscriptions/${subscription.id}/receipt`;
-    const res = await get(url);
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['content-type']).toBe('image/jpeg');
-    expect(res.headers['cache-control']).toMatch(/no-store/);
-    expect(res.headers['x-content-type-options']).toBe('nosniff');
-    expect(res.rawPayload.equals(image)).toBe(true);
-
-    // The owner of the receipt is not an admin: no access to their own file through this route.
-    expect((await call(app, 'GET', url, member.accessToken)).statusCode).toBe(403);
-    expect((await call(app, 'GET', url)).statusCode).toBe(401);
-  });
-
-  it('404 when there is no receipt, when the file is gone, or when the stored key is not ours', async () => {
-    const plan = await makePlan();
-    const member = await makeMember(app);
-    const none = await makeSubmitted(member.userId, plan.id);
-    expect((await get(`/v1/admin/subscriptions/${none.id}/receipt`)).statusCode).toBe(404);
-
-    const gone = await makeSubmitted(member.userId, plan.id, {
+    const sub = await makeSubmitted(member.userId, plan.id, {
       proofImagePath: '11111111-2222-3333-4444-555555555555.jpg',
     });
-    expect((await get(`/v1/admin/subscriptions/${gone.id}/receipt`)).statusCode).toBe(404);
-
-    for (const bad of ['../../etc/passwd', '..\\..\\secret.jpg', '/etc/passwd', 'a.jpg']) {
-      const sub = await makeSubmitted(member.userId, plan.id, { proofImagePath: bad });
-      expect((await get(`/v1/admin/subscriptions/${sub.id}/receipt`)).statusCode, bad).toBe(404);
-    }
+    const res = await get(`/v1/admin/subscriptions/${sub.id}/receipt`);
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
   });
 });
 

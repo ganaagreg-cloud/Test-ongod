@@ -1,21 +1,16 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { testDb } from './helpers';
-import { DAY, call, jpeg, makeMember, makePlan, multipart, paymentApp, png } from './admin-helpers';
+import { DAY, call, makeMember, makePlan, paymentApp } from './admin-helpers';
 
 let app: FastifyInstance;
-let dir: string;
 
 beforeEach(async () => {
-  ({ app, dir } = await paymentApp());
+  ({ app } = await paymentApp());
 });
 afterEach(async () => {
   await app.close();
 });
-
-const files = () => readdirSync(dir);
 
 describe('GET /v1/plans', () => {
   it('is public (the landing page shows the price) and lists only active plans, cheapest first', async () => {
@@ -47,7 +42,7 @@ describe('GET /v1/plans', () => {
     for (const [method, url] of [
       ['POST', '/v1/subscriptions'],
       ['GET', '/v1/subscriptions/current'],
-      ['POST', '/v1/subscriptions/x/submitted'],
+      ['POST', '/v1/subscriptions/x/mock'],
     ] as const) {
       expect((await call(app, method, url)).statusCode, `${method} ${url}`).toBe(401);
     }
@@ -108,25 +103,23 @@ describe('POST /v1/subscriptions', () => {
     expect(await testDb.subscription.count()).toBe(1);
   });
 
-  it('keeps blocking while the payment is submitted, and allows a new request after a rejection', async () => {
+  it('blocks a request for another plan while one is open, and allows a new one after a cancel', async () => {
     const plan = await makePlan();
+    const other = await makePlan({ name: 'Хагас жил', durationDays: 180 });
     const user = await makeMember(app);
     const first = (
       await call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id })
     ).json().subscription;
 
-    await testDb.subscription.update({
-      where: { id: first.id },
-      data: { status: 'PAYMENT_SUBMITTED' },
-    });
     const blocked = await call(app, 'POST', '/v1/subscriptions', user.accessToken, {
-      planId: plan.id,
+      planId: other.id,
     });
     expect(blocked.statusCode).toBe(409);
+    expect(blocked.json().error.code).toBe('OPEN_SUBSCRIPTION_EXISTS');
 
-    await testDb.subscription.update({ where: { id: first.id }, data: { status: 'REJECTED' } });
+    await testDb.subscription.update({ where: { id: first.id }, data: { status: 'CANCELLED' } });
     const again = await call(app, 'POST', '/v1/subscriptions', user.accessToken, {
-      planId: plan.id,
+      planId: other.id,
     });
     expect(again.statusCode).toBe(201);
   });
@@ -208,10 +201,10 @@ describe('GET /v1/subscriptions/current', () => {
 
     await testDb.subscription.update({
       where: { id: created.id },
-      data: { status: 'PAYMENT_SUBMITTED' },
+      data: { status: 'CANCELLED' },
     });
     res = (await call(app, 'GET', '/v1/subscriptions/current', user.accessToken)).json();
-    expect(res.subscription.status).toBe('PAYMENT_SUBMITTED');
+    expect(res.subscription.status).toBe('CANCELLED');
     expect(res.subscription.checkoutUrl).toBeNull();
   });
 
@@ -225,229 +218,24 @@ describe('GET /v1/subscriptions/current', () => {
   });
 });
 
-describe('POST /v1/subscriptions/:id/submitted', () => {
-  const transferAt = () => new Date(Date.now() - 3600_000).toISOString();
-
-  async function pending(email = 'member@example.com') {
-    const plan = await makePlan();
-    const user = await makeMember(app, email);
-    const { subscription } = (
-      await call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id })
-    ).json();
-    // "Төлсөн" is the old bank-transfer path: make this an old-style request (ADR-0041).
-    await testDb.subscription.update({
-      where: { id: subscription.id },
-      data: { paymentProvider: 'NONE', checkoutUrl: null },
-    });
-    return { user, subscription };
-  }
-
-  it('refuses a QPay request: it is paid at the checkout, not with "Төлсөн"', async () => {
+describe('removed bank-transfer path (ADR-0046)', () => {
+  it('has no "Төлсөн" route any more: 404 for a signed-in member, nothing changes', async () => {
     const plan = await makePlan();
     const user = await makeMember(app);
     const { subscription } = (
       await call(app, 'POST', '/v1/subscriptions', user.accessToken, { planId: plan.id })
     ).json();
-    const res = await submit(subscription.id, user.accessToken, { transferAt: transferAt() });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('SUBSCRIPTION_STATE');
-  });
-
-  const submit = async (
-    id: string,
-    token: string,
-    fields: Record<string, string>,
-    file?: Parameters<typeof multipart>[1],
-  ) => {
-    const { payload, headers } = await multipart(fields, file);
-    return app.inject({
-      method: 'POST',
-      url: `/v1/subscriptions/${id}/submitted`,
-      payload,
-      headers: { ...headers, authorization: `Bearer ${token}` },
-    });
-  };
-
-  it('moves to PAYMENT_SUBMITTED with the note, transfer time and a privately stored receipt', async () => {
-    const { user, subscription } = await pending();
-    const image = jpeg(2048);
-
-    const res = await submit(
-      subscription.id,
-      user.accessToken,
-      { payerNote: 'Хаан банкаар шилжүүлсэн', transferAt: transferAt() },
-      { name: 'receipt.jpg', data: image },
-    );
-    expect(res.statusCode).toBe(200);
-    const dto = res.json().subscription;
-    expect(dto).toMatchObject({
-      status: 'PAYMENT_SUBMITTED',
-      payerNote: 'Хаан банкаар шилжүүлсэн',
-      hasReceipt: true,
-    });
-    expect(dto.submittedAt).not.toBeNull();
-
-    // Stored on our disk under a random name; the DB key is never sent to the client.
-    const row = await testDb.subscription.findUniqueOrThrow({ where: { id: subscription.id } });
-    expect(row.proofImagePath).toMatch(/^[0-9a-f-]{36}\.jpg$/);
-    expect(JSON.stringify(res.json())).not.toContain(row.proofImagePath!);
-    expect(files()).toEqual([row.proofImagePath]);
-    expect(readFileSync(join(dir, row.proofImagePath!)).equals(image)).toBe(true);
-  });
-
-  it('works without a receipt and without a note', async () => {
-    const { user, subscription } = await pending();
-    const res = await submit(subscription.id, user.accessToken, { transferAt: transferAt() });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().subscription).toMatchObject({ hasReceipt: false, payerNote: null });
-    expect(files()).toEqual([]);
-  });
-
-  it('treats an empty file field (nothing chosen in the browser) as no receipt', async () => {
-    const { user, subscription } = await pending();
-    const res = await submit(
-      subscription.id,
-      user.accessToken,
-      { transferAt: transferAt() },
-      { name: '', data: Buffer.alloc(0), type: 'application/octet-stream' },
-    );
-    expect(res.statusCode).toBe(200);
-    expect(res.json().subscription.hasReceipt).toBe(false);
-  });
-
-  it('accepts a PNG and ignores the file name and declared type (the bytes decide)', async () => {
-    const { user, subscription } = await pending();
-    const res = await submit(
-      subscription.id,
-      user.accessToken,
-      { transferAt: transferAt() },
-      { name: '../../evil.php', data: png(), type: 'text/html' },
-    );
-    expect(res.statusCode).toBe(200);
-    const row = await testDb.subscription.findUniqueOrThrow({ where: { id: subscription.id } });
-    expect(row.proofImagePath).toMatch(/^[0-9a-f-]{36}\.png$/);
-  });
-
-  it('accepts exactly 5 MB and refuses more: 413 RECEIPT_TOO_LARGE, nothing stored, still PENDING', async () => {
-    const { user, subscription } = await pending();
-
-    const big = await submit(
-      subscription.id,
-      user.accessToken,
-      { transferAt: transferAt() },
-      { name: 'big.jpg', data: jpeg(5 * 1024 * 1024 + 1) },
-    );
-    expect(big.statusCode).toBe(413);
-    expect(big.json().error.code).toBe('RECEIPT_TOO_LARGE');
-    expect(files()).toEqual([]);
-    expect(
-      (await testDb.subscription.findUniqueOrThrow({ where: { id: subscription.id } })).status,
-    ).toBe('PENDING_PAYMENT');
-
-    const exact = await submit(
-      subscription.id,
-      user.accessToken,
-      { transferAt: transferAt() },
-      { name: 'ok.jpg', data: jpeg(5 * 1024 * 1024) },
-    );
-    expect(exact.statusCode).toBe(200);
-  });
-
-  it('refuses files that are not JPEG, PNG or WebP images: 400 RECEIPT_INVALID', async () => {
-    const { user, subscription } = await pending();
-    for (const data of [
-      Buffer.from('<?php echo 1; ?>'),
-      Buffer.from('%PDF-1.7 fake'),
-      Buffer.from('GIF89a....'),
-    ]) {
-      const res = await submit(
-        subscription.id,
-        user.accessToken,
-        { transferAt: transferAt() },
-        { name: 'receipt.jpg', data, type: 'image/jpeg' },
-      );
-      expect(res.statusCode).toBe(400);
-      expect(res.json().error.code).toBe('RECEIPT_INVALID');
-    }
-    expect(files()).toEqual([]);
-  });
-
-  it('submits only once: a second (or parallel) submit gets 409 and stores no extra file', async () => {
-    const { user, subscription } = await pending();
-    const results = await Promise.all(
-      [1, 2, 3].map(() =>
-        submit(
-          subscription.id,
-          user.accessToken,
-          { transferAt: transferAt() },
-          { name: 'r.jpg', data: jpeg() },
-        ),
-      ),
-    );
-    expect(results.map((r) => r.statusCode).sort()).toEqual([200, 409, 409]);
-    expect(results.find((r) => r.statusCode === 409)!.json().error.code).toBe('SUBSCRIPTION_STATE');
-    expect(files()).toHaveLength(1);
-  });
-
-  it("cannot touch someone else's request: 404", async () => {
-    const { subscription } = await pending('a@example.com');
-    const other = await makeMember(app, 'b@example.com');
-    const res = await submit(subscription.id, other.accessToken, { transferAt: transferAt() });
-    expect(res.statusCode).toBe(404);
-    expect(
-      (await testDb.subscription.findUniqueOrThrow({ where: { id: subscription.id } })).status,
-    ).toBe('PENDING_PAYMENT');
-  });
-
-  it('refuses a request older than 7 days (409 SUBSCRIPTION_EXPIRED) and a missing or future transfer time', async () => {
-    const { user, subscription } = await pending();
-
-    expect((await submit(subscription.id, user.accessToken, {})).statusCode).toBe(400);
-    expect(
-      (
-        await submit(subscription.id, user.accessToken, {
-          transferAt: new Date(Date.now() + 3 * 3600_000).toISOString(),
-        })
-      ).statusCode,
-    ).toBe(400);
-    expect(
-      (await submit(subscription.id, user.accessToken, { transferAt: 'yesterday' })).statusCode,
-    ).toBe(400);
-
-    await testDb.subscription.update({
-      where: { id: subscription.id },
-      data: { createdAt: new Date(Date.now() - 8 * DAY) },
-    });
-    const res = await submit(subscription.id, user.accessToken, { transferAt: transferAt() });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('SUBSCRIPTION_EXPIRED');
-  });
-
-  it('needs a signed-in user', async () => {
-    const { subscription } = await pending();
-    const { payload, headers } = await multipart({ transferAt: transferAt() });
-    const res = await app.inject({
-      method: 'POST',
-      url: `/v1/subscriptions/${subscription.id}/submitted`,
-      payload,
-      headers,
-    });
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('also accepts a plain JSON body (no receipt)', async () => {
-    const { user, subscription } = await pending();
     const res = await call(
       app,
       'POST',
       `/v1/subscriptions/${subscription.id}/submitted`,
       user.accessToken,
-      {
-        transferAt: transferAt(),
-        payerNote: '  тэмдэглэл  ',
-      },
+      { transferAt: new Date().toISOString() },
     );
-    expect(res.statusCode).toBe(200);
-    expect(res.json().subscription.payerNote).toBe('тэмдэглэл');
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.code).toBe('NOT_FOUND');
+    expect(
+      (await testDb.subscription.findUniqueOrThrow({ where: { id: subscription.id } })).status,
+    ).toBe('PENDING_PAYMENT');
   });
 });

@@ -1,10 +1,7 @@
-import { mkdtempSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ubDate, ubDateTime, ubDayStart } from '../src/lib/dates';
+import { sniffImage } from '../src/lib/image';
 import { computePeriod, generateReferenceCode } from '../src/subscriptions/period';
-import { createReceiptStore, sniffImage } from '../src/subscriptions/receipts';
 
 const DAY = 86_400_000;
 
@@ -70,48 +67,6 @@ describe('sniffImage', () => {
     ]) {
       expect(sniffImage(data)).toBeNull();
     }
-  });
-});
-
-describe('receipt store', () => {
-  const fresh = () => mkdtempSync(join(tmpdir(), 'ongod-store-'));
-
-  it('saves under a random name, reads back with the right type, and removes', async () => {
-    const dir = fresh();
-    const store = createReceiptStore(dir);
-    const data = Buffer.from([1, 2, 3, 4]);
-    const key = await store.save(data, 'png');
-    expect(key).toMatch(/^[0-9a-f-]{36}\.png$/);
-    expect(readdirSync(dir)).toEqual([key]);
-    const file = await store.read(key);
-    expect(file?.data.equals(data)).toBe(true);
-    expect(file?.mime).toBe('image/png');
-    await store.remove(key);
-    expect(await store.read(key)).toBeNull();
-    await store.remove(key); // removing twice is fine
-  });
-
-  it('never turns a key into a path outside its folder', async () => {
-    const store = createReceiptStore(fresh());
-    for (const key of [
-      '../x.jpg',
-      '..\\x.jpg',
-      '/etc/passwd',
-      'a/b.jpg',
-      'x.jpg',
-      '',
-      '.jpg',
-      'a'.repeat(40) + '.jpg',
-    ]) {
-      expect(await store.read(key), key).toBeNull();
-    }
-    await expect(store.remove('../../x.jpg')).rejects.toThrow('invalid receipt key');
-  });
-
-  it('creates its folder on first use', async () => {
-    const dir = join(fresh(), 'nested', 'receipts');
-    const key = await createReceiptStore(dir).save(Buffer.from([1]), 'jpg');
-    expect(readdirSync(dir)).toEqual([key]);
   });
 });
 

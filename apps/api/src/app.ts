@@ -35,7 +35,6 @@ import { createBunnySigner } from './lib/bunnyToken';
 import { createLogger, type Logger } from './logger';
 import { createMediaRuntime, type MediaRuntime } from './media/storage';
 import { createTusServer } from './media/tus';
-import { createReceiptStore, type ReceiptStore } from './subscriptions/receipts';
 import { createPaymentService } from './payments/service';
 import { createWireGateway, type WireGateway } from './payments/wire';
 import { createSubscriptionService } from './subscriptions/service';
@@ -71,8 +70,6 @@ export interface AppDeps {
   registerDocs?: (app: FastifyInstance) => Promise<void>;
   /** Storage and working folders for media (covers, audio); built from env by default. Tests pass a local one. */
   mediaRuntime?: MediaRuntime;
-  /** Private store for payment receipt images; defaults to RECEIPTS_DIR on disk. */
-  receipts?: ReceiptStore;
   /** Wire payment gateway (QPay); built from WIRE_API_KEY by default, null = mock checkout. Tests pass a fake. */
   wire?: WireGateway | null;
   /** Clock for the catalog and subscriptions (visibility, play expiry, periods); tests pass a fixed one. */
@@ -166,7 +163,6 @@ export async function buildApp(deps: AppDeps) {
         catalog: createCatalogService({ db, media: mediaUrls, now: deps.now }),
         requireAuth,
       });
-      const receipts = deps.receipts ?? createReceiptStore(env.RECEIPTS_DIR);
       const mediaRuntime = deps.mediaRuntime ?? createMediaRuntime(env);
       const tus = createTusServer({ db, dirs: mediaRuntime.dirs, env });
       const payments = createPaymentService({
@@ -177,7 +173,7 @@ export async function buildApp(deps: AppDeps) {
         now: deps.now,
       });
       await v1.register(subscriptionRoutes, {
-        subscriptions: createSubscriptionService({ db, payments, receipts, now: deps.now }),
+        subscriptions: createSubscriptionService({ db, payments, now: deps.now }),
         payments,
         requireAuth,
       });
@@ -185,7 +181,7 @@ export async function buildApp(deps: AppDeps) {
       await v1.register(adminRoutes, {
         guards: createAdminGuards(requireAuth),
         decisions: createDecisionService({ db, now: deps.now }),
-        queries: createAdminQueries({ db, receipts, now: deps.now }),
+        queries: createAdminQueries({ db, now: deps.now }),
       });
       const contentService = createContentService({
         db,

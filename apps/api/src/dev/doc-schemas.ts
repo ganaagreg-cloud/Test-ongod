@@ -132,11 +132,6 @@ const admin = (
   ...rest,
 });
 
-const submitFields = z.object({
-  transferAt: z.iso.datetime({ offset: true }),
-  payerNote: z.string().max(1000).optional(),
-});
-
 /** Key = `METHOD /full/path` exactly as Fastify registers it. */
 export const ROUTE_DOCS: Record<string, RouteDoc> = {
   // ---- system ----
@@ -384,15 +379,6 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     auth: 'none',
     responses: { 200: z.object({ ok: z.boolean() }).passthrough() },
   },
-  'POST /v1/subscriptions/:id/submitted': user(
-    'portal',
-    'D. Old bank-transfer requests only: "Төлсөн" with payer note, transfer time, optional receipt',
-    {
-      description: 'multipart/form-data. `receipt`: JPEG, PNG or WebP, at most 5 MB.',
-      multipart: { fields: submitFields, file: 'receipt' },
-      responses: { 200: z.object({ subscription: subscriptionSchema }) },
-    },
-  ),
 
   // ---- admin (E) ----
   'GET /v1/admin/dashboard': admin('Dashboard counts', {
@@ -407,10 +393,6 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   ),
   'GET /v1/admin/subscriptions/:id': admin('One subscription', {
     responses: { 200: adminSubscriptionResponseSchema },
-  }),
-  'GET /v1/admin/subscriptions/:id/receipt': admin('Receipt image (admin only)', {
-    contentType: 'image/*',
-    responses: { 200: null },
   }),
   'POST /v1/admin/subscriptions/:id/approve': admin(
     'E. Approve: period, Payment, access, email + push, audit',
