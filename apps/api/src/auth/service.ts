@@ -576,7 +576,6 @@ export function createAuthService(deps: { db: Db; env: Env }) {
             email: `deleted-${userId}@deleted.invalid`,
             emailVerifiedAt: null,
             passwordHash: null,
-            totpSecret: null,
             firstName: 'Устгасан',
             lastName: 'Хэрэглэгч',
             phone: '',

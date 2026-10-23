@@ -499,7 +499,6 @@ describe('SPEC H: delete account', () => {
       email: `deleted-${a.userId}@deleted.invalid`,
       phone: '',
       passwordHash: null,
-      totpSecret: null,
       emailVerifiedAt: null,
     });
     expect(user.deletedAt).not.toBeNull();

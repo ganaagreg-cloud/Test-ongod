@@ -43,7 +43,7 @@ I. App update: the app checks /v1/app-config on start; below the minimum version
 
 Decisions: [[ADR-0007-access-model-reference-codes|ADR-0007]] · [[ADR-0011-audio-first-media-asset|ADR-0011]] · [[ADR-0002-api-fastify-prisma-mysql-single-process|ADR-0002]]
 
-User(id, username uniq lowercase, email uniq lowercase, emailVerifiedAt?, passwordHash?, firstName, lastName, phone, status PENDING_PROFILE|ACTIVE|DISABLED|DELETED, role USER|ADMIN|OWNER, accessUntil?, totpSecret?, createdAt, deletedAt?)
+User(id, username uniq lowercase, email uniq lowercase, emailVerifiedAt?, passwordHash?, firstName, lastName, phone, status PENDING_PROFILE|ACTIVE|DISABLED|DELETED, role USER|ADMIN|OWNER, accessUntil?, createdAt, deletedAt?)
 AuthIdentity(id, userId, provider GOOGLE|APPLE, providerSubject, email; uniq(provider, providerSubject))
 Session(id, userId, deviceId, refreshTokenHash, familyId, expiresAt, revokedAt?, createdAt)
 Device(id, userId, deviceId, platform, model?, pushToken?, lastSeenAt; uniq(userId, deviceId))

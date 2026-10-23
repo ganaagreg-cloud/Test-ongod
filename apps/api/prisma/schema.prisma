@@ -111,11 +111,6 @@ model User {
   role            UserRole   @default(USER)
   /// Cache of the end of the latest ACTIVE subscription period.
   accessUntil     DateTime?
-  totpSecret      String?
-  /// Set when the first TOTP code was verified; until then the secret is only a pending setup.
-  totpEnabledAt   DateTime?
-  /// Last accepted TOTP time step; codes at or before it are rejected (replay protection).
-  totpLastStep    Int?
   createdAt       DateTime   @default(now())
   deletedAt       DateTime?
 
@@ -153,8 +148,6 @@ model Session {
   familyId         String
   expiresAt        DateTime
   revokedAt        DateTime?
-  /// Admin sessions: when this session passed the TOTP check. Carried over on refresh.
-  totpVerifiedAt   DateTime?
   createdAt        DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
