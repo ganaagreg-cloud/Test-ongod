@@ -5,15 +5,6 @@ import { testDb, type testEnv } from './helpers';
 
 export const DAY = 86_400_000;
 
-/** A JPEG-looking file: the API only checks the first bytes. */
-export const jpeg = (size = 1024) =>
-  Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(Math.max(0, size - 4), 7)]);
-export const png = () =>
-  Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    Buffer.alloc(64, 1),
-  ]);
-
 /** An app for the payment and admin tests, optionally with a fixed clock. */
 export async function paymentApp(
   opts: { now?: () => Date; env?: Parameters<typeof testEnv>[0] } = {},
@@ -96,33 +87,7 @@ export async function makeAdmin(
   return signed;
 }
 
-/** A subscription waiting in the admin queue. */
-export async function makeSubmitted(
-  userId: string,
-  planId: string,
-  over: {
-    amountMnt?: number;
-    submittedAt?: Date;
-    proofImagePath?: string | null;
-    payerNote?: string;
-  } = {},
-) {
-  return testDb.subscription.create({
-    data: {
-      userId,
-      planId,
-      status: 'PAYMENT_SUBMITTED',
-      referenceCode: generateReferenceCode(),
-      amountMnt: over.amountMnt ?? 100_000,
-      submittedAt: over.submittedAt ?? new Date(),
-      transferAt: new Date(),
-      payerNote: over.payerNote ?? null,
-      proofImagePath: over.proofImagePath ?? null,
-    },
-  });
-}
-
-/** An ACTIVE period, as if approved earlier; keeps the user.accessUntil cache in step. */
+/** An ACTIVE period, as if paid earlier; keeps the user.accessUntil cache in step. */
 export async function makeActive(userId: string, planId: string, startsAt: Date, endsAt: Date) {
   const sub = await testDb.subscription.create({
     data: {
@@ -148,7 +113,7 @@ export async function multipart(
   for (const [k, v] of Object.entries(fields)) form.append(k, v);
   if (file) {
     form.append(
-      file.field ?? 'receipt',
+      file.field ?? 'cover',
       new Blob([new Uint8Array(file.data)], { type: file.type ?? 'image/jpeg' }),
       file.name,
     );

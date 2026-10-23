@@ -9,7 +9,7 @@ const reasonSchema = z.string().trim().min(1).max(500);
 
 export const adminIdParamsSchema = z.object({ id: idSchema });
 
-// ---- Queue and subscriptions ----
+// ---- Subscriptions (the payments list) ----
 
 export const PAGE_SIZE_DEFAULT = 25;
 export const PAGE_SIZE_MAX = 100;
@@ -36,9 +36,19 @@ export const adminSubscriptionSchema = subscriptionSchema.extend({
 });
 export type AdminSubscriptionDto = z.infer<typeof adminSubscriptionSchema>;
 
+/**
+ * The states the admin payments list filters by. PAYMENT_SUBMITTED and REJECTED belonged to the
+ * removed bank-transfer path (ADR-0046): old rows still parse, but nothing creates them.
+ */
+export const adminStatusFilterSchema = subscriptionStatusSchema.exclude([
+  'PAYMENT_SUBMITTED',
+  'REJECTED',
+]);
+export type AdminStatusFilter = z.infer<typeof adminStatusFilterSchema>;
+
 export const listSubscriptionsQuerySchema = z.object({
-  /** Default: the queue (PAYMENT_SUBMITTED). */
-  status: subscriptionStatusSchema.default('PAYMENT_SUBMITTED'),
+  /** Default: ACTIVE. Newest first. */
+  status: adminStatusFilterSchema.default('ACTIVE'),
   /** Reference code, username, email, phone or name. */
   q: searchQuery,
   ...pageQuery,
@@ -53,7 +63,6 @@ export const adminSubscriptionsPageSchema = z.object({
 
 export const adminSubscriptionResponseSchema = z.object({ subscription: adminSubscriptionSchema });
 
-export const rejectRequestSchema = z.object({ reason: reasonSchema });
 export const revokeRequestSchema = z.object({
   reason: reasonSchema,
   /** Mark the payments of this subscription REFUNDED (default: false, e.g. fraud). */

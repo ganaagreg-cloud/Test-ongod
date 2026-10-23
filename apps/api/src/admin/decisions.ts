@@ -1,12 +1,8 @@
 import type { AdminSubscriptionDto } from '@ongod/shared';
 import { isUniqueViolation, lockUser } from '../auth/service';
 import type { Db } from '../db';
-import { enqueueEmail } from '../email';
 import { AppError } from '../errors';
 import type { User } from '../generated/prisma/client';
-import { ubDate } from '../lib/dates';
-import { mn } from '../i18n/mn';
-import { enqueuePush } from '../push';
 import { toAdminSubscriptionDto } from '../subscriptions/dto';
 import { latestActiveEnd, refreshAccessUntil } from '../subscriptions/access';
 import { computePeriod, generateReferenceCode } from '../subscriptions/period';
@@ -16,10 +12,11 @@ const CODE_RETRIES = 5;
 const include = { plan: true, user: true, decidedBy: true } as const;
 
 /**
- * Every change that grants or removes access (CLAUDE.md): one transaction, the user row locked
- * first (ADR-0018 #6), a status precondition in the UPDATE, the audit entry and the email/push
- * jobs in the same commit. The first statement of each transaction is the lock, so the reads
- * after it see everything the previous holder committed.
+ * SPEC E, manual grant and revoke only (ADR-0046). Every change that grants or removes access
+ * (CLAUDE.md): one transaction, the user row locked first (ADR-0018 #6), a status precondition
+ * in the UPDATE where a row changes state, and the audit entry in the same commit. The first
+ * statement of each transaction is the lock, so the reads after it see everything the previous
+ * holder committed.
  */
 export function createDecisionService(deps: { db: Db; now?: (() => Date) | undefined }) {
   const { db } = deps;
@@ -36,87 +33,6 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
     toAdminSubscriptionDto(await db.subscription.findUniqueOrThrow({ where: { id }, include }));
 
   return {
-    /** SPEC E. Double approval is impossible: the second call finds the status already ACTIVE. */
-    async approve(actor: User, id: string): Promise<AdminSubscriptionDto> {
-      const userId = await ownerOf(id);
-      await db.$transaction(async (tx) => {
-        await lockUser(tx, userId);
-        const sub = await tx.subscription.findUnique({
-          where: { id },
-          include: { plan: true, user: true },
-        });
-        if (!sub || sub.status !== 'PAYMENT_SUBMITTED')
-          throw new AppError(409, 'SUBSCRIPTION_STATE');
-        if (sub.user.status === 'DELETED') throw new AppError(409, 'SUBSCRIPTION_STATE');
-
-        const at = now();
-        const { startsAt, endsAt } = computePeriod(
-          at,
-          await latestActiveEnd(tx, userId),
-          sub.plan.durationDays,
-        );
-        const decided = await tx.subscription.updateMany({
-          where: { id, status: 'PAYMENT_SUBMITTED' },
-          data: { status: 'ACTIVE', startsAt, endsAt, decidedById: actor.id, decidedAt: at },
-        });
-        if (decided.count !== 1) throw new AppError(409, 'SUBSCRIPTION_STATE');
-
-        await tx.payment.create({
-          data: { subscriptionId: id, method: 'BANK_TRANSFER', amountMnt: sub.amountMnt },
-        });
-        await refreshAccessUntil(tx, userId);
-        await audit(tx, actor.id, 'subscription.approve', 'Subscription', id, {
-          userId,
-          referenceCode: sub.referenceCode,
-          amountMnt: sub.amountMnt,
-          startsAt: startsAt.toISOString(),
-          endsAt: endsAt.toISOString(),
-        });
-        const until = ubDate(endsAt);
-        await enqueueEmail(tx, sub.user.email, 'paymentApproved', {
-          firstName: sub.user.firstName,
-          endsAt: until,
-        });
-        await enqueuePush(tx, {
-          userId,
-          title: mn.push.paymentApproved.title,
-          body: mn.push.paymentApproved.body({ endsAt: until }),
-          data: { type: 'access_granted' },
-        });
-      });
-      return view(id);
-    },
-
-    async reject(actor: User, id: string, reason: string): Promise<AdminSubscriptionDto> {
-      const userId = await ownerOf(id);
-      await db.$transaction(async (tx) => {
-        await lockUser(tx, userId);
-        const sub = await tx.subscription.findUnique({ where: { id }, include: { user: true } });
-        if (!sub) throw new AppError(404, 'NOT_FOUND');
-        const decided = await tx.subscription.updateMany({
-          where: { id, status: 'PAYMENT_SUBMITTED' },
-          data: {
-            status: 'REJECTED',
-            rejectReason: reason,
-            decidedById: actor.id,
-            decidedAt: now(),
-          },
-        });
-        if (decided.count !== 1) throw new AppError(409, 'SUBSCRIPTION_STATE');
-
-        await audit(tx, actor.id, 'subscription.reject', 'Subscription', id, {
-          userId,
-          referenceCode: sub.referenceCode,
-          reason,
-        });
-        await enqueueEmail(tx, sub.user.email, 'paymentRejected', {
-          firstName: sub.user.firstName,
-          reason,
-        });
-      });
-      return view(id);
-    },
-
     /** Refund or fraud: ends an ACTIVE subscription now and rebuilds the access cache. */
     async revoke(
       actor: User,

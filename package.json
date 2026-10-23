@@ -8,7 +8,6 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:down": "docker compose down",
-    "dev:approve": "pnpm --filter @ongod/api dev:approve",
     "db:studio": "pnpm --filter @ongod/api db:studio",
     "dev:api": "pnpm --filter @ongod/api dev",
     "dev:admin": "pnpm --filter @ongod/admin dev",

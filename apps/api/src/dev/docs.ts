@@ -44,7 +44,7 @@ Seeded users (password = the \`SEED_*_PASSWORD\` values in your \`.env\`; owner 
 | \`owner\` | OWNER (admin) |
 | \`bat\` | member, active access |
 | \`demo\` | member, active access (store-reviewer demo account) |
-| \`saraa\` | member, payment submitted (waiting in the admin queue) |
+| \`saraa\` | member, never paid (no access) |
 | \`tuya\` | member, access expired |
 | \`temuujin\` | member, never subscribed |
 | \`disabled\` | DISABLED account |

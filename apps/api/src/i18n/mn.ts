@@ -120,11 +120,6 @@ export const mn = {
       body: (p: { firstName: string; endsAt: string }) =>
         `Сайн байна уу, ${p.firstName}.\n\nТаны төлбөр баталгаажиж, эрх идэвхжлээ. Эрх ${p.endsAt} хүртэл хүчинтэй.`,
     },
-    paymentRejected: {
-      subject: 'Онгод: төлбөр баталгаажсангүй',
-      body: (p: { firstName: string; reason: string }) =>
-        `Сайн байна уу, ${p.firstName}.\n\nТаны төлбөрийн хүсэлт баталгаажсангүй.\nШалтгаан: ${p.reason}`,
-    },
     accessEnding: {
       subject: 'Онгод: эрх дуусах гэж байна',
       body: (p: { firstName: string; endsAt: string }) =>

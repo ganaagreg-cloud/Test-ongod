@@ -13,7 +13,6 @@ import {
   listAuditQuerySchema,
   listSubscriptionsQuerySchema,
   listUsersQuerySchema,
-  rejectRequestSchema,
   revokeRequestSchema,
 } from '@ongod/shared';
 import type { AdminQueries } from '../admin/queries';
@@ -61,19 +60,6 @@ export async function adminRoutes(
     admin.get('/admin/subscriptions/:id/history', async (req) => {
       const { id } = adminIdParamsSchema.parse(req.params);
       return historyResponseSchema.parse(await queries.subscriptionHistory(id));
-    });
-
-    admin.post('/admin/subscriptions/:id/approve', async (req) => {
-      const { id } = adminIdParamsSchema.parse(req.params);
-      const subscription = await decisions.approve(authOf(req).user, id);
-      return adminSubscriptionResponseSchema.parse({ subscription });
-    });
-
-    admin.post('/admin/subscriptions/:id/reject', async (req) => {
-      const { id } = adminIdParamsSchema.parse(req.params);
-      const body = rejectRequestSchema.parse(req.body);
-      const subscription = await decisions.reject(authOf(req).user, id, body.reason);
-      return adminSubscriptionResponseSchema.parse({ subscription });
     });
 
     admin.post('/admin/subscriptions/:id/revoke', async (req) => {

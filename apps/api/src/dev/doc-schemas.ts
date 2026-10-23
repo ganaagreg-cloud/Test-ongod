@@ -81,7 +81,6 @@ import {
   refreshRequestSchema,
   registerRequestSchema,
   registerResponseSchema,
-  rejectRequestSchema,
   removeDeviceRequestSchema,
   resendCodeRequestSchema,
   resetPasswordRequestSchema,
@@ -385,23 +384,13 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     responses: { 200: dashboardResponseSchema },
   }),
   'GET /v1/admin/subscriptions': admin(
-    'Payments queue (default PAYMENT_SUBMITTED), search, paging',
+    'Payments list (status filter, default ACTIVE, newest first), search, paging',
     {
       query: listSubscriptionsQuerySchema,
       responses: { 200: adminSubscriptionsPageSchema },
     },
   ),
   'GET /v1/admin/subscriptions/:id': admin('One subscription', {
-    responses: { 200: adminSubscriptionResponseSchema },
-  }),
-  'POST /v1/admin/subscriptions/:id/approve': admin(
-    'E. Approve: period, Payment, access, email + push, audit',
-    {
-      responses: { 200: adminSubscriptionResponseSchema },
-    },
-  ),
-  'POST /v1/admin/subscriptions/:id/reject': admin('E. Reject with a reason (emails the user)', {
-    body: rejectRequestSchema,
     responses: { 200: adminSubscriptionResponseSchema },
   }),
   'POST /v1/admin/subscriptions/:id/revoke': admin(

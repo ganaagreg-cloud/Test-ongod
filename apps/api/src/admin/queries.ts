@@ -73,9 +73,7 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
         db.subscription.findMany({
           where,
           include: subInclude,
-          // The queue is first come, first served; history shows the newest first.
-          orderBy:
-            query.status === 'PAYMENT_SUBMITTED' ? { submittedAt: 'asc' } : { createdAt: 'desc' },
+          orderBy: { createdAt: 'desc' },
           ...skipTake(query),
         }),
         db.subscription.count({ where }),
@@ -94,7 +92,7 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
       return toAdminSubscriptionDto(sub);
     },
 
-    /** Everything the admins did to one subscription (approve, reject, revoke, grant), newest first. */
+    /** Everything the admins did to one subscription (grant, revoke), newest first. */
     async subscriptionHistory(id: string) {
       const exists = await db.subscription.findUnique({ where: { id }, select: { id: true } });
       if (!exists) throw new AppError(404, 'NOT_FOUND');

@@ -9,7 +9,6 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "dev:setup": "tsx --env-file-if-exists=../../.env scripts/dev-setup.ts",
-    "dev:approve": "tsx --env-file-if-exists=../../.env scripts/dev-approve.ts",
     "bunny:reference": "tsx scripts/fetch-bunny-reference.ts",
     "bunny:smoke": "tsx --env-file-if-exists=../../.env scripts/bunny-smoke.ts",
     "test": "tsx scripts/fetch-bunny-reference.ts --if-missing && vitest run",

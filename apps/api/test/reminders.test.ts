@@ -163,12 +163,12 @@ describe('access-ending reminder (SPEC F)', () => {
 });
 
 describe('expiry (SPEC D, F)', () => {
-  it('PENDING_PAYMENT older than 7 days becomes EXPIRED; a PAYMENT_SUBMITTED one is left alone', async () => {
+  it('PENDING_PAYMENT older than 7 days becomes EXPIRED; other states are left alone', async () => {
     const app = await testApp();
     const plan = await makePlan();
     const member = await makeMember(app, 'm@example.com');
     await app.close();
-    const mk = (code: string, status: 'PENDING_PAYMENT' | 'PAYMENT_SUBMITTED', ageDays: number) =>
+    const mk = (code: string, status: 'PENDING_PAYMENT' | 'CANCELLED', ageDays: number) =>
       testDb.subscription.create({
         data: {
           userId: member.userId,
@@ -181,7 +181,7 @@ describe('expiry (SPEC D, F)', () => {
       });
     const old = await mk('ONG-OLD22', 'PENDING_PAYMENT', 7.1);
     const fresh = await mk('ONG-NEW22', 'PENDING_PAYMENT', 6.9);
-    const waiting = await mk('ONG-SUB22', 'PAYMENT_SUBMITTED', 30);
+    const closed = await mk('ONG-SUB22', 'CANCELLED', 30);
 
     expect(await expirePendingPayments.run({ db: testDb, now: new Date() })).toEqual({
       affected: 1,
@@ -190,7 +190,7 @@ describe('expiry (SPEC D, F)', () => {
       (await testDb.subscription.findUniqueOrThrow({ where: { id } })).status;
     expect(await status(old.id)).toBe('EXPIRED');
     expect(await status(fresh.id)).toBe('PENDING_PAYMENT');
-    expect(await status(waiting.id)).toBe('PAYMENT_SUBMITTED');
+    expect(await status(closed.id)).toBe('CANCELLED');
   });
 
   it('an ACTIVE period past its end becomes EXPIRED and the access check already refuses it', async () => {

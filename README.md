@@ -60,7 +60,6 @@ pnpm --filter @ongod/portal test        # CSS tokens-only, hardcoded-text check,
 pnpm --filter @ongod/portal test:e2e    # Playwright; the payment-flow spec needs `pnpm dev` running
 pnpm --filter @ongod/portal assets      # redraw public/favicon.svg and public/og.png from the tokens
 pnpm build && pnpm --filter @ongod/portal lighthouse   # mobile Lighthouse, writes docs/reports/lighthouse-portal.md
-pnpm dev:approve ONG-XXXXX              # approve (or: ... reject "reason") a "Төлсөн" request as the seeded owner
 ```
 
 Set `VITE_PUBLIC_URL` (the real https address) when building for production. Payments use QPay through Wire (`WIRE_*` in `.env`, ADR-0041); without `WIRE_API_KEY` the Pay page uses a mock checkout in development.

@@ -86,7 +86,7 @@ async function main() {
       accessUntil: daysFromNow(365),
     },
     {
-      // Paid and waiting for admin approval.
+      // Never paid: no subscription, no access (the id is kept so an old dev database updates in place).
       id: 'seed_user_submitted',
       username: 'saraa',
       email: 'saraa@example.com',
@@ -185,12 +185,10 @@ async function main() {
       userId: 'seed_user_active',
       status: 'ACTIVE',
       referenceCode: 'ONG-7K3QX',
-      submittedAt: daysFromNow(-66),
+      paymentProvider: 'MOCK',
       startsAt: daysFromNow(-65),
       endsAt: daysFromNow(300),
-      decidedById: 'seed_user_owner',
-      decidedAt: daysFromNow(-65),
-      payment: { method: 'BANK_TRANSFER' },
+      payment: { method: 'QPAY' },
     },
     {
       id: 'seed_sub_demo',
@@ -204,26 +202,19 @@ async function main() {
       payment: { method: 'MANUAL_GRANT', amountMnt: 0 },
     },
     {
-      id: 'seed_sub_submitted',
-      userId: 'seed_user_submitted',
-      status: 'PAYMENT_SUBMITTED',
-      referenceCode: 'ONG-H8WPN',
-      payerNote: 'Хаан банкнаас шилжүүлсэн',
-      transferAt: daysFromNow(-1),
-      submittedAt: daysFromNow(-1),
-    },
-    {
       id: 'seed_sub_expired',
       userId: 'seed_user_expired',
       status: 'EXPIRED',
       referenceCode: 'ONG-R2TZM',
+      paymentProvider: 'MOCK',
       startsAt: daysFromNow(-375),
       endsAt: daysFromNow(-10),
-      decidedById: 'seed_user_owner',
-      decidedAt: daysFromNow(-375),
-      payment: { method: 'BANK_TRANSFER' },
+      payment: { method: 'QPAY' },
     },
   ];
+
+  // The bank-transfer request older seeds created (ADR-0046): nothing can decide it any more.
+  await db.subscription.deleteMany({ where: { id: 'seed_sub_submitted' } });
 
   for (const { payment, ...s } of subscriptions) {
     const data = { ...s, planId: plan.id, amountMnt: plan.priceMnt };

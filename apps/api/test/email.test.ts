@@ -54,9 +54,9 @@ describe('email', () => {
   });
 
   it('escapes user-provided values in the HTML part', () => {
-    const { html } = renderEmail('paymentRejected', {
+    const { html } = renderEmail('accessEnding', {
       firstName: '<script>',
-      reason: 'a & b',
+      endsAt: 'a & b',
     });
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');

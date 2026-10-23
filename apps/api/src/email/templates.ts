@@ -11,7 +11,6 @@ export const emailTemplateSchemas = {
   resetPassword: z.object({ firstName: name, code }),
   changeEmail: z.object({ firstName: name, code }),
   paymentApproved: z.object({ firstName: name, endsAt: z.string().min(1) }),
-  paymentRejected: z.object({ firstName: name, reason: z.string().min(1).max(1000) }),
   accessEnding: z.object({ firstName: name, endsAt: z.string().min(1) }),
   /** To ALERT_EMAILS (owner/admins), see monitoring/alerts.ts. */
   errorAlert: z.object({

@@ -563,7 +563,7 @@ describe('SPEC H: delete account', () => {
       },
     });
     await testDb.payment.create({
-      data: { subscriptionId: sub.id, method: 'BANK_TRANSFER', amountMnt: 100000 },
+      data: { subscriptionId: sub.id, method: 'QPAY', amountMnt: 100000 },
     });
     await send(app, 'DELETE', '/v1/me', a.accessToken);
     expect(await testDb.subscription.count({ where: { userId: a.userId } })).toBe(1);
