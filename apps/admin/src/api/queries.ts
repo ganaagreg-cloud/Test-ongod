@@ -268,7 +268,16 @@ export function useCategoryActions() {
       }),
     onSuccess: done,
   });
-  return { create, update, remove, reorder };
+  const uploadCover = useMutation({
+    mutationFn: (v: { id: string; file: File }) =>
+      api(`/admin/categories/${v.id}/cover`, {
+        method: 'POST',
+        form: coverForm(v.file),
+        schema: adminCategoryResponseSchema,
+      }),
+    onSettled: done,
+  });
+  return { create, update, remove, reorder, uploadCover };
 }
 
 type Transition = 'publish' | 'unschedule' | 'archive' | 'restore' | 'media/retry';

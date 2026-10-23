@@ -246,6 +246,43 @@ test('categories: create, reorder, edit and delete', async () => {
   await expect(edited).toHaveCount(0);
 });
 
+test('categories: upload a cover and see the preview', async () => {
+  const stamp = Date.now();
+  const name = `Зурагтай ангилал ${stamp}`;
+  await page.getByRole('link', { name: mn.nav.categories }).click();
+  await page.getByRole('button', { name: mn.categories.new }).first().click();
+  const form = dialog(mn.categories.formCreate);
+  await form.getByLabel(mn.categories.name).fill(name);
+  await form.getByLabel(mn.categories.slug).fill(`e2e-cover-${stamp}`);
+  await form.getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.categories.created)).toBeVisible();
+
+  const row = page.getByRole('row', { name: new RegExp(name) });
+  await row.getByRole('button', { name: mn.common.edit }).click();
+  const editing = dialog(mn.categories.formEdit);
+  await expect(editing.getByRole('img', { name: mn.categories.cover.alt })).toHaveCount(0);
+
+  const cover = await sharp({
+    create: { width: 1280, height: 720, channels: 3, background: '#887766' },
+  })
+    .png()
+    .toBuffer();
+  await editing
+    .getByLabel(mn.episodes.cover.choose)
+    .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: cover });
+  await expect(toast(mn.episodes.cover.uploaded)).toBeVisible();
+  // A background job stores the picture; the form looks again until it shows.
+  await expect(editing.getByRole('img', { name: mn.categories.cover.alt })).toBeVisible({
+    timeout: 30_000,
+  });
+  await editing.getByRole('button', { name: mn.common.cancel }).click();
+
+  await row.getByRole('button', { name: mn.common.delete }).click();
+  const deleting = dialog(mn.categories.deleteTitle);
+  await deleting.getByRole('button', { name: mn.common.delete }).click();
+  await expect(toast(mn.categories.deleted)).toBeVisible();
+});
+
 test('episodes: create, cover, and an audio upload that resumes after a page refresh', async () => {
   test.setTimeout(150_000);
   await page.getByRole('link', { name: mn.nav.episodes }).click();

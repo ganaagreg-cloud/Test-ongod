@@ -234,6 +234,11 @@ export const mn = {
     name: 'Нэр',
     slug: 'Слаг',
     slugHint: 'Латин жижиг үсэг, тоо, зураас (жишээ нь: zohiol-ayalguu).',
+    cover: {
+      title: 'Ангиллын зураг',
+      alt: 'Ангиллын зураг',
+      createFirst: 'Зургийг ангиллыг хадгалсны дараа оруулна.',
+    },
     created: 'Ангилал нэмлээ.',
     deleteTitle: 'Ангиллыг устгах уу?',
     deleteText: (name: string) => `“${name}” ангиллыг устгана. Буцаах боломжгүй.`,

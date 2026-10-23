@@ -3,6 +3,7 @@ import type { AdminCategoryDto } from '@ongod/shared';
 import { Button, EmptyState, Input, Skeleton, useToast } from '@ongod/ui-web';
 import { useState, type FormEvent } from 'react';
 import { categoriesQuery, useCategoryActions } from '../api/queries';
+import { CoverCard } from '../components/CoverCard';
 import { LoadError, PageHeader } from '../components/bits';
 import { ConfirmDialog, errorText, Modal } from '../components/Modal';
 import { suggestSlug } from '../lib/format';
@@ -150,7 +151,8 @@ function CategoryFields({
 }) {
   const t = mn.categories;
   const toast = useToast();
-  const { create, update } = useCategoryActions();
+  const { create, update, uploadCover } = useCategoryActions();
+  const list = useQuery(categoriesQuery());
   const existing = editing === 'new' ? undefined : editing;
   const [name, setName] = useState(existing?.name ?? '');
   const [slug, setSlug] = useState(existing?.slug ?? '');
@@ -158,6 +160,8 @@ function CategoryFields({
   const [slugTouched, setSlugTouched] = useState(existing !== undefined);
   const [error, setError] = useState<string>();
   const pending = create.isPending || update.isPending;
+  // The picture comes from the live list, so it shows up when the background job has stored it.
+  const coverUrl = list.data?.categories.find((c) => c.id === existing?.id)?.coverUrl ?? null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -199,6 +203,21 @@ function CategoryFields({
         required
         {...(error ? { error } : {})}
       />
+      <section aria-labelledby="category-cover">
+        <h3 id="category-cover" className="admin-card__title">
+          {t.cover.title}
+        </h3>
+        {existing ? (
+          <CoverCard
+            coverUrl={coverUrl}
+            alt={t.cover.alt}
+            upload={(file) => uploadCover.mutateAsync({ id: existing.id, file })}
+            refetch={() => void list.refetch()}
+          />
+        ) : (
+          <p className="admin-hint">{t.cover.createFirst}</p>
+        )}
+      </section>
       <div className="admin-modal__actions">
         <Button variant="ghost" onClick={onClose} disabled={pending}>
           {mn.common.cancel}
