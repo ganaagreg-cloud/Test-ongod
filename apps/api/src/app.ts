@@ -224,7 +224,7 @@ export async function buildApp(deps: AppDeps) {
         secret: env.CRON_SECRET,
         tasks: deps.cronTasks ?? [
           // First, so a request about to expire is synced before expirePendingPayments runs.
-          syncWaitingPayments(payments),
+          syncWaitingPayments(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
           ...cronTasks,
           cleanupAbandonedUploads(() => tus.cleanUpExpired()),
         ],

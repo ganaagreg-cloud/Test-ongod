@@ -123,6 +123,8 @@ export const envSchema = z
     /** `sandbox` while testing with an sk_test key; the live operator id (e.g. qpay) in production. */
     WIRE_ALLOWED_OPERATORS: csv.transform((v) => (v.length > 0 ? v : ['sandbox'])),
     ALLOW_MOCK_PAYMENTS: bool.default(false),
+    /** Cron payment sync (ADR-0047): no new Wire call starts after this much of a tick. 20 s. */
+    WIRE_SYNC_BUDGET_MS: z.coerce.number().int().positive().default(20_000),
 
     // Old bank-transfer details (ADR-0006, replaced by ADR-0041). No longer shown or required.
     BANK_NAME: z.preprocess(emptyToUndefined, z.string().optional()),

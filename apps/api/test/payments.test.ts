@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WireGateway, WireIntent } from '../src/payments/wire';
 import { toMinor } from '../src/payments/wire';
 import { createPaymentService } from '../src/payments/service';
-import { syncWaitingPayments } from '../src/cron/tasks';
+import { expirePendingPayments, syncWaitingPayments } from '../src/cron/tasks';
 import { authApp } from './auth-helpers';
 import { call, jobsOf, makeMember, makePlan } from './admin-helpers';
 import { CRON_SECRET, testDb, testEnv } from './helpers';
@@ -481,13 +481,13 @@ describe('cron: syncWaitingPayments', () => {
     return { sub, intentId, userId: user.id };
   }
 
-  function makeTask(wire = fakeWire()) {
+  function makeTask(wire = fakeWire(), opts: Parameters<typeof syncWaitingPayments>[1] = {}) {
     const payments = createPaymentService({
       db: testDb,
       env: testEnv({ WIRE_API_KEY: 'sk_test_x', WIRE_WEBHOOK_SECRET: SECRET }),
       gateway: wire.gateway,
     });
-    const task = syncWaitingPayments(payments);
+    const task = syncWaitingPayments(payments, opts);
     return { wire, run: () => task.run({ db: testDb, now: new Date() }) };
   }
   const paid = (wire: ReturnType<typeof fakeWire>, id: string, amount = toMinor(120_000)) =>
@@ -539,8 +539,8 @@ describe('cron: syncWaitingPayments', () => {
 
   it('a Wire outage does not fail the tick, and the other requests are still synced', async () => {
     const { wire, run } = makeTask();
-    const down = await request({ ageDays: 2 });
-    const ok = await request({ ageDays: 1 });
+    const down = await request({ ageDays: 1 }); // newest: asked first, Wire fails
+    const ok = await request({ ageDays: 2 });
     paid(wire, ok.intentId);
     vi.mocked(wire.gateway.retrieveIntent).mockRejectedValueOnce(new Error('wire down'));
 
@@ -549,13 +549,71 @@ describe('cron: syncWaitingPayments', () => {
     expect((await row(ok.sub.id)).status).toBe('ACTIVE');
   });
 
-  it('asks Wire about at most 50 requests per tick, oldest first', async () => {
+  it('asks Wire about at most 50 requests per tick, newest first (ADR-0047)', async () => {
     const { wire, run } = makeTask();
     for (let i = 0; i < 52; i++) await request({ ageDays: 9 - i * 0.1 });
 
     expect(await run()).toEqual({ affected: 0 });
     expect(wire.gateway.retrieveIntent).toHaveBeenCalledTimes(50);
-    expect(vi.mocked(wire.gateway.retrieveIntent).mock.calls[0]![0]).toBe(`pi_sync_${seq - 51}`);
+    const asked = vi.mocked(wire.gateway.retrieveIntent).mock.calls.map((c) => c[0]);
+    expect(asked[0]).toBe(`pi_sync_${seq}`);
+    expect(asked).not.toContain(`pi_sync_${seq - 51}`);
+    expect(asked).not.toContain(`pi_sync_${seq - 50}`);
+  });
+
+  it('newest first with a small cap: abandoned old checkouts do not starve a new payer', async () => {
+    const { wire, run } = makeTask(undefined, { limit: 2 });
+    for (const ageDays of [9, 8, 7]) await request({ ageDays });
+    const fresh = await request({ ageDays: 0.01 });
+    paid(wire, fresh.intentId);
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect((await row(fresh.sub.id)).status).toBe('ACTIVE');
+    const asked = vi.mocked(wire.gateway.retrieveIntent).mock.calls.map((c) => c[0]);
+    expect(asked).toEqual([fresh.intentId, `pi_sync_${seq - 1}`]);
+  });
+
+  it('a hanging Wire cannot hold the tick past the budget plus one call timeout', async () => {
+    const wire = fakeWire();
+    vi.mocked(wire.gateway.retrieveIntent).mockImplementation(() => new Promise(() => {}));
+    const { run } = makeTask(wire, { budgetMs: 120, callTimeoutMs: 50 });
+    const subs = [];
+    for (let i = 0; i < 6; i++) subs.push(await request({ ageDays: 1 + i }));
+
+    const started = Date.now();
+    expect(await run()).toEqual({ affected: 0 });
+    const took = Date.now() - started;
+    expect(took).toBeLessThan(120 + 50 + 400);
+
+    // Calls start only inside the budget; the rest are left for the next tick.
+    const calls = vi.mocked(wire.gateway.retrieveIntent).mock.calls.length;
+    expect(calls).toBeGreaterThanOrEqual(1);
+    expect(calls).toBeLessThan(6);
+    for (const s of subs) expect((await row(s.sub.id)).status).toBe('PENDING_PAYMENT');
+
+    // Later work in the tick still runs.
+    expect(await expirePendingPayments.run({ db: testDb, now: new Date() })).toEqual({
+      affected: 0,
+    });
+  });
+
+  it('a call abandoned by the timeout that fails later causes no unhandled rejection', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (err: unknown) => unhandled.push(err);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      await request();
+      const late = {
+        sync: () =>
+          new Promise<void>((_, reject) => setTimeout(() => reject(new Error('late')), 80)),
+      } as unknown as Parameters<typeof syncWaitingPayments>[0];
+      const task = syncWaitingPayments(late, { budgetMs: 1000, callTimeoutMs: 20 });
+      expect(await task.run({ db: testDb, now: new Date() })).toEqual({ affected: 0 });
+      await new Promise((r) => setTimeout(r, 200));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
   });
 
   it('runs first in the default cron tick', async () => {

@@ -21,6 +21,7 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 - Bunny: owner's account values ([[BUNNY_SWITCH]])
 - Payments ([[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]): `WIRE_API_KEY` (`sk_live_...`), `WIRE_WEBHOOK_SECRET`, `WIRE_ALLOWED_OPERATORS` (the live operator id, e.g. `qpay`); leave `ALLOW_MOCK_PAYMENTS` unset. Without the Wire keys production answers 503 on "choose a plan" (there is no mock). Add the endpoint `<PUBLIC_BASE_URL>/v1/webhooks/wire` in the Wire dashboard for `payment_intent.succeeded`, `payment_intent.canceled` and `payment_intent.payment_failed`. **Before launch: one small real payment, and check the exact amount charged on the bank statement** ([[R-wire-qpay-gateway]]). `RECEIPTS_DIR` stays on persistent disk and in the backup (old bank-transfer receipts, [[ADR-0023-subscription-workflows-implementation|ADR-0023]]); optional `EXPO_ACCESS_TOKEN`
 - Added by [[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]] (defaults are fine, set only to change them): `JOB_LOCK_TIMEOUT_MS` (7200000, 2 h: longer than the slowest video upload), `AUTH_RATE_LIMIT_IDENTIFIER_CEILING` (100 attempts per identifier per window, from any IP), `REFRESH_GRACE_SECONDS` (10)
+- Added by [[ADR-0047-wire-payment-sync-window|ADR-0047]] (default is fine): `WIRE_SYNC_BUDGET_MS` (20000: time the cron tick may spend asking Wire about waiting payments)
 - Admin login is password only ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]): set a long, unique `SEED_OWNER_PASSWORD` before the first deploy
 
 ## Steps

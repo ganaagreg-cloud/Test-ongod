@@ -22,19 +22,55 @@ export interface CronTask {
   run(ctx: CronTaskContext): Promise<{ affected: number }>;
 }
 
-const SYNC_BATCH = 50;
 /** A request that expired a few days ago may still have been paid on its last day. */
 const SYNC_WINDOW_DAYS = PENDING_PAYMENT_TTL_DAYS + 3;
 
+export interface SyncWaitingPaymentsOptions {
+  /** Requests asked about per tick. Default 50. */
+  limit?: number;
+  /** No new Wire call starts after this much time in the tick (WIRE_SYNC_BUDGET_MS). */
+  budgetMs?: number;
+  /** One call is abandoned for this tick after this long. Default 10 s. */
+  callTimeoutMs?: number;
+}
+
+/** Resolves true when `work` settles (either way), false when `ms` passes first. */
+async function settlesWithin(work: Promise<unknown>, ms: number): Promise<boolean> {
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<false>((resolve) => {
+    timer = setTimeout(() => resolve(false), ms);
+  });
+  try {
+    // Both outcomes are handled here, so a late rejection of abandoned work is never unhandled.
+    return await Promise.race([
+      work.then(
+        () => true,
+        () => true,
+      ),
+      timedOut,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
- * ADR-0045: asks Wire about waiting QPay requests, so a payment whose webhook was lost is granted
- * within one tick. Runs before expirePendingPayments. Granting goes through the payment service
- * (one transaction, status precondition), so repeated or parallel ticks grant once. A Wire error
- * is logged by sync() and only skips that request.
+ * ADR-0047 (supersedes ADR-0045 item 3): asks Wire about waiting QPay requests, so a payment
+ * whose webhook was lost is granted within one tick. Newest first, so abandoned old checkouts
+ * cannot starve a recent payer; time-boxed, so a hanging Wire cannot stall the rest of the tick.
+ * Runs before expirePendingPayments. Granting goes through the payment service (one transaction,
+ * status precondition), so repeated or parallel ticks grant once. A Wire error is logged by
+ * sync() and only skips that request.
  */
-export const syncWaitingPayments = (payments: PaymentService): CronTask => ({
+export const syncWaitingPayments = (
+  payments: Pick<PaymentService, 'sync'>,
+  opts: SyncWaitingPaymentsOptions = {},
+): CronTask => ({
   name: 'syncWaitingPayments',
   async run({ db, now }) {
+    const budgetMs = opts.budgetMs ?? 20_000;
+    const callTimeoutMs = opts.callTimeoutMs ?? 10_000;
+    const startedAt = Date.now();
     const waiting = await db.subscription.findMany({
       where: {
         paymentProvider: 'WIRE',
@@ -43,12 +79,13 @@ export const syncWaitingPayments = (payments: PaymentService): CronTask => ({
         createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
       },
       include: { plan: true },
-      orderBy: { createdAt: 'asc' },
-      take: SYNC_BATCH,
+      orderBy: { createdAt: 'desc' },
+      take: opts.limit ?? 50,
     });
     let granted = 0;
     for (const sub of waiting) {
-      await payments.sync(sub);
+      if (Date.now() - startedAt >= budgetMs) break; // the rest wait for the next tick
+      if (!(await settlesWithin(payments.sync(sub), callTimeoutMs))) continue; // abandoned
       const after = await db.subscription.findUnique({
         where: { id: sub.id },
         select: { status: true },
