@@ -60,6 +60,11 @@ const columns = [
     cell: ({ row }) => formatMnt(row.original.amountMnt),
   }),
   col.display({
+    id: 'method',
+    header: mn.payments.columns.method,
+    cell: ({ row }) => mn.payments.methods[row.original.paymentProvider],
+  }),
+  col.display({
     id: 'submitted',
     header: mn.payments.columns.submitted,
     cell: ({ row }) =>
@@ -165,6 +170,7 @@ export function PaymentsPage() {
           }))}
         />
       </div>
+      <p className="admin-hint">{mn.payments.queueHint}</p>
       <p className="admin-hint">{mn.payments.shortcuts}</p>
 
       {list.error ? <LoadError error={list.error} onRetry={() => void list.refetch()} /> : null}
@@ -248,6 +254,8 @@ function PaymentPanel({
 }) {
   const history = useQuery(subscriptionHistoryQuery(s.id));
   const decidable = s.status === 'PAYMENT_SUBMITTED';
+  // Transfer time, payer note and receipt only exist on old bank-transfer requests.
+  const isBank = s.paymentProvider === 'NONE';
 
   return (
     <aside className="admin-panel" aria-label={mn.payments.panel.title}>
@@ -266,6 +274,7 @@ function PaymentPanel({
         <Fact label={mn.payments.panel.amount}>
           <strong>{formatMnt(s.amountMnt)}</strong> · {s.plan.name}
         </Fact>
+        <Fact label={mn.payments.panel.method}>{mn.payments.methods[s.paymentProvider]}</Fact>
         <Fact label={mn.payments.panel.user}>
           <Link to={`/users/${s.user.id}`}>
             {fullName(s.user)} (@{s.user.username})
@@ -273,13 +282,17 @@ function PaymentPanel({
         </Fact>
         <Fact label={mn.payments.panel.email}>{s.user.email}</Fact>
         <Fact label={mn.payments.panel.phone}>{s.user.phone}</Fact>
-        <Fact label={mn.payments.panel.transferAt}>
-          {s.transferAt ? formatDateTime(s.transferAt) : mn.common.none}
-        </Fact>
-        <Fact label={mn.payments.panel.submittedAt}>
-          {s.submittedAt ? formatDateTime(s.submittedAt) : mn.common.none}
-        </Fact>
-        <Fact label={mn.payments.panel.payerNote}>{s.payerNote ?? mn.common.none}</Fact>
+        {isBank ? (
+          <>
+            <Fact label={mn.payments.panel.transferAt}>
+              {s.transferAt ? formatDateTime(s.transferAt) : mn.common.none}
+            </Fact>
+            <Fact label={mn.payments.panel.submittedAt}>
+              {s.submittedAt ? formatDateTime(s.submittedAt) : mn.common.none}
+            </Fact>
+            <Fact label={mn.payments.panel.payerNote}>{s.payerNote ?? mn.common.none}</Fact>
+          </>
+        ) : null}
         {s.startsAt && s.endsAt ? (
           <Fact label={mn.payments.panel.period}>
             {formatDateTime(s.startsAt)} → {formatDateTime(s.endsAt)}
@@ -296,12 +309,14 @@ function PaymentPanel({
         ) : null}
       </dl>
 
-      <section aria-labelledby={`receipt-${s.id}`}>
-        <h3 id={`receipt-${s.id}`} className="admin-panel__subtitle">
-          {mn.payments.panel.receipt}
-        </h3>
-        <Receipt subscription={s} />
-      </section>
+      {isBank ? (
+        <section aria-labelledby={`receipt-${s.id}`}>
+          <h3 id={`receipt-${s.id}`} className="admin-panel__subtitle">
+            {mn.payments.panel.receipt}
+          </h3>
+          <Receipt subscription={s} />
+        </section>
+      ) : null}
 
       {decidable ? (
         <div className="admin-panel__actions">

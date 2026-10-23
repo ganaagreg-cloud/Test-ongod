@@ -92,8 +92,16 @@ export const mn = {
       user: 'Хэрэглэгч',
       amount: 'Дүн',
       submitted: 'Илгээсэн',
+      method: 'Арга',
       status: 'Төлөв',
     },
+    methods: {
+      WIRE: 'QPay',
+      MOCK: 'QPay (туршилт)',
+      NONE: 'Банкны шилжүүлэг',
+    },
+    queueHint:
+      'QPay төлбөр баталгаажмагц эрх өөрөө нээгдэнэ. Дараалалд зөвхөн банкны шилжүүлгийн хуучин хүсэлт орно.',
     emptyQueue: 'Шалгах төлбөр байхгүй байна.',
     panel: {
       title: 'Төлбөрийн дэлгэрэнгүй',
@@ -103,6 +111,7 @@ export const mn = {
       amount: 'Дүн',
       reference: 'Лавлах код',
       plan: 'Багц',
+      method: 'Төлбөрийн арга',
       payerNote: 'Төлөгчийн тэмдэглэл',
       transferAt: 'Шилжүүлсэн цаг',
       submittedAt: 'Илгээсэн цаг',
