@@ -3,9 +3,11 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WireGateway, WireIntent } from '../src/payments/wire';
 import { toMinor } from '../src/payments/wire';
+import { createPaymentService } from '../src/payments/service';
+import { syncWaitingPayments } from '../src/cron/tasks';
 import { authApp } from './auth-helpers';
 import { call, jobsOf, makeMember, makePlan } from './admin-helpers';
-import { testDb } from './helpers';
+import { CRON_SECRET, testDb, testEnv } from './helpers';
 
 const SECRET = 'whsec_test_secret';
 
@@ -435,5 +437,140 @@ describe('mock checkout (development, no Wire keys)', () => {
     app = await authApp({ ...prod, ALLOW_MOCK_PAYMENTS: '1' }, { wire: null });
     const res = await mock(sub.id, member.accessToken, 'success');
     expect(res.statusCode).toBe(200);
+  });
+});
+
+// ADR-0045 item 3: the cron tick asks Wire about waiting requests, so a lost webhook is recovered.
+describe('cron: syncWaitingPayments', () => {
+  const DAY_MS = 86_400_000;
+  let seq = 0;
+
+  async function request(
+    over: {
+      status?: 'PENDING_PAYMENT' | 'EXPIRED' | 'CANCELLED' | 'ACTIVE';
+      provider?: 'WIRE' | 'MOCK' | 'NONE';
+      ageDays?: number;
+      intent?: boolean;
+    } = {},
+  ) {
+    const n = ++seq;
+    const user = await testDb.user.create({
+      data: {
+        username: `sync${n}`,
+        email: `sync${n}@example.com`,
+        firstName: 'А',
+        lastName: 'Б',
+        phone: `9900${n}`,
+      },
+    });
+    const plan = await makePlan({ priceMnt: 120_000 });
+    const provider = over.provider ?? 'WIRE';
+    const intentId = `pi_sync_${n}`;
+    const sub = await testDb.subscription.create({
+      data: {
+        userId: user.id,
+        planId: plan.id,
+        amountMnt: 120_000,
+        referenceCode: `ONG-S${String(n).padStart(4, '0')}`,
+        status: over.status ?? 'PENDING_PAYMENT',
+        paymentProvider: provider,
+        wirePaymentIntentId: over.intent === false || provider !== 'WIRE' ? null : intentId,
+        createdAt: new Date(Date.now() - (over.ageDays ?? 1) * DAY_MS),
+      },
+    });
+    return { sub, intentId, userId: user.id };
+  }
+
+  function makeTask(wire = fakeWire()) {
+    const payments = createPaymentService({
+      db: testDb,
+      env: testEnv({ WIRE_API_KEY: 'sk_test_x', WIRE_WEBHOOK_SECRET: SECRET }),
+      gateway: wire.gateway,
+    });
+    const task = syncWaitingPayments(payments);
+    return { wire, run: () => task.run({ db: testDb, now: new Date() }) };
+  }
+  const paid = (wire: ReturnType<typeof fakeWire>, id: string, amount = toMinor(120_000)) =>
+    wire.intents.set(id, { id, status: 'succeeded', amount, livemode: false });
+
+  it('grants a paid PENDING_PAYMENT request once, even over two ticks', async () => {
+    const { wire, run } = makeTask();
+    const { sub, intentId, userId } = await request();
+    paid(wire, intentId);
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect(await run()).toEqual({ affected: 0 });
+
+    expect((await row(sub.id)).status).toBe('ACTIVE');
+    expect(await testDb.payment.count({ where: { subscriptionId: sub.id } })).toBe(1);
+    expect(await accessUntil(userId)).toEqual((await row(sub.id)).endsAt);
+  });
+
+  it('grants an EXPIRED request whose payment succeeded, but not a wrong amount', async () => {
+    const { wire, run } = makeTask();
+    const expired = await request({ status: 'EXPIRED', ageDays: 8 });
+    const wrong = await request();
+    paid(wire, expired.intentId);
+    paid(wire, wrong.intentId, 1_200);
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect((await row(expired.sub.id)).status).toBe('ACTIVE');
+    expect((await row(wrong.sub.id)).status).toBe('PENDING_PAYMENT');
+    expect(await testDb.payment.count({ where: { subscriptionId: wrong.sub.id } })).toBe(0);
+  });
+
+  it('ignores old, MOCK, NONE, intent-less, CANCELLED and ACTIVE requests (Wire is not asked)', async () => {
+    const { wire, run } = makeTask();
+    const others = [
+      await request({ ageDays: 11 }),
+      await request({ status: 'EXPIRED', ageDays: 11 }),
+      await request({ provider: 'MOCK' }),
+      await request({ provider: 'NONE' }),
+      await request({ intent: false }),
+      await request({ status: 'CANCELLED' }),
+      await request({ status: 'ACTIVE' }),
+    ];
+    for (const o of others) paid(wire, o.intentId);
+
+    expect(await run()).toEqual({ affected: 0 });
+    expect(wire.gateway.retrieveIntent).not.toHaveBeenCalled();
+    for (const o of others) expect((await row(o.sub.id)).status).toBe(o.sub.status);
+  });
+
+  it('a Wire outage does not fail the tick, and the other requests are still synced', async () => {
+    const { wire, run } = makeTask();
+    const down = await request({ ageDays: 2 });
+    const ok = await request({ ageDays: 1 });
+    paid(wire, ok.intentId);
+    vi.mocked(wire.gateway.retrieveIntent).mockRejectedValueOnce(new Error('wire down'));
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect((await row(down.sub.id)).status).toBe('PENDING_PAYMENT');
+    expect((await row(ok.sub.id)).status).toBe('ACTIVE');
+  });
+
+  it('asks Wire about at most 50 requests per tick, oldest first', async () => {
+    const { wire, run } = makeTask();
+    for (let i = 0; i < 52; i++) await request({ ageDays: 9 - i * 0.1 });
+
+    expect(await run()).toEqual({ affected: 0 });
+    expect(wire.gateway.retrieveIntent).toHaveBeenCalledTimes(50);
+    expect(vi.mocked(wire.gateway.retrieveIntent).mock.calls[0]![0]).toBe(`pi_sync_${seq - 51}`);
+  });
+
+  it('runs first in the default cron tick', async () => {
+    const { wire, plan, member } = await setup();
+    const { subscription } = (await apply(plan.id, member.accessToken)).json();
+    wire!.intents.get(`pi_${subscription.id}`)!.status = 'succeeded';
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/cron/tick',
+      headers: { 'x-cron-secret': CRON_SECRET },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(Object.keys(res.json().tasks)[0]).toBe('syncWaitingPayments');
+    expect(res.json().tasks.syncWaitingPayments).toEqual({ affected: 1 });
+    expect((await row(subscription.id)).status).toBe('ACTIVE');
   });
 });

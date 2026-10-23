@@ -190,11 +190,14 @@ export function createPaymentService(deps: {
       }
     },
 
-    /** Asks Wire about a waiting payment, so access arrives even before the webhook does. */
+    /**
+     * Asks Wire about a waiting payment, so access arrives even before the webhook does (status
+     * page), or after a lost webhook (cron, ADR-0045: also a request that expired meanwhile).
+     */
     async sync(sub: SubscriptionRow): Promise<void> {
       if (
         !gateway ||
-        sub.status !== 'PENDING_PAYMENT' ||
+        (sub.status !== 'PENDING_PAYMENT' && sub.status !== 'EXPIRED') ||
         sub.paymentProvider !== 'WIRE' ||
         !sub.wirePaymentIntentId
       ) {
@@ -203,7 +206,8 @@ export function createPaymentService(deps: {
       try {
         await applyIntent(sub, await gateway.retrieveIntent(sub.wirePaymentIntentId));
       } catch (err) {
-        // The status page asks again in a few seconds; a Wire outage must not break it.
+        // The status page asks again in a few seconds, the cron on its next tick; a Wire outage
+        // must not break either.
         report({ err, subscriptionId: sub.id }, 'wire status check failed');
       }
     },

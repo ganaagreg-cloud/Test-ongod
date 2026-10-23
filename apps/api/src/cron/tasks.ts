@@ -1,8 +1,9 @@
-import { REMINDER_DAYS_BEFORE_END } from '@ongod/shared';
+import { PENDING_PAYMENT_TTL_DAYS, REMINDER_DAYS_BEFORE_END } from '@ongod/shared';
 import { lockUser } from '../auth/service';
 import type { Db } from '../db';
 import { enqueueEmail } from '../email';
 import { mn } from '../i18n/mn';
+import type { PaymentService } from '../payments/service';
 import { DAY_MS, ubDate } from '../lib/dates';
 import { enqueuePush } from '../push';
 import { enqueuePublishPush, type PublishedEpisode } from '../push/publish';
@@ -20,6 +21,43 @@ export interface CronTask {
   name: string;
   run(ctx: CronTaskContext): Promise<{ affected: number }>;
 }
+
+const SYNC_BATCH = 50;
+/** A request that expired a few days ago may still have been paid on its last day. */
+const SYNC_WINDOW_DAYS = PENDING_PAYMENT_TTL_DAYS + 3;
+
+/**
+ * ADR-0045: asks Wire about waiting QPay requests, so a payment whose webhook was lost is granted
+ * within one tick. Runs before expirePendingPayments. Granting goes through the payment service
+ * (one transaction, status precondition), so repeated or parallel ticks grant once. A Wire error
+ * is logged by sync() and only skips that request.
+ */
+export const syncWaitingPayments = (payments: PaymentService): CronTask => ({
+  name: 'syncWaitingPayments',
+  async run({ db, now }) {
+    const waiting = await db.subscription.findMany({
+      where: {
+        paymentProvider: 'WIRE',
+        wirePaymentIntentId: { not: null },
+        status: { in: ['PENDING_PAYMENT', 'EXPIRED'] },
+        createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
+      },
+      include: { plan: true },
+      orderBy: { createdAt: 'asc' },
+      take: SYNC_BATCH,
+    });
+    let granted = 0;
+    for (const sub of waiting) {
+      await payments.sync(sub);
+      const after = await db.subscription.findUnique({
+        where: { id: sub.id },
+        select: { status: true },
+      });
+      if (after?.status === 'ACTIVE') granted++;
+    }
+    return { affected: granted };
+  },
+});
 
 /** SPEC D: PENDING_PAYMENT expires after 7 days. */
 export const expirePendingPayments: CronTask = {

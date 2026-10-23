@@ -20,7 +20,12 @@ import { createSocialVerifiers, type SocialVerifiers } from './auth/social';
 import { createSocialService } from './auth/social-service';
 import { createMediaUrls, type MediaUrls } from './catalog/media';
 import { createCatalogService } from './catalog/service';
-import { cleanupAbandonedUploads, cronTasks, type CronTask } from './cron/tasks';
+import {
+  cleanupAbandonedUploads,
+  cronTasks,
+  syncWaitingPayments,
+  type CronTask,
+} from './cron/tasks';
 import type { Db } from './db';
 import { missingBunnyKeys, missingStreamKeys, requireBunny, requireStream, type Env } from './env';
 import { errorBody, toErrorReply, type HttpErrorReporter } from './errors';
@@ -218,6 +223,8 @@ export async function buildApp(deps: AppDeps) {
         db,
         secret: env.CRON_SECRET,
         tasks: deps.cronTasks ?? [
+          // First, so a request about to expire is synced before expirePendingPayments runs.
+          syncWaitingPayments(payments),
           ...cronTasks,
           cleanupAbandonedUploads(() => tus.cleanUpExpired()),
         ],
