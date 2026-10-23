@@ -1,12 +1,11 @@
-import { mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { test } from '@playwright/test';
+import { screenPath } from './screens';
 
 // Screenshots of the kit gallery (/dev/ui) on both surfaces, for docs/screens/ (design review).
 // Needs Metro on MOBILE_WEB_URL (default http://localhost:8081). Run:
 //   pnpm exec playwright test e2e/screens.spec.ts
-// Output: docs/screens/kit-<surface>-<section>.png
-const OUT = `${resolve(process.cwd(), '../../docs/screens')}/`;
+// Output: kit-<surface>-<section>.png in test-results/screens/, or in docs/screens/ with
+// UPDATE_SCREENS=1 (screens.ts).
 const SECTIONS = [
   'type',
   'colors',
@@ -27,14 +26,13 @@ test.describe.configure({ mode: 'serial' });
 for (const surface of ['dark', 'cream'] as const) {
   for (const section of SECTIONS) {
     test(`kit ${surface} ${section}`, async ({ page }) => {
-      mkdirSync(OUT, { recursive: true });
       await page.setViewportSize({
         width: 390,
         height: section === 'type' || section === 'episodes' ? 1500 : 1000,
       });
       await page.goto(`/dev/ui?surface=${surface}&section=${section}`);
       await page.waitForTimeout(2500);
-      await page.screenshot({ path: `${OUT}kit-${surface}-${section}.png` });
+      await page.screenshot({ path: screenPath(`kit-${surface}-${section}`) });
     });
   }
 }

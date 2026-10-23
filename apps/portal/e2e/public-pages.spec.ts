@@ -1,8 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { screenPath } from './screens';
 
-const shot = (name: string) =>
-  fileURLToPath(new URL(`../../../docs/screens/portal-${name}.png`, import.meta.url));
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
+const shot = (name: string) => screenPath(`portal-${name}`);
 
 // A phone-sized window: the portal is mobile first.
 test.use({ viewport: { width: 390, height: 844 } });

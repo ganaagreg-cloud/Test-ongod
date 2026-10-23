@@ -1,8 +1,8 @@
-import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 // One member on one browser for the whole spec: each new browser is a new device, and the
 // account allows two (SPEC B).
 import { mn } from '../src/i18n/mn';
+import { screenPath } from './screens';
 
 // The phase 3 screens (ADR-0039) as Expo web against the real API and the seeded catalog
 // (pnpm --filter @ongod/api db:seed): tabs, Нүүр, Сан (search, category, sort), the bookmark and
@@ -10,7 +10,8 @@ import { mn } from '../src/i18n/mn';
 // The member is new, so it has no access: playing must show the store-safe no-access sheet.
 const API = process.env.MOBILE_E2E_API_URL ?? 'http://localhost:3100';
 const MAILPIT = 'http://localhost:8025';
-const shot = (name: string) => join(__dirname, '../../../docs/screens', `mobile-${name}.png`);
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
+const shot = (name: string) => screenPath(`mobile-${name}`);
 const settle = (page: Page) => page.waitForTimeout(1500);
 
 const up = (url: string) =>

@@ -1,6 +1,6 @@
-﻿import { join } from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+﻿import { expect, test, type Page } from '@playwright/test';
 import { mn } from '../src/i18n/mn';
+import { screenPath } from './screens';
 
 // The sign-in screens of the app, run as Expo web in a browser (phone-sized) against the real
 // API, database and Mailpit. What this cannot show: SecureStore, Google / Apple sign-in and the
@@ -9,7 +9,8 @@ import { mn } from '../src/i18n/mn';
 // profile". Creates e2e users in the dev database, like the portal and admin specs.
 const API = process.env.MOBILE_E2E_API_URL ?? 'http://localhost:3100';
 const MAILPIT = 'http://localhost:8025';
-const shot = (name: string) => join(__dirname, '../../../docs/screens', `mobile-${name}.png`);
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
+const shot = (name: string) => screenPath(`mobile-${name}`);
 
 /** Lets the entrance animations and the line drawing finish before a screenshot. */
 const settle = (page: Page) => page.waitForTimeout(2600);

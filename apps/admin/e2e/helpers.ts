@@ -7,8 +7,17 @@ import type { mn as Mn } from '../src/i18n/mn';
 export const ORIGIN = process.env.ADMIN_E2E_URL ?? 'http://localhost:3000';
 export const MAILPIT = 'http://localhost:8025';
 
+/**
+ * Where screenshots go (ADR-0045): test-results/screens/ at the repo root (ignored) by default, so
+ * a run leaves no changed files in git; the tracked docs/screens/ only with UPDATE_SCREENS=1.
+ */
 export const shot = (name: string) =>
-  fileURLToPath(new URL(`../../../docs/screens/${name}.png`, import.meta.url));
+  fileURLToPath(
+    new URL(
+      `../../../${process.env.UPDATE_SCREENS === '1' ? 'docs/screens' : 'test-results/screens'}/${name}.png`,
+      import.meta.url,
+    ),
+  );
 
 /** The owner's login from the local .env. Read here, never printed. */
 export function ownerLogin(): { identifier: string; password: string } {

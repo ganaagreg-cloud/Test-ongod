@@ -1,11 +1,12 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { screenPath } from './screens';
 
 // Visual check of the mobile app's UI kit through Expo web. Needs Metro running
 // (`pnpm dev:mobile:web`), so it only runs when MOBILE_WEB_URL is set:
 //   MOBILE_WEB_URL=http://localhost:8081 pnpm test:e2e
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
 const base = process.env.MOBILE_WEB_URL;
-const shot = fileURLToPath(new URL('../../../docs/screens/ui-kit-mobile-web.png', import.meta.url));
+const shot = screenPath('ui-kit-mobile-web');
 
 test.skip(!base, 'set MOBILE_WEB_URL to run the mobile web check');
 

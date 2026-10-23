@@ -37,7 +37,7 @@ Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-
 
 - `pnpm --filter @ongod/mobile test` (unit tests), `typecheck`.
 - `pnpm --filter @ongod/mobile exec expo export --platform android` (and `ios`): bundles the real native code paths, so a broken native import shows up.
-- Screens against the real API in a browser: start the API (`SERVE_STATIC` not needed), Mailpit, and Metro web with `EXPO_PUBLIC_API_URL` set, then `MOBILE_E2E_API_URL=<api> pnpm --filter @ongod/mobile test:e2e`. Each browser context counts as a new device (limit 2), so the specs register their own users. `e2e/app.spec.ts` (the tabs, Player, no-access, Сан, Хадгалсан, Профайл, Тохиргоо) also needs the seeded catalog (`pnpm --filter @ongod/api db:seed`). Metro started with `CI=1` does not watch files: restart it after changing app code, or the browser gets the old bundle.
+- Screens against the real API in a browser: start the API (`SERVE_STATIC` not needed), Mailpit, and Metro web with `EXPO_PUBLIC_API_URL` set, then `MOBILE_E2E_API_URL=<api> pnpm --filter @ongod/mobile test:e2e`. Each browser context counts as a new device (limit 2), so the specs register their own users. `e2e/app.spec.ts` (the tabs, Player, no-access, Сан, Хадгалсан, Профайл, Тохиргоо) also needs the seeded catalog (`pnpm --filter @ongod/api db:seed`). Metro started with `CI=1` does not watch files: restart it after changing app code, or the browser gets the old bundle. Screenshots go to the ignored `test-results/screens/`; add `UPDATE_SCREENS=1` to refresh the tracked `docs/screens/` ([[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]]).
 
 ## Not yet done
 

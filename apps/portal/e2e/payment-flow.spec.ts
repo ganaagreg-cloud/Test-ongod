@@ -1,14 +1,13 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { screenPath as shots } from './screens';
 
 // The whole customer journey against the real API, database and Mailpit (pnpm dev must be
 // running, without WIRE_API_KEY so the mock QPay checkout is used, ADR-0041): register, email
 // code, login, plan, QPay checkout, access. Skipped when the API is not up. Each run creates
 // one e2e-... user in the dev database.
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
 const API = 'http://localhost:3000';
 const MAILPIT = 'http://localhost:8025';
-const shots = (name: string) =>
-  fileURLToPath(new URL(`../../../docs/screens/${name}.png`, import.meta.url));
 
 const apiUp = await fetch(`${API}/health`).then(
   (r) => r.ok,

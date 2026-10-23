@@ -1,11 +1,10 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { fontFamily, fontWeights, type FontRole } from '@ongod/tokens';
+import { screenPath } from './screens';
 
 const SAMPLE = 'ӨҮөү';
-const screenshotPath = fileURLToPath(
-  new URL('../../../docs/screens/font-check-web.png', import.meta.url),
-);
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
+const screenshotPath = screenPath('font-check-web');
 
 test('Lora and Inter render Mongolian Cyrillic (Ө/Ү) on web', async ({ page }) => {
   await page.goto('/dev/ui');

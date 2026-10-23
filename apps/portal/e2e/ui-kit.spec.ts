@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
 import { layout } from '@ongod/tokens';
+import { screenPath as shot } from './screens';
 
-const shot = (name: string) =>
-  fileURLToPath(new URL(`../../../docs/screens/${name}.png`, import.meta.url));
+// Screenshots: test-results/screens/ by default, docs/screens/ with UPDATE_SCREENS=1 (screens.ts).
 
 async function openGallery(page: Page) {
   await page.goto('/dev/ui');

@@ -106,7 +106,7 @@ pnpm test:e2e       # Playwright (first time: pnpm --filter @ongod/portal test:e
 
 API tests use `TEST_DATABASE_URL` (its name must end in `_test`). Migrations are applied once per run, and every table is emptied before each test. If the test schema drifts (for example after editing an existing migration), reset it yourself: `DATABASE_URL=<TEST_DATABASE_URL> pnpm --filter @ongod/api db:reset`. This drops all data in that database.
 
-`pnpm test:e2e` opens the dev-only page `/dev/ui` in the portal, checks that Lora and Inter render Mongolian Ө/Ү, and saves `docs/screens/font-check-web.png`.
+`pnpm test:e2e` opens the dev-only page `/dev/ui` in the portal, checks that Lora and Inter render Mongolian Ө/Ү, and saves `font-check-web.png`. E2E screenshots go to the ignored `test-results/screens/` by default; run with `UPDATE_SCREENS=1` to write the tracked `docs/screens/` instead (design review, ADR-0045).
 
 ## Jobs and cron
 
