@@ -459,3 +459,56 @@ describe('bulk', () => {
     expect((await bulk(admin.accessToken, ['a'], { type: 'delete' })).statusCode).toBe(400);
   });
 });
+
+describe('free items', () => {
+  it('creates an item as paid by default', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const res = await call(app, 'POST', '/v1/admin/episodes', admin.accessToken, {
+      title: 'Шинэ',
+      description: 'Тайлбар',
+      categoryId: category.id,
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().episode.isFree).toBe(false);
+  });
+
+  it('an admin marks an item free and back', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const item = await makeEpisode(category.id, { status: 'DRAFT' });
+    const url = `/v1/admin/episodes/${item.id}`;
+    const on = await call(app, 'PATCH', url, admin.accessToken, { isFree: true });
+    expect(on.statusCode).toBe(200);
+    expect(on.json().episode.isFree).toBe(true);
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: item.id } })).isFree).toBe(true);
+    const off = await call(app, 'PATCH', url, admin.accessToken, { isFree: false });
+    expect(off.json().episode.isFree).toBe(false);
+    expect(await auditCount('episode.update')).toBe(2);
+  });
+
+  it('a USER cannot set isFree', async () => {
+    const member = await makeMember(app);
+    const category = await makeCategory();
+    const item = await makeEpisode(category.id, { status: 'DRAFT' });
+    const res = await call(app, 'PATCH', `/v1/admin/episodes/${item.id}`, member.accessToken, {
+      isFree: true,
+    });
+    expect(res.statusCode).toBe(403);
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: item.id } })).isFree).toBe(false);
+  });
+
+  it('duplicate starts paid', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const source = await makeEpisode(category.id, { isFree: true });
+    const res = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${source.id}/duplicate`,
+      admin.accessToken,
+    );
+    expect(res.statusCode).toBe(201);
+    expect(res.json().episode.isFree).toBe(false);
+  });
+});

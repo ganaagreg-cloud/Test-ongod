@@ -93,6 +93,7 @@ export function createContentService(deps: {
       seriesPart: row.seriesPart,
       tags: row.tags.map((t) => t.tag).sort((a, b) => a.name.localeCompare(b.name)),
       notifyOnPublish: row.notifyOnPublish,
+      isFree: row.isFree,
       pushText: row.pushText,
     };
   }
@@ -363,6 +364,7 @@ export function createContentService(deps: {
               ...(input.notifyOnPublish !== undefined
                 ? { notifyOnPublish: input.notifyOnPublish }
                 : {}),
+              ...(input.isFree !== undefined ? { isFree: input.isFree } : {}),
               pushText: input.pushText ?? null,
             },
           });
@@ -398,6 +400,7 @@ export function createContentService(deps: {
           if (input.description !== undefined) data.description = input.description;
           if (input.categoryId !== undefined) data.categoryId = input.categoryId;
           if (input.notifyOnPublish !== undefined) data.notifyOnPublish = input.notifyOnPublish;
+          if (input.isFree !== undefined) data.isFree = input.isFree;
           if (input.pushText !== undefined) data.pushText = input.pushText;
           if (input.seriesId !== undefined || input.seriesPart !== undefined) {
             const seriesId = input.seriesId === undefined ? current.seriesId : input.seriesId;

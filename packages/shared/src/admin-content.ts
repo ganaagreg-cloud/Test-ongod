@@ -210,6 +210,7 @@ export const adminEpisodeSchema = z.object({
   seriesPart: z.number().int().nullable(),
   tags: z.array(z.object({ id: z.string(), name: z.string() })),
   notifyOnPublish: z.boolean(),
+  isFree: z.boolean(),
   pushText: z.string().nullable(),
 });
 export type AdminEpisodeDto = z.infer<typeof adminEpisodeSchema>;
@@ -264,6 +265,7 @@ export const createEpisodeRequestSchema = z.object({
   seriesPart: z.number().int().min(1).max(9999).nullable().optional(),
   tagIds: z.array(idSchema).max(20).optional(),
   notifyOnPublish: z.boolean().optional(),
+  isFree: z.boolean().optional(),
   pushText: z.string().trim().max(180).nullable().optional(),
 });
 export type CreateEpisodeRequest = z.infer<typeof createEpisodeRequestSchema>;

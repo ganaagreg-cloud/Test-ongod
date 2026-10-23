@@ -275,6 +275,7 @@ model Episode {
   seriesPart      Int?
   // Whether publishing sends a push to members; pushText overrides the default text.
   notifyOnPublish Boolean       @default(true)
+  isFree          Boolean       @default(false)
   pushText        String?       @db.Text
 
   category         Category           @relation(fields: [categoryId], references: [id])

@@ -98,6 +98,7 @@ export async function makeEpisode(
     /** AUDIO (default) on Bunny Storage, or VIDEO on Bunny Stream with a random video id. */
     kind?: 'AUDIO' | 'VIDEO';
     coverPath?: string;
+    isFree?: boolean;
   } = {},
 ) {
   seq++;
@@ -110,6 +111,7 @@ export async function makeEpisode(
       coverPath: over.coverPath ?? `covers/ep${seq}/cover.webp`,
       status,
       scheduledFor: over.scheduledFor ?? null,
+      isFree: over.isFree ?? false,
       publishedAt:
         over.publishedAt !== undefined
           ? over.publishedAt
