@@ -7,7 +7,7 @@ tags: [spec]
 
 Decisions: [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] (replaces [[ADR-0011-audio-first-media-asset|ADR-0011]]) · Home: [[00-Index]]
 
-Paid yearly access to a library of episodes. Each episode has one media file: audio over the episode picture, or video (max 720p). Episodes are usually 40 minutes or longer, 1 to 10 a week. The catalog is visible to logged-in users; playback requires active access.
+Paid yearly access to a library of episodes, plus free items the owner marks free ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]]). Each episode has one media file: audio over the episode picture, or video (max 720p). Episodes are usually 40 minutes or longer, 1 to 10 a week. The catalog is visible to logged-in users; playback of paid items requires active access, free items do not (login rules for free items: phase 2 plan).
 
 # Surfaces
 
@@ -71,7 +71,7 @@ AppConfig(key, value)
 
 Requests: [[changes]]
 
-Offline downloads, comments/social feed, free episodes, quizzes, live, multiple creators, bank CSV matching (unless agreed).
+Offline downloads, comments/social feed, quizzes, live, multiple creators, bank CSV matching (unless agreed).
 
 # Acceptance tests (must pass before launch)
 

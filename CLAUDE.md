@@ -1,4 +1,4 @@
-Project: Онгод — a paid, members-only audio/video library app for a Mongolian creator. No free users, no free episodes.
+Project: Онгод — a paid, members-only audio/video library app for a Mongolian creator. Paid access to the full library; free users and a few free items are allowed (ADR-0043).
 
 Read docs/SPEC.md and docs/DESIGN.md before any task. If a request conflicts with them, stop and tell me.
 
