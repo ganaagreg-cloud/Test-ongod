@@ -428,3 +428,155 @@ describe('JobWorker locks (ADR-0045)', () => {
     expect(hooked).toEqual([[{ n: 2 }, j2.id]]);
   });
 });
+
+// ADR-0045 review: the loop keeps free slots busy instead of waiting for its slowest job.
+describe('JobWorker loop (ADR-0045)', () => {
+  function gate() {
+    let open!: () => void;
+    const opened = new Promise<void>((r) => (open = r));
+    return { open, opened };
+  }
+  /** Polls until `check` is true or the time is up. */
+  async function waitFor(check: () => Promise<boolean> | boolean, ms = 4000) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (await check()) return true;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return false;
+  }
+  const statusOf = async (id: string) =>
+    (await testDb.job.findUniqueOrThrow({ where: { id } })).status;
+
+  it('finishes a queued email while a slow job is still in flight', async () => {
+    const slowStarted = gate();
+    const releaseSlow = gate();
+    const slow = defineJob({
+      type: 'test.slow',
+      schema: z.object({}),
+      async handle() {
+        slowStarted.open();
+        await releaseSlow.opened;
+      },
+    });
+    const email = defineJob({ type: 'test.mail', schema: z.object({}), handle: async () => {} });
+    const worker = makeWorker(new JobRegistry().register(slow, email), {
+      batchSize: 2,
+      pollIntervalMs: 50,
+    });
+    const slowJob = await enqueue(testDb, slow, {});
+    worker.start();
+    try {
+      await slowStarted.opened;
+      const mail = await enqueue(testDb, email, {});
+      expect(await waitFor(async () => (await statusOf(mail.id)) === 'DONE')).toBe(true);
+      expect(await statusOf(slowJob.id)).toBe('RUNNING');
+    } finally {
+      releaseSlow.open();
+      await worker.stop();
+    }
+    expect(await statusOf(slowJob.id)).toBe('DONE');
+  });
+
+  it('never has more than batchSize jobs in flight, and runs each once', async () => {
+    let inFlight = 0;
+    let max = 0;
+    const runs: string[] = [];
+    const def = defineJob({
+      type: 'test.busy',
+      schema: z.object({ n: z.number() }),
+      async handle(_p, ctx) {
+        inFlight++;
+        max = Math.max(max, inFlight);
+        await new Promise((r) => setTimeout(r, 30 + Math.random() * 50));
+        runs.push(ctx.jobId);
+        inFlight--;
+      },
+    });
+    for (let n = 0; n < 8; n++) await enqueue(testDb, def, { n });
+    const worker = makeWorker(new JobRegistry().register(def), {
+      batchSize: 3,
+      pollIntervalMs: 20,
+    });
+    worker.start();
+    expect(
+      await waitFor(async () => (await testDb.job.count({ where: { status: 'DONE' } })) === 8),
+    ).toBe(true);
+    await worker.stop();
+    expect(max).toBeLessThanOrEqual(3);
+    expect(runs).toHaveLength(8);
+    expect(new Set(runs).size).toBe(8);
+  });
+
+  it('stop() waits for the jobs in flight', async () => {
+    const started = gate();
+    let finished = false;
+    const def = defineJob({
+      type: 'test.stop',
+      schema: z.object({}),
+      async handle() {
+        started.open();
+        await new Promise((r) => setTimeout(r, 200));
+        finished = true;
+      },
+    });
+    const job = await enqueue(testDb, def, {});
+    const worker = makeWorker(new JobRegistry().register(def), { pollIntervalMs: 20 });
+    worker.start();
+    await started.opened;
+    await worker.stop();
+    expect(finished).toBe(true);
+    expect(await statusOf(job.id)).toBe('DONE');
+  });
+
+  it('keeps running after a job throws and after finish() fails', async () => {
+    const boom = defineJob({
+      type: 'test.boom',
+      schema: z.object({}),
+      handle: async () => {
+        throw new PermanentJobError('boom');
+      },
+    });
+    const ok = defineJob({ type: 'test.ok', schema: z.object({}), handle: async () => {} });
+    const db = Object.create(testDb) as typeof testDb;
+    // finish() fails twice in a row (DONE, then the retry's QUEUED: the database dropped the
+    // connection), so the error escapes execute().
+    let failures = 2;
+    let victim = '';
+    const realJob = testDb.job;
+    Object.defineProperty(db, 'job', {
+      value: new Proxy(realJob, {
+        get(target, prop, receiver) {
+          if (prop === 'updateMany') {
+            return (args: { where: { id?: unknown }; data: { status?: string } }) => {
+              if (failures > 0 && args.where.id === victim && args.data.status !== undefined) {
+                failures--;
+                return Promise.reject(new Error('connection lost'));
+              }
+              return target.updateMany(args as never);
+            };
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+      }),
+    });
+    const worker = new JobWorker(db, new JobRegistry().register(boom, ok), log, {
+      backoff,
+      batchSize: 1,
+      pollIntervalMs: 20,
+    });
+    const b = await enqueue(testDb, boom, {});
+    const first = await enqueue(testDb, ok, {}, { runAt: new Date(Date.now() - 500) });
+    victim = first.id;
+    worker.start();
+    try {
+      expect(await waitFor(async () => (await statusOf(b.id)) === 'FAILED')).toBe(true);
+      const second = await enqueue(testDb, ok, {});
+      expect(await waitFor(async () => (await statusOf(second.id)) === 'DONE')).toBe(true);
+    } finally {
+      await worker.stop();
+    }
+    // The job whose finish() failed stays RUNNING until the lock timeout frees it.
+    expect(await statusOf(first.id)).toBe('RUNNING');
+  });
+});

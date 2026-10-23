@@ -39,6 +39,8 @@ export class JobWorker {
   private running = false;
   private timer: NodeJS.Timeout | undefined;
   private loop: Promise<void> | undefined;
+  /** Jobs the loop (start()) has started and not yet finished. */
+  private readonly inFlight = new Set<Promise<void>>();
   private lastRecoveryAt: number | undefined;
 
   constructor(
@@ -256,29 +258,47 @@ export class JobWorker {
     });
   }
 
+  /** Starts a job without waiting for it; it leaves the in-flight set when it settles. */
+  private launch(job: Job): void {
+    const run: Promise<void> = this.execute(job)
+      .catch((err: unknown) => this.log.error({ err, jobId: job.id }, 'job run failed'))
+      .finally(() => this.inFlight.delete(run));
+    this.inFlight.add(run);
+  }
+
+  /**
+   * The in-process loop. Each poll claims only as many jobs as there are free slots (batchSize
+   * minus the jobs still running) and starts them without waiting, so a long upload does not hold
+   * back a login email (ADR-0045). drain() (the cron tick) claims and awaits its own batches; the
+   * claim's SKIP LOCKED keeps the two from running the same job.
+   */
   start(): void {
     if (this.running) return;
     this.running = true;
     const tick = async () => {
-      let processed = 0;
+      let filled = false;
       try {
-        processed = await this.runOnce();
+        const free = this.batchSize - this.inFlight.size;
+        if (free > 0) {
+          const jobs = await this.claim(free);
+          for (const job of jobs) this.launch(job);
+          filled = jobs.length === free;
+        }
       } catch (err) {
         this.log.error({ err }, 'job worker round failed');
       }
       if (!this.running) return;
-      // A full batch probably means more work is waiting: go again immediately.
-      this.timer = setTimeout(
-        () => (this.loop = tick()),
-        processed >= this.batchSize ? 0 : this.pollIntervalMs,
-      );
+      // Every free slot was filled: more work is probably waiting, so look again at once.
+      this.timer = setTimeout(() => (this.loop = tick()), filled ? 0 : this.pollIntervalMs);
     };
     this.loop = tick();
   }
 
+  /** Stops polling and waits for the jobs that are still running. */
   async stop(): Promise<void> {
     this.running = false;
     clearTimeout(this.timer);
     await this.loop;
+    await Promise.allSettled([...this.inFlight]);
   }
 }
