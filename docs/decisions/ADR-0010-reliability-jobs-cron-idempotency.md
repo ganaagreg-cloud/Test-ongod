@@ -1,7 +1,7 @@
 ---
 id: ADR-0010
 title: 'Reliability: DB job queue, idempotent cron, transactional approve, tus uploads, TOTP'
-status: accepted
+status: 'accepted (the 15-minute job lock rule superseded in part by [[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]])'
 date: 2026-10-08
 tags: [adr, area/backend]
 ---

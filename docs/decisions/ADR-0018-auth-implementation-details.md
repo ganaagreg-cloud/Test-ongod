@@ -1,7 +1,7 @@
 ---
 id: ADR-0018
 title: 'Auth implementation details: devices, sessions, codes, rate limits'
-status: accepted
+status: 'accepted (items 5 and 8 superseded in part by [[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]])'
 date: 2026-10-08
 tags: [adr, area/auth, area/backend]
 ---
