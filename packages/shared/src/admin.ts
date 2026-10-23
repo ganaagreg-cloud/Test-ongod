@@ -126,7 +126,6 @@ export const dashboardResponseSchema = z.object({
   /** Users whose access has not ended. */
   activeUsers: z.number().int(),
   pendingPayment: z.number().int(),
-  paymentSubmitted: z.number().int(),
   /** Users whose access ends within 30 days. */
   expiringIn30Days: z.number().int(),
   /** Registered in the last 7 days. */

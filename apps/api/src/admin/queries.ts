@@ -147,26 +147,24 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
     async dashboard() {
       const at = now();
       const active = { accessUntil: { gt: at }, status: { not: 'DELETED' as const } };
-      const [activeUsers, pendingPayment, paymentSubmitted, expiringIn30Days, newUsersThisWeek] =
-        await Promise.all([
-          db.user.count({ where: active }),
-          db.subscription.count({ where: { status: 'PENDING_PAYMENT' } }),
-          db.subscription.count({ where: { status: 'PAYMENT_SUBMITTED' } }),
-          db.user.count({
-            where: {
-              ...active,
-              accessUntil: { gt: at, lte: new Date(at.getTime() + 30 * DAY_MS) },
-            },
-          }),
-          db.user.count({
-            where: {
-              role: 'USER',
-              status: { not: 'DELETED' },
-              createdAt: { gte: new Date(at.getTime() - 7 * DAY_MS) },
-            },
-          }),
-        ]);
-      return { activeUsers, pendingPayment, paymentSubmitted, expiringIn30Days, newUsersThisWeek };
+      const [activeUsers, pendingPayment, expiringIn30Days, newUsersThisWeek] = await Promise.all([
+        db.user.count({ where: active }),
+        db.subscription.count({ where: { status: 'PENDING_PAYMENT' } }),
+        db.user.count({
+          where: {
+            ...active,
+            accessUntil: { gt: at, lte: new Date(at.getTime() + 30 * DAY_MS) },
+          },
+        }),
+        db.user.count({
+          where: {
+            role: 'USER',
+            status: { not: 'DELETED' },
+            createdAt: { gte: new Date(at.getTime() - 7 * DAY_MS) },
+          },
+        }),
+      ]);
+      return { activeUsers, pendingPayment, expiringIn30Days, newUsersThisWeek };
     },
 
     async listAudit(

@@ -396,7 +396,7 @@ describe('users, dashboard, audit, export', () => {
     expect((await get('/v1/admin/users')).json().total).toBe(3);
   });
 
-  it('dashboard counts: active, pending, submitted, expiring in 30 days, new users this week', async () => {
+  it('dashboard counts: active, pending, expiring in 30 days, new users this week', async () => {
     const plan = await makePlan();
     const day = DAY;
     const mk = (
@@ -443,7 +443,6 @@ describe('users, dashboard, audit, export', () => {
     expect(res.json()).toEqual({
       activeUsers: 3, // far, soon, edge
       pendingPayment: 2,
-      paymentSubmitted: 1,
       expiringIn30Days: 2, // soon, edge
       newUsersThisWeek: 1, // fresh (the admin is not a "user", the old ones are older)
     });

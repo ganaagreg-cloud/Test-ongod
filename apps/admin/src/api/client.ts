@@ -182,7 +182,7 @@ export async function api<T = void>(path: string, options: RequestOptions<T> = {
   return options.schema.parse(await res.json());
 }
 
-/** For files behind the login (receipt image, CSV): the body as a Blob plus the file name, if any. */
+/** For files behind the login (the CSV export): the body as a Blob plus the file name, if any. */
 export async function apiBlob(
   path: string,
   signal?: AbortSignal,

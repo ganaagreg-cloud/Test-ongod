@@ -1,10 +1,4 @@
-import {
-  keepPreviousData,
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
@@ -31,8 +25,8 @@ import {
   type CreatePlaylistRequest,
   type CreateSeriesRequest,
   type ListAdminEpisodesQuery,
+  type AdminStatusFilter,
   type ListSubscriptionsQuery,
-  type SubscriptionStatus,
   type UpdateEpisodeRequest,
   type UpdatePlaylistRequest,
   type UpdateSeriesRequest,
@@ -61,7 +55,7 @@ export const dashboardQuery = () =>
   });
 
 export type SubscriptionsFilter = Partial<Omit<ListSubscriptionsQuery, 'status'>> & {
-  status: SubscriptionStatus;
+  status: AdminStatusFilter;
 };
 
 export const subscriptionsQuery = (filter: SubscriptionsFilter) =>
@@ -70,8 +64,6 @@ export const subscriptionsQuery = (filter: SubscriptionsFilter) =>
     queryFn: ({ signal }) =>
       api(`/admin/subscriptions${qs(filter)}`, { schema: adminSubscriptionsPageSchema, signal }),
     placeholderData: keepPreviousData,
-    // The queue refreshes by itself: new payments appear while the admin works.
-    refetchInterval: filter.status === 'PAYMENT_SUBMITTED' ? 30_000 : false,
   });
 
 export const subscriptionHistoryQuery = (id: string) =>
@@ -140,30 +132,7 @@ export const episodeQuery = (id: string) =>
     },
   });
 
-// ---- Hooks for the receipt image and the CSV ----
-
-const toDataUrl = (blob: Blob) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-
-/**
- * The receipt image sits behind the login, so it is fetched with the token. It comes back as a
- * data URL (at most 5 MB): nothing to revoke later, and it survives React re-mounts.
- */
-export function useReceiptImage(subscriptionId: string | undefined, enabled: boolean) {
-  return useQuery({
-    queryKey: ['receipt', subscriptionId],
-    enabled: enabled && subscriptionId !== undefined,
-    queryFn: async ({ signal }) =>
-      toDataUrl((await apiBlob(`/admin/subscriptions/${subscriptionId}/receipt`, signal)).blob),
-    staleTime: Infinity,
-    gcTime: 60_000,
-  });
-}
+// ---- The CSV ----
 
 export async function downloadPaymentsCsv(range: { from?: string; to?: string }) {
   const { blob, filename } = await apiBlob(`/admin/payments.csv${qs(range)}`);
@@ -189,23 +158,6 @@ export function useDecisions() {
   const invalidate = useInvalidate();
   const done = () =>
     invalidate('subscriptions', 'subscription-history', 'dashboard', 'user', 'audit');
-  const approve = useMutation({
-    mutationFn: (id: string) =>
-      api(`/admin/subscriptions/${id}/approve`, {
-        method: 'POST',
-        schema: adminSubscriptionResponseSchema,
-      }),
-    onSuccess: done,
-  });
-  const reject = useMutation({
-    mutationFn: (v: { id: string; reason: string }) =>
-      api(`/admin/subscriptions/${v.id}/reject`, {
-        method: 'POST',
-        body: { reason: v.reason },
-        schema: adminSubscriptionResponseSchema,
-      }),
-    onSuccess: done,
-  });
   const revoke = useMutation({
     mutationFn: (v: { id: string; reason: string; refund: boolean }) =>
       api(`/admin/subscriptions/${v.id}/revoke`, {
@@ -215,7 +167,7 @@ export function useDecisions() {
       }),
     onSuccess: done,
   });
-  return { approve, reject, revoke };
+  return { revoke };
 }
 
 export function useUserActions(userId: string) {

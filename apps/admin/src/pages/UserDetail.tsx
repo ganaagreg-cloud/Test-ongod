@@ -259,12 +259,6 @@ function SubscriptionItem({ subscription: s }: { subscription: SubscriptionDto }
           {s.plan.name} · {formatMnt(s.amountMnt)}
           {s.startsAt && s.endsAt ? ` · ${formatDate(s.startsAt)} → ${formatDate(s.endsAt)}` : ''}
         </small>
-        {s.rejectReason ? (
-          <>
-            <br />
-            <small>{s.rejectReason}</small>
-          </>
-        ) : null}
       </span>
       {s.status === 'ACTIVE' ? (
         <>

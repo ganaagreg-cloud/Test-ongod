@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Page } from '@playwright/test';
-import { createConnection } from 'mysql2/promise';
 import type { mn as Mn } from '../src/i18n/mn';
 
 export const ORIGIN = process.env.ADMIN_E2E_URL ?? 'http://localhost:3000';
@@ -66,45 +65,17 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
   return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
 
-// A real 1x1 PNG: the API only checks the file signature for receipts.
-const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
-
 export interface Customer {
   username: string;
   referenceCode: string;
   name: string;
 }
 
-/** DATABASE_URL from the local .env. Read here, never printed. */
-const databaseUrl = () => {
-  const line = readFileSync(new URL('../../../.env', import.meta.url), 'utf8')
-    .split(/\r?\n/)
-    .find((l) => l.startsWith('DATABASE_URL='));
-  if (!line) throw new Error('DATABASE_URL is not set in .env');
-  return line.slice('DATABASE_URL='.length).replace(/^"(.*)"$/, '$1');
-};
-
 /**
- * New requests are paid at the QPay checkout (ADR-0041); "Төлсөн" and the receipt queue exist only
- * for old bank-transfer requests (paymentProvider NONE). The admin payments queue still has to
- * work for those, so the fixture turns the new request into one.
+ * A new customer who has verified their email and paid a plan at the mock QPay checkout (the
+ * stack has no Wire keys, ADR-0041): an ACTIVE subscription with a QPAY payment, no admin step.
  */
-async function makeLegacyBankRequest(subscriptionId: string) {
-  const db = await createConnection(databaseUrl());
-  try {
-    await db.execute("UPDATE Subscription SET paymentProvider = 'NONE' WHERE id = ?", [
-      subscriptionId,
-    ]);
-  } finally {
-    await db.end();
-  }
-}
-
-/** A new customer who has verified their email and pressed "Төлсөн" on an old bank request. */
-export async function customerWithSubmittedPayment(tag: string): Promise<Customer> {
+export async function customerWhoPaid(tag: string): Promise<Customer> {
   const stamp = Date.now();
   const username = `e2e.${tag}.${stamp}`;
   const email = `${username}@example.com`;
@@ -137,18 +108,12 @@ export async function customerWithSubmittedPayment(tag: string): Promise<Custome
     token,
   );
 
-  await makeLegacyBankRequest(created.subscription.id);
-
-  const form = new FormData();
-  form.set('payerNote', `E2E тэмдэглэл ${tag}`);
-  form.set('transferAt', new Date(stamp - 3600_000).toISOString());
-  form.set('receipt', new Blob([PNG], { type: 'image/png' }), 'receipt.png');
-  const submitted = await fetch(`${ORIGIN}/v1/subscriptions/${created.subscription.id}/submitted`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}` },
-    body: form,
-  });
-  if (!submitted.ok) throw new Error(`submit -> ${submitted.status} ${await submitted.text()}`);
+  const paid = await post<{ subscription: { status: string } }>(
+    `/subscriptions/${created.subscription.id}/mock`,
+    { outcome: 'success' },
+    token,
+  );
+  if (paid.subscription.status !== 'ACTIVE') throw new Error('the mock payment did not activate');
 
   return {
     username,
@@ -178,33 +143,18 @@ export async function signIn(page: Page, mn: typeof Mn) {
 
 /**
  * Tidies up after a run, through the admin screens (so it needs no extra device or login):
- * rejects e2e customers' payments that are still waiting and deletes leftover "E2E анги" drafts.
- * Runs even when a test failed halfway, so the owner's queue is not left with test data.
+ * deletes leftover "E2E анги" drafts. Runs even when a test failed halfway.
  *
  * It must never touch anything that is not test data: it waits for the filtered list from the
- * API, and then only acts on rows whose own text says they are e2e rows ("@e2e." usernames,
- * "E2E анги" titles). The first version acted on the first row of a not-yet-filtered list and
- * rejected a seeded payment and deleted a seeded draft (restored; see the 2026-10-09 log).
+ * API, and then only acts on rows whose own text says they are e2e rows ("E2E анги" titles). The
+ * first version acted on the first row of a not-yet-filtered list and deleted a seeded draft
+ * (restored; see the 2026-10-09 log).
  */
 export async function cleanUp(page: Page, mn: typeof Mn) {
   const filtered = (path: string, query: string) =>
     page.waitForResponse((res) => res.url().includes(path) && res.url().includes(query));
 
-  await page.goto('payments'); // also closes anything a failed test left open
-  const e2ePayments = page.getByRole('row').filter({ hasText: '@e2e.' });
-  const payments = filtered('/admin/subscriptions', 'q=e2e');
-  await page.getByLabel(mn.payments.searchLabel).fill('e2e.');
-  await payments;
-  for (let guard = 0; guard < 20 && (await e2ePayments.count()) > 0; guard++) {
-    await e2ePayments.first().click();
-    await page.keyboard.press('r');
-    const reject = page.getByRole('dialog', { name: mn.payments.rejectTitle });
-    await reject.getByLabel(mn.payments.rejectReason).fill('E2E: тестийн өгөгдөл цэвэрлэв');
-    await reject.getByRole('button', { name: mn.payments.rejectSubmit }).click();
-    await reject.waitFor({ state: 'hidden' });
-  }
-
-  await page.goto('episodes');
+  await page.goto('episodes'); // also closes anything a failed test left open
   const e2eEpisodes = page.getByRole('row').filter({ hasText: 'E2E анги' });
   const episodes = filtered('/admin/episodes', 'q=E2E');
   await page.getByLabel(mn.episodes.searchLabel).fill('E2E анги');
@@ -223,11 +173,10 @@ export async function cleanUp(page: Page, mn: typeof Mn) {
 }
 
 /** How many rows of a list are NOT test data (the cleanup must leave this number alone). */
-export async function foreignRows(page: Page, screen: 'payments' | 'episodes'): Promise<number> {
-  const api = screen === 'payments' ? '/admin/subscriptions' : '/admin/episodes';
-  const marker = screen === 'payments' ? '@e2e.' : 'E2E анги';
-  const loaded = page.waitForResponse((res) => res.url().includes(api));
-  await page.goto(screen);
+export async function foreignEpisodes(page: Page): Promise<number> {
+  const marker = 'E2E анги';
+  const loaded = page.waitForResponse((res) => res.url().includes('/admin/episodes'));
+  await page.goto('episodes');
   await loaded;
   // While loading, the table is aria-busy and shows aria-hidden skeleton rows, which would count
   // as 0 rows (it did on 2026-10-17 in the afterAll check).

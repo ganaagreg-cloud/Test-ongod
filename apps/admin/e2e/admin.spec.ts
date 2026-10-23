@@ -6,8 +6,8 @@ import sharp from 'sharp';
 import { mn } from '../src/i18n/mn';
 import {
   cleanUp,
-  customerWithSubmittedPayment,
-  foreignRows,
+  customerWhoPaid,
+  foreignEpisodes,
   MAILPIT,
   ORIGIN,
   shot,
@@ -16,8 +16,8 @@ import {
 } from './helpers';
 
 // The admin against the real API, database and Mailpit (the API must serve the admin build:
-// SERVE_STATIC=true after `pnpm build`). Creates two e2e customers, one category and one episode
-// in the dev database. One serial run with one session.
+// SERVE_STATIC=true after `pnpm build`). Creates an e2e customer who paid at the mock QPay
+// checkout, categories and episodes in the dev database. One serial run with one session.
 const up = async (url: string) =>
   fetch(url).then(
     (r) => r.ok,
@@ -29,32 +29,20 @@ test.skip(!stackUp, 'start the API (SERVE_STATIC=true) and Mailpit to run the ad
 test.describe.configure({ mode: 'serial' });
 
 let page: Page;
-let rejected: Customer;
-let approved: Customer;
+let paid: Customer;
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
-  // One after the other: parallel registrations can deadlock in the API (see the 2026-10-09 log).
-  rejected = await customerWithSubmittedPayment('a');
-  approved = await customerWithSubmittedPayment('b');
-  // Nobody decides this one: the cleanup in afterAll has to find it.
-  await customerWithSubmittedPayment('c');
+  paid = await customerWhoPaid('a');
   await signIn(page, mn);
 });
 
 test.afterAll(async () => {
-  // The cleanup removes the stray payment and any leftover test episodes, and nothing else:
-  // the rows that are not test data are the same before and after.
-  const before = {
-    payments: await foreignRows(page, 'payments'),
-    episodes: await foreignRows(page, 'episodes'),
-  };
+  // The cleanup removes leftover test episodes and nothing else: the rows that are not test data
+  // are the same before and after.
+  const before = await foreignEpisodes(page);
   await cleanUp(page, mn);
-  expect(await foreignRows(page, 'payments')).toBe(before.payments);
-  expect(await foreignRows(page, 'episodes')).toBe(before.episodes);
-  await page.goto('payments');
-  await page.getByLabel(mn.payments.searchLabel).fill('e2e.');
-  await expect(page.getByRole('row').filter({ hasText: '@e2e.' })).toHaveCount(0);
+  expect(await foreignEpisodes(page)).toBe(before);
 
   // Signing out ends the session for good: a reload stays on the login screen.
   const logout = page.getByRole('button', { name: mn.nav.logout });
@@ -70,86 +58,44 @@ test.afterAll(async () => {
 const toast = (text: string) => page.getByRole('status').filter({ hasText: text });
 const dialog = (name: string) => page.getByRole('dialog', { name });
 
-test('dashboard shows the counters, with payments to review', async () => {
+test('dashboard shows the counters; there is no payments queue any more', async () => {
   await expect(page.getByRole('heading', { name: mn.dashboard.title })).toBeVisible();
-  const toReview = page.locator('.admin-counter', { hasText: mn.dashboard.paymentSubmitted });
-  await expect(toReview).toBeVisible();
-  const count = Number(await toReview.locator('.admin-counter__value').innerText());
-  expect(count).toBeGreaterThanOrEqual(2);
-  await expect(toReview).toHaveClass(/is-attention/);
+  const counters = page.locator('.admin-counter');
+  await expect(counters).toHaveCount(4);
+  await expect(counters.filter({ hasText: mn.dashboard.pendingPayment })).toBeVisible();
+  await expect(page.getByText('Шалгах төлбөр')).toHaveCount(0);
   await page.screenshot({ path: shot('admin-dashboard') });
 });
 
-test('payments: search, side panel, and a keyboard reject that needs a reason', async () => {
+test('payments: the list of every request, search, side panel and its history', async () => {
   await page.getByRole('link', { name: mn.nav.payments }).click();
+  // The list starts on ACTIVE; the removed bank-transfer states are not offered.
+  const filter = page.getByLabel(mn.payments.statusLabel);
+  await expect(filter).toHaveValue('ACTIVE');
+  await expect(filter.locator('option[value="PAYMENT_SUBMITTED"]')).toHaveCount(0);
+  await expect(filter.locator('option[value="REJECTED"]')).toHaveCount(0);
 
-  // J / K move the selection down and up the queue, Esc closes the panel
-  const rows = page.getByRole('row').filter({ has: page.locator('td') });
-  await expect(rows.nth(2)).toBeVisible();
-  await rows.first().click();
-  await expect(rows.first()).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('j');
-  await expect(rows.nth(1)).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('j');
-  await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('k');
-  await expect(rows.nth(1)).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('complementary', { name: mn.payments.panel.title })).toBeHidden();
-
-  await page.getByLabel(mn.payments.searchLabel).fill(rejected.referenceCode);
-  const row = page.getByRole('row', { name: new RegExp(rejected.referenceCode) });
+  await page.getByLabel(mn.payments.searchLabel).fill(paid.referenceCode);
+  const row = page.getByRole('row', { name: new RegExp(paid.referenceCode) });
   await expect(row).toBeVisible();
   await expect(page.getByRole('row')).toHaveCount(2); // header + the one match
   await row.click();
 
   const panel = page.getByRole('complementary', { name: mn.payments.panel.title });
   await expect(panel).toBeVisible();
-  await expect(panel.getByText(rejected.referenceCode)).toBeVisible();
-  await expect(panel.getByText(`E2E тэмдэглэл a`)).toBeVisible();
+  await expect(panel.getByText(paid.referenceCode)).toBeVisible();
   await expect(panel.getByText('99112233')).toBeVisible();
-  await expect(panel.getByAltText(mn.payments.panel.receiptAlt)).toBeVisible();
+  await expect(panel.getByText(mn.payments.methods.MOCK)).toBeVisible();
+  // The member paid at the checkout: the history shows it, nobody approved anything.
+  await expect(panel.getByText('subscription.paid')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Батлах' })).toHaveCount(0);
   await page.screenshot({ path: shot('admin-payments') });
 
-  await page.keyboard.press('r');
-  const reject = dialog(mn.payments.rejectTitle);
-  await expect(reject).toBeVisible();
-  const submit = reject.getByRole('button', { name: mn.payments.rejectSubmit });
-  await expect(submit).toBeDisabled();
-  await reject.getByLabel(mn.payments.rejectReason).fill('   ');
-  await expect(submit).toBeDisabled();
-  await reject.getByLabel(mn.payments.rejectReason).fill('Дүн таарахгүй байна');
-  await submit.click();
-  await expect(toast(mn.payments.rejected)).toBeVisible();
-  await expect(row).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
 });
 
-test('payments: approve asks for a confirmation first', async () => {
-  await page.getByLabel(mn.payments.searchLabel).fill(approved.referenceCode);
-  const row = page.getByRole('row', { name: new RegExp(approved.referenceCode) });
-  await row.click();
-  await page.keyboard.press('a');
-  const confirm = dialog(mn.payments.approveConfirmTitle);
-  await expect(confirm).toBeVisible();
-  await expect(confirm.getByText(approved.referenceCode)).toBeVisible();
-  // Cancelling changes nothing.
-  await confirm.getByRole('button', { name: mn.confirm.cancel }).click();
-  await expect(row).toBeVisible();
-  await page.keyboard.press('a');
-  await dialog(mn.payments.approveConfirmTitle)
-    .getByRole('button', { name: mn.payments.approve })
-    .click();
-  await expect(toast(mn.payments.approved)).toBeVisible();
-  await expect(row).toHaveCount(0);
-});
-
-test('payments: the history of a decided payment, and the CSV export', async () => {
-  await page.getByLabel(mn.payments.statusLabel).selectOption('ACTIVE');
-  await page.getByLabel(mn.payments.searchLabel).fill(approved.referenceCode);
-  await page.getByRole('row', { name: new RegExp(approved.referenceCode) }).click();
-  const panel = page.getByRole('complementary', { name: mn.payments.panel.title });
-  await expect(panel.getByText('subscription.approve')).toBeVisible();
-
+test('payments: the CSV export', async () => {
   await page.getByRole('button', { name: mn.payments.export.title }).click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -161,15 +107,17 @@ test('payments: the history of a decided payment, and the CSV export', async () 
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
-  expect(Buffer.concat(chunks).toString('utf8')).toContain(approved.referenceCode);
+  const csv = Buffer.concat(chunks).toString('utf8');
+  expect(csv).toContain(paid.referenceCode);
+  expect(csv).toContain('QPAY');
   await expect(toast(mn.payments.export.done)).toBeVisible();
 });
 
 test('users: search, grant, remove a device and revoke, each behind a confirmation', async () => {
   await page.getByRole('link', { name: mn.nav.users }).click();
-  await page.getByLabel(mn.users.searchLabel).fill(approved.username);
-  await page.getByRole('row', { name: new RegExp(approved.username) }).click();
-  await expect(page.getByRole('heading', { name: approved.name })).toBeVisible();
+  await page.getByLabel(mn.users.searchLabel).fill(paid.username);
+  await page.getByRole('row', { name: new RegExp(paid.username) }).click();
+  await expect(page.getByRole('heading', { name: paid.name })).toBeVisible();
 
   // devices
   await page.getByRole('button', { name: mn.users.detail.removeDevice }).click();
@@ -187,10 +135,10 @@ test('users: search, grant, remove a device and revoke, each behind a confirmati
   await granting.getByRole('button', { name: mn.users.detail.grantSubmit }).click();
   await expect(toast(mn.users.detail.granted)).toBeVisible();
 
-  // revoke the approved subscription (reason required)
+  // revoke the paid subscription (reason required)
   await page
     .getByRole('listitem')
-    .filter({ hasText: approved.referenceCode })
+    .filter({ hasText: paid.referenceCode })
     .getByRole('button', { name: mn.users.detail.revoke })
     .click();
   const revoking = dialog(mn.users.detail.revokeTitle);
@@ -202,7 +150,7 @@ test('users: search, grant, remove a device and revoke, each behind a confirmati
   await expect(
     page
       .getByRole('listitem')
-      .filter({ hasText: approved.referenceCode })
+      .filter({ hasText: paid.referenceCode })
       .getByText(mn.subscriptionStatus.REVOKED),
   ).toBeVisible();
 });
@@ -727,11 +675,11 @@ test('content: the calendar shows a scheduled item on its day and opens it', asy
 test('audit log lists what was done, and can be filtered', async () => {
   await page.getByRole('link', { name: mn.nav.audit }).click();
   await expect(page.getByRole('heading', { name: mn.audit.title })).toBeVisible();
-  await page.getByLabel(mn.audit.actionLabel).fill('subscription.reject');
-  const rows = page.getByRole('row').filter({ hasText: 'subscription.reject' });
+  await page.getByLabel(mn.audit.actionLabel).fill('subscription.revoke');
+  const rows = page.getByRole('row').filter({ hasText: 'subscription.revoke' });
   await expect(rows.first()).toBeVisible();
   await rows.first().getByText(mn.audit.showData).click();
-  await expect(rows.first().getByText('Дүн таарахгүй байна')).toBeVisible();
+  await expect(rows.first().getByText('E2E: буцаалт')).toBeVisible();
 });
 
 test('the session survives a reload without asking for the code again', async () => {

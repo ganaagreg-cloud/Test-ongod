@@ -137,15 +137,6 @@ select.ui-field__input {
   font: inherit;
 }
 
-kbd {
-  padding: 0 var(--space-xxs);
-  border: var(--layout-border-width) solid currentColor;
-  border-radius: var(--radius-small);
-  font: var(--text-caption-weight) var(--text-caption-size) / var(--text-caption-line)
-    var(--text-caption-font);
-  opacity: 0.8;
-}
-
 .admin-code {
   white-space: nowrap;
   padding: 0 var(--space-xxs);
@@ -178,11 +169,6 @@ kbd {
   border: var(--layout-border-width) solid var(--color-hairline);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-}
-
-.admin-counter.is-attention {
-  border-color: var(--color-warning);
-  background: var(--color-warning-bg);
 }
 
 .admin-counter__value {
@@ -350,35 +336,6 @@ kbd {
 .admin-panel__subtitle {
   margin-block-end: var(--space-xs);
   font: var(--text-h2-weight) var(--text-body-size) / var(--text-body-line) var(--text-body-font);
-}
-
-.admin-panel__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-
-.admin-receipt {
-  width: 100%;
-  max-height: calc(var(--layout-overlay-max-width) * 1);
-  border: var(--layout-border-width) solid var(--color-hairline);
-  border-radius: var(--radius-small);
-  object-fit: contain;
-  background: var(--color-surface-sunken);
-}
-
-.admin-receipt-button {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: zoom-in;
-}
-
-.admin-receipt.is-zoomed {
-  max-height: none;
-  cursor: zoom-out;
 }
 
 .admin-history {
