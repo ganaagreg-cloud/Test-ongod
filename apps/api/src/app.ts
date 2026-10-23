@@ -142,6 +142,7 @@ export async function buildApp(deps: AppDeps) {
       const limiter = new AuthLimiter({
         ipMax: env.AUTH_RATE_LIMIT_IP_MAX,
         identifierMax: env.AUTH_RATE_LIMIT_IDENTIFIER_MAX,
+        identifierCeiling: env.AUTH_RATE_LIMIT_IDENTIFIER_CEILING,
         windowSeconds: env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
       });
       await v1.register(authRoutes, { auth, limiter, webSession: createWebSession(env) });

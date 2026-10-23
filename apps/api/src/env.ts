@@ -72,9 +72,13 @@ export const envSchema = z
     JWT_ACCESS_SECRET: z.string().min(32),
     ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(900),
     REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
-    /** Login/register/code endpoints: attempts per window, per IP and per identifier. */
+    /**
+     * Login/register/code endpoints: attempts per window, per IP, per identifier and IP, and
+     * per identifier alone (the higher ceiling, across all IPs; ADR-0045).
+     */
     AUTH_RATE_LIMIT_IP_MAX: z.coerce.number().int().positive().default(30),
     AUTH_RATE_LIMIT_IDENTIFIER_MAX: z.coerce.number().int().positive().default(10),
+    AUTH_RATE_LIMIT_IDENTIFIER_CEILING: z.coerce.number().int().positive().default(100),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(900),
 
     // Bunny (ADR-0004/0005). Optional here; code that needs them calls requireBunny().

@@ -574,8 +574,48 @@ describe('access tokens', () => {
 });
 
 describe('rate limits', () => {
-  it('limits login per identifier, whatever the IP', async () => {
+  const loginFrom = (
+    app: Awaited<ReturnType<typeof authApp>>,
+    ip: string,
+    identifier: string,
+    password = 'wrong-password-1',
+  ) =>
+    app.inject({
+      method: 'POST',
+      url: '/v1/auth/login',
+      remoteAddress: ip,
+      payload: { identifier, password, ...device(1) },
+    });
+
+  it('a stranger cannot lock out the victim (ADR-0045: identifier bucket is per identifier|ip)', async () => {
+    const app = await authApp();
+    await register(app);
+    const stranger = [];
+    for (let i = 0; i < 15; i++)
+      stranger.push((await loginFrom(app, '10.6.6.6', EMAIL)).statusCode);
+    // The stranger hits the identifier|ip limit (10) ...
+    expect(stranger.slice(0, 10)).toEqual(Array(10).fill(401));
+    expect(stranger.slice(10)).toEqual(Array(5).fill(429));
+    // ... but the victim, from their own IP, still logs in.
+    const victim = await loginFrom(app, '10.1.2.3', EMAIL, PASSWORD);
+    expect(victim.statusCode).toBe(200);
+  });
+
+  it('still limits one IP after identifierMax attempts for one identifier', async () => {
     const app = await authApp({ AUTH_RATE_LIMIT_IDENTIFIER_MAX: '3' });
+    await register(app);
+    const codes = [];
+    for (let i = 0; i < 4; i++) codes.push((await loginFrom(app, '10.7.7.7', EMAIL)).statusCode);
+    expect(codes).toEqual([401, 401, 401, 429]);
+    // Even the right password from that IP is refused inside the window.
+    expect((await loginFrom(app, '10.7.7.7', EMAIL, PASSWORD)).statusCode).toBe(429);
+  });
+
+  it('limits login per identifier across many IPs once the ceiling is reached', async () => {
+    const app = await authApp({
+      AUTH_RATE_LIMIT_IDENTIFIER_MAX: '3',
+      AUTH_RATE_LIMIT_IDENTIFIER_CEILING: '3',
+    });
     await register(app);
     const statuses: number[] = [];
     for (let i = 0; i < 5; i++) {
@@ -644,8 +684,63 @@ describe('rate limits', () => {
     expect(counter.hit('k')).toBe(true);
   });
 
+  it('AuthLimiter keys the identifier bucket per identifier and IP', () => {
+    const limiter = new AuthLimiter({
+      ipMax: 30,
+      identifierMax: 5,
+      identifierCeiling: 100,
+      windowSeconds: 60,
+    });
+    const req = (ip: string) => ({ ip }) as never;
+    // A stranger from B burns 15 attempts against the victim's identifier ...
+    for (let i = 0; i < 15; i++) {
+      try {
+        limiter.check(req('2.2.2.2'), 'login', 'Victim@Example.com');
+      } catch {
+        /* expected once over the limit */
+      }
+    }
+    expect(() => limiter.check(req('2.2.2.2'), 'login', 'victim@example.com')).toThrow();
+    // ... the victim from A is not affected.
+    expect(() => limiter.check(req('1.1.1.1'), 'login', 'victim@example.com')).not.toThrow();
+  });
+
+  it('AuthLimiter limits one IP after identifierMax for one identifier', () => {
+    const limiter = new AuthLimiter({
+      ipMax: 30,
+      identifierMax: 3,
+      identifierCeiling: 100,
+      windowSeconds: 60,
+    });
+    const req = { ip: '1.1.1.1' } as never;
+    for (let i = 0; i < 3; i++) limiter.check(req, 'login', 'a');
+    expect(() => limiter.check(req, 'login', 'A')).toThrow(
+      expect.objectContaining({ statusCode: 429, code: 'RATE_LIMITED' }),
+    );
+  });
+
+  it('AuthLimiter enforces the per-identifier ceiling across IPs', () => {
+    const limiter = new AuthLimiter({
+      ipMax: 30,
+      identifierMax: 5,
+      identifierCeiling: 4,
+      windowSeconds: 60,
+    });
+    const req = (n: number) => ({ ip: `10.0.0.${n}` }) as never;
+    for (let n = 1; n <= 4; n++) limiter.check(req(n), 'login', 'a');
+    expect(() => limiter.check(req(5), 'login', 'a')).toThrow();
+    // Another identifier and another scope are separate.
+    expect(() => limiter.check(req(6), 'login', 'b')).not.toThrow();
+    expect(() => limiter.check(req(6), 'register', 'a')).not.toThrow();
+  });
+
   it('AuthLimiter counts IP and identifier separately', () => {
-    const limiter = new AuthLimiter({ ipMax: 2, identifierMax: 5, windowSeconds: 60 });
+    const limiter = new AuthLimiter({
+      ipMax: 2,
+      identifierMax: 5,
+      identifierCeiling: 100,
+      windowSeconds: 60,
+    });
     const req = (ip: string) => ({ ip }) as never;
     limiter.check(req('1.1.1.1'), 'login', 'a');
     limiter.check(req('1.1.1.1'), 'login', 'b');

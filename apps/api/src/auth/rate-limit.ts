@@ -37,26 +37,38 @@ export class WindowCounter {
 
 export interface AuthLimiterConfig {
   ipMax: number;
+  /** Per identifier and client IP: a stranger's attempts never use up the victim's quota. */
   identifierMax: number;
+  /** Per identifier alone, higher: caps guessing spread over many IPs (ADR-0045). */
+  identifierCeiling: number;
   windowSeconds: number;
 }
 
-/** Limits an auth endpoint per client IP and per identifier (email, username or user id). */
+/**
+ * Limits an auth endpoint per client IP, per identifier (email, username, user id or device
+ * id) and IP, and per identifier alone with a higher ceiling (ADR-0045 item 1).
+ */
 export class AuthLimiter {
   private readonly byIp: WindowCounter;
+  private readonly byIdentifierIp: WindowCounter;
   private readonly byIdentifier: WindowCounter;
 
   constructor(cfg: AuthLimiterConfig, now?: () => number) {
     const windowMs = cfg.windowSeconds * 1000;
     this.byIp = new WindowCounter(cfg.ipMax, windowMs, now);
-    this.byIdentifier = new WindowCounter(cfg.identifierMax, windowMs, now);
+    this.byIdentifierIp = new WindowCounter(cfg.identifierMax, windowMs, now);
+    this.byIdentifier = new WindowCounter(cfg.identifierCeiling, windowMs, now);
   }
 
-  /** Throws 429 RATE_LIMITED when either the IP or the identifier is over its limit. */
+  /** Throws 429 RATE_LIMITED when any of the three buckets is over its limit. */
   check(req: FastifyRequest, scope: string, identifier: string): void {
-    // Both counters are always hit, so one blocked key never hides the other's count.
-    const ipOk = this.byIp.hit(`${scope}:${req.ip}`);
-    const idOk = this.byIdentifier.hit(`${scope}:${identifier.toLowerCase()}`);
-    if (!ipOk || !idOk) throw new AppError(429, 'RATE_LIMITED');
+    const id = identifier.toLowerCase();
+    // All counters are always hit, so one blocked key never hides another's count.
+    const results = [
+      this.byIp.hit(`${scope}:${req.ip}`),
+      this.byIdentifierIp.hit(`${scope}:${id}|${req.ip}`),
+      this.byIdentifier.hit(`${scope}:${id}`),
+    ];
+    if (results.includes(false)) throw new AppError(429, 'RATE_LIMITED');
   }
 }
