@@ -473,6 +473,19 @@ describe('free items', () => {
     expect(res.json().episode.isFree).toBe(false);
   });
 
+  it('creates an item as free when isFree is true', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const res = await call(app, 'POST', '/v1/admin/episodes', admin.accessToken, {
+      title: 'Шинэ',
+      description: 'Тайлбар',
+      categoryId: category.id,
+      isFree: true,
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().episode.isFree).toBe(true);
+  });
+
   it('an admin marks an item free and back', async () => {
     const admin = await makeAdmin(app);
     const category = await makeCategory();

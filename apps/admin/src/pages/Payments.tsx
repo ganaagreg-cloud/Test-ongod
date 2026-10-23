@@ -254,8 +254,6 @@ function PaymentPanel({
 }) {
   const history = useQuery(subscriptionHistoryQuery(s.id));
   const decidable = s.status === 'PAYMENT_SUBMITTED';
-  // Transfer time, payer note and receipt only exist on old bank-transfer requests.
-  const isBank = s.paymentProvider === 'NONE';
 
   return (
     <aside className="admin-panel" aria-label={mn.payments.panel.title}>
@@ -282,17 +280,13 @@ function PaymentPanel({
         </Fact>
         <Fact label={mn.payments.panel.email}>{s.user.email}</Fact>
         <Fact label={mn.payments.panel.phone}>{s.user.phone}</Fact>
-        {isBank ? (
-          <>
-            <Fact label={mn.payments.panel.transferAt}>
-              {s.transferAt ? formatDateTime(s.transferAt) : mn.common.none}
-            </Fact>
-            <Fact label={mn.payments.panel.submittedAt}>
-              {s.submittedAt ? formatDateTime(s.submittedAt) : mn.common.none}
-            </Fact>
-            <Fact label={mn.payments.panel.payerNote}>{s.payerNote ?? mn.common.none}</Fact>
-          </>
+        {s.transferAt ? (
+          <Fact label={mn.payments.panel.transferAt}>{formatDateTime(s.transferAt)}</Fact>
         ) : null}
+        {s.submittedAt ? (
+          <Fact label={mn.payments.panel.submittedAt}>{formatDateTime(s.submittedAt)}</Fact>
+        ) : null}
+        {s.payerNote ? <Fact label={mn.payments.panel.payerNote}>{s.payerNote}</Fact> : null}
         {s.startsAt && s.endsAt ? (
           <Fact label={mn.payments.panel.period}>
             {formatDateTime(s.startsAt)} → {formatDateTime(s.endsAt)}
@@ -309,7 +303,7 @@ function PaymentPanel({
         ) : null}
       </dl>
 
-      {isBank ? (
+      {s.hasReceipt ? (
         <section aria-labelledby={`receipt-${s.id}`}>
           <h3 id={`receipt-${s.id}`} className="admin-panel__subtitle">
             {mn.payments.panel.receipt}

@@ -326,10 +326,10 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   }),
   'POST /v1/episodes/:id/play': user(
     'catalog',
-    'Signed audio URL or HLS video playlist (kind); needs active access',
+    'Signed audio URL or HLS video playlist (kind); paid items need active access',
     {
       description:
-        'Without access: 403 NO_ACCESS. Needs a registered device (the one you logged in on).',
+        'Paid items without access: 403 NO_ACCESS. A published free item needs only a login. Needs a registered device (the one you logged in on).',
       responses: { 200: playResponseSchema },
     },
   ),

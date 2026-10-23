@@ -20,8 +20,9 @@ import type { CatalogService } from '../catalog/service';
 
 /**
  * Catalog, playback, progress and saved (SPEC G). Every route needs a signed-in user with an
- * ACTIVE profile (the auth guard answers PROFILE_INCOMPLETE otherwise). Only playback needs
- * active access; the catalog is visible to every logged-in user.
+ * ACTIVE profile (the auth guard answers PROFILE_INCOMPLETE otherwise). Playback of paid
+ * items needs active access; a published free item needs only a login and a registered device
+ * (ADR-0043/0044). The catalog is visible to every logged-in user.
  */
 export async function catalogRoutes(
   app: FastifyInstance,

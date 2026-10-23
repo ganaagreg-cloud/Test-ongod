@@ -627,6 +627,7 @@ test('free: mark an item free, see the badge, mark it paid again', async () => {
   await expect(checkbox).toBeChecked();
   await checkbox.uncheck();
   await page.getByRole('button', { name: mn.common.save }).first().click();
+  await expect(toast(mn.common.saved)).toBeVisible();
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
   row = await listRow();
   await expect(row).toBeVisible();

@@ -7,7 +7,7 @@ tags: [spec]
 
 Decisions: [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] (replaces [[ADR-0011-audio-first-media-asset|ADR-0011]]) · Home: [[00-Index]]
 
-Paid yearly access to a library of episodes, plus free items the owner marks free ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]]). Each episode has one media file: audio over the episode picture, or video (max 720p). Episodes are usually 40 minutes or longer, 1 to 10 a week. The catalog is visible to logged-in users; playback of paid items requires active access, free items do not (login rules for free items: phase 2 plan).
+Paid yearly access to a library of episodes, plus free items the owner marks free ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]]). Each episode has one media file: audio over the episode picture, or video (max 720p). Episodes are usually 40 minutes or longer, 1 to 10 a week. The catalog is visible to logged-in users; playback of paid items requires active access, free items do not (free items need a login: [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]).
 
 # Surfaces
 
@@ -84,6 +84,6 @@ Tracked in: [[LAUNCH_CHECKLIST]]
 - Failed processing shows the reason + retry.
 - A link without access or token is refused.
 - The 3rd device is refused.
-- Expired access stops playback.
+- Expired access stops playback of paid items.
 - A backup has been restored once on a clean server.
 - Store review: the demo account works, and there is no price, plan name, link or payment button in the apps.

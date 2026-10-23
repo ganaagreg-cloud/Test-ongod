@@ -58,7 +58,7 @@ Dates are when the entries were logged; the requests came from earlier planning 
 ### 2026-10-21: Content management (series, playlists, tags, admin tools) and free content
 
 - **Client asked** (relayed by Ganaa, 2026-10-21): organise content by series, playlists and tags, feature items on Нүүр, faster admin tools (filters, bulk actions, preview, duplicate, calendar), push control per item, stats; and free items playable by everyone as a hook.
-- **In scope:** no. [[SPEC#Workflows]] G and the admin surface cover only categories and a flat list; free content conflicts with "no free episodes" ([[SPEC]], CLAUDE.md).
+- **In scope:** being delivered. Content management is [[ADR-0042-content-organisation-and-publish-push|ADR-0042]]; free content is [[ADR-0043-allow-free-users-and-free-content|ADR-0043]] and [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]], which allow it despite "no free episodes" in the first [[SPEC]].
 - **Price:** set by Ganaa.
-- **Status:** proposed. Phase 1 (organise, admin tools, push on publish) decided in [[ADR-0042-content-organisation-and-publish-push|ADR-0042]] (accepted).
+- **Status:** in progress (price pending). Phase 1 (organise, admin tools, push on publish) decided in [[ADR-0042-content-organisation-and-publish-push|ADR-0042]] (accepted).
 - **Notes:** design: [[2026-10-21-content-management-design]]. Free content (phase 2) is now allowed ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]): delivered per item (`isFree`, admin switch), login required, a registered device required; paid items without access show a blurred cover and the activate text in the app. Price field stays blank: Ganaa sets it.

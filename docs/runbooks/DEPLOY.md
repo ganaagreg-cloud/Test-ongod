@@ -25,7 +25,7 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 
 1. `pnpm install` (also generates the Prisma client)
 2. `pnpm build`: tokens CSS, API bundle, portal and admin static builds. Set `VITE_PUBLIC_URL` (the real https address, no trailing slash) in the environment for this step, and leave `NODE_ENV` unset or `production`: the portal build refuses to run in development mode ([[ADR-0026-web-session-cookie-and-portal|ADR-0026]]). The portal build also writes `.br` and `.gz` copies that the API serves
-3. `pnpm --filter @ongod/api db:deploy`: apply migrations (never `migrate dev` or `reset` in production)
+3. `pnpm --filter @ongod/api db:deploy`: apply migrations (never `migrate dev` or `reset` in production). Migration `20261023090000_drop_totp_columns` drops columns the OLD build still selects: restart the app immediately after `db:deploy`, because sign-in and refresh fail between the migration and the restart
 4. Start: `node apps/api/dist/server.js` (`pnpm start`)
 5. Check `https://<domain>/health` returns `{"status":"ok"}`
 6. Cron every 5 minutes: `curl -fsS -X POST -H "X-Cron-Secret: $CRON_SECRET" https://<domain>/v1/cron/tick`

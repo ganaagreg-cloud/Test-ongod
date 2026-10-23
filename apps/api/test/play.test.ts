@@ -177,6 +177,25 @@ describe('free items', () => {
     expect(res.json().error.code).toBe('NO_ACCESS');
   });
 
+  it('a scheduled free item is refused to a user with no access', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode({
+      status: 'SCHEDULED',
+      scheduledFor: new Date(now.getTime() + DAY),
+    });
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('NO_ACCESS');
+  });
+
+  it('a published free item with a future publishedAt is refused to a user with no access', async () => {
+    const user = await memberOn(app, { accessUntil: null });
+    const episode = await freeEpisode({ publishedAt: new Date(now.getTime() + HOUR) });
+    const res = await play(episode.id, user.accessToken);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.code).toBe('NO_ACCESS');
+  });
+
   it('a free item on an unregistered device', async () => {
     const user = await memberOn(app, { accessUntil: null });
     const episode = await freeEpisode();
