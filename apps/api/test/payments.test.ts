@@ -160,6 +160,29 @@ describe('Wire webhook', () => {
     return { ...ctx, subscription, intentId };
   }
 
+  it('a late succeeded webhook for a request that was paid and has since expired grants nothing (ADR-0047)', async () => {
+    const { wire, member, subscription, intentId } = await pay();
+    wire!.intents.get(intentId)!.status = 'succeeded';
+    const first = eventBody('evt_paid', 'payment_intent.succeeded', intentId);
+    await webhook(first, sign(first));
+    expect((await row(subscription.id)).status).toBe('ACTIVE');
+    // The period ran out and the expiry cron turned it EXPIRED.
+    await testDb.subscription.update({
+      where: { id: subscription.id },
+      data: { status: 'EXPIRED', endsAt: new Date(Date.now() - 1000) },
+    });
+    const before = await accessUntil(member.userId);
+    const jobs = await testDb.job.count();
+
+    const late = eventBody('evt_late', 'payment_intent.succeeded', intentId);
+    expect((await webhook(late, sign(late))).statusCode).toBe(200);
+
+    expect((await row(subscription.id)).status).toBe('EXPIRED');
+    expect(await testDb.payment.count({ where: { subscriptionId: subscription.id } })).toBe(1);
+    expect(await accessUntil(member.userId)).toEqual(before);
+    expect(await testDb.job.count()).toBe(jobs);
+  });
+
   it('a signed payment_intent.succeeded turns the request ACTIVE: access, payment, email', async () => {
     const { wire, member, subscription, intentId } = await pay();
     wire!.intents.get(intentId)!.status = 'succeeded';
@@ -504,6 +527,39 @@ describe('cron: syncWaitingPayments', () => {
     expect((await row(sub.id)).status).toBe('ACTIVE');
     expect(await testDb.payment.count({ where: { subscriptionId: sub.id } })).toBe(1);
     expect(await accessUntil(userId)).toEqual((await row(sub.id)).endsAt);
+  });
+
+  it('never grants again a request that was paid and then expired normally (ADR-0047)', async () => {
+    const { wire, run } = makeTask();
+    const { sub, intentId, userId } = await request();
+    paid(wire, intentId);
+    expect(await run()).toEqual({ affected: 1 });
+    // The period ran out: EXPIRED, with the period and the Payment of the first grant.
+    await testDb.subscription.update({
+      where: { id: sub.id },
+      data: { status: 'EXPIRED', endsAt: new Date(Date.now() - 1000) },
+    });
+    const before = await accessUntil(userId);
+    const jobs = await testDb.job.count();
+
+    expect(await run()).toEqual({ affected: 0 });
+    expect(await run()).toEqual({ affected: 0 });
+
+    expect((await row(sub.id)).status).toBe('EXPIRED');
+    expect(await testDb.payment.count({ where: { subscriptionId: sub.id } })).toBe(1);
+    expect(await accessUntil(userId)).toEqual(before);
+    expect(await testDb.job.count()).toBe(jobs);
+  });
+
+  it('grants exactly once an unpaid request that expired at 7 days and was paid after', async () => {
+    const { wire, run } = makeTask();
+    const { sub, intentId } = await request({ status: 'EXPIRED', ageDays: 8 });
+    paid(wire, intentId);
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect(await run()).toEqual({ affected: 0 });
+    expect((await row(sub.id)).status).toBe('ACTIVE');
+    expect(await testDb.payment.count({ where: { subscriptionId: sub.id } })).toBe(1);
   });
 
   it('grants an EXPIRED request whose payment succeeded, but not a wrong amount', async () => {

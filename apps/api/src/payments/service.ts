@@ -24,9 +24,20 @@ import {
 /**
  * A verified payment may still arrive after the request went stale (the member paid on the last
  * day, or the 7-day expiry ran first). The money is taken, so the access is granted. REJECTED and
- * REVOKED are admin decisions and stay as they are.
+ * REVOKED are admin decisions and stay as they are. An EXPIRED request counts only if it was never
+ * granted (startsAt empty): one that was paid and then ran out is also EXPIRED, and its intent
+ * still reads succeeded, so it must not be granted again (ADR-0047).
  */
-const PAYABLE = ['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'] as const;
+const PAYABLE_WHERE = {
+  OR: [
+    { status: { in: ['PENDING_PAYMENT' as const, 'CANCELLED' as const] } },
+    { status: 'EXPIRED' as const, startsAt: null },
+  ],
+};
+const isPayable = (sub: Pick<Subscription, 'status' | 'startsAt'>) =>
+  sub.status === 'PENDING_PAYMENT' ||
+  sub.status === 'CANCELLED' ||
+  (sub.status === 'EXPIRED' && sub.startsAt === null);
 
 type SubscriptionRow = Subscription & { plan: Plan };
 
@@ -69,7 +80,7 @@ export function createPaymentService(deps: {
         where: { id: subscriptionId },
         include: { plan: true, user: true },
       });
-      if (!sub || !(PAYABLE as readonly string[]).includes(sub.status)) return false;
+      if (!sub || !isPayable(sub)) return false;
       if (sub.user.status === 'DELETED') return false;
 
       const at = now();
@@ -79,7 +90,7 @@ export function createPaymentService(deps: {
         sub.plan.durationDays,
       );
       const granted = await tx.subscription.updateMany({
-        where: { id: subscriptionId, status: { in: [...PAYABLE] } },
+        where: { id: subscriptionId, ...PAYABLE_WHERE },
         data: { status: 'ACTIVE', startsAt, endsAt, decidedAt: at },
       });
       if (granted.count !== 1) return false;

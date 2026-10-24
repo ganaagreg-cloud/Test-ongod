@@ -76,6 +76,8 @@ export const syncWaitingPayments = (
         paymentProvider: 'WIRE',
         wirePaymentIntentId: { not: null },
         status: { in: ['PENDING_PAYMENT', 'EXPIRED'] },
+        // Never granted: a request that was paid and then ran out is EXPIRED too (ADR-0047).
+        startsAt: null,
         createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
       },
       include: { plan: true },
