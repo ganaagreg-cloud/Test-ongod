@@ -214,7 +214,10 @@ async function main() {
   ];
 
   // The bank-transfer request older seeds created (ADR-0046): nothing can decide it any more.
-  await db.subscription.deleteMany({ where: { id: 'seed_sub_submitted' } });
+  // Only while still waiting: an approved one has a Payment row (no cascade), so it stays.
+  await db.subscription.deleteMany({
+    where: { id: 'seed_sub_submitted', status: 'PAYMENT_SUBMITTED' },
+  });
 
   for (const { payment, ...s } of subscriptions) {
     const data = { ...s, planId: plan.id, amountMnt: plan.priceMnt };
