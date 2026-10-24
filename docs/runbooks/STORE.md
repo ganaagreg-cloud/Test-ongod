@@ -11,7 +11,7 @@ Draft checklist. Account ownership is still open ([[open-questions]] #1).
 
 ## Both stores
 
-- No price, plan, bank details or payment links anywhere in the app ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[R-apple-no-payment-ui]], [[R-google-play-payments]]).
+- No price, plan, bank details or payment links anywhere in the app (payment is QPay in the portal only, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0046-remove-bank-transfer-path|ADR-0046]], [[R-apple-no-payment-ui]], [[R-google-play-payments]]).
 - In-app account deletion, plus the portal deletion page ([[R-account-deletion-stores]]).
 - Reviewer demo account with access granted manually (seed user `demo`, MANUAL_GRANT). Its password lives only in the store console.
 - Privacy policy and terms URLs on the final domain ([[open-questions]] #9).

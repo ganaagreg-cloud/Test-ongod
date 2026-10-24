@@ -6,11 +6,11 @@ tags: [glossary]
 # Glossary
 
 - **Онгод:** the app and brand.
-- **Owner / client:** the Mongolian creator who owns the content and approves payments.
-- **Portal:** the member website (sign up, plans, bank transfer, status). The only place with payment UI ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]]).
-- **Admin:** the owner's web tool at `/admin` (payments queue, users, episodes), light theme ([[ADR-0014-admin-light-theme|ADR-0014]]).
-- **Төлсөн:** "Paid" button in the portal; moves a subscription to PAYMENT_SUBMITTED.
-- **Reference code:** `ONG-XXXXX`, written in the bank transfer description ([[ADR-0007-access-model-reference-codes|ADR-0007]]).
+- **Owner / client:** the Mongolian creator who owns the content (QPay payments are granted automatically).
+- **Portal:** the member website (sign up, plans, QPay checkout, status). The only place with payment UI ([[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]).
+- **Admin:** the owner's web tool at `/admin` (payments list, users, episodes), light theme ([[ADR-0014-admin-light-theme|ADR-0014]]).
+- **Төлсөн:** the old bank-transfer "Paid" button, removed by [[ADR-0046-remove-bank-transfer-path|ADR-0046]]; PAYMENT_SUBMITTED is left only on old rows.
+- **Reference code:** `ONG-XXXXX`, identifies a request in the portal and admin (once written in the bank transfer description) ([[ADR-0007-access-model-reference-codes|ADR-0007]]).
 - **accessUntil:** cached end of the user's current access period.
 - **PENDING_PAYMENT / PAYMENT_SUBMITTED / ACTIVE / EXPIRED:** subscription statuses ([[SPEC#Data model (Prisma)]]).
 - **MANUAL_GRANT:** access given without payment (gift, store reviewer demo).

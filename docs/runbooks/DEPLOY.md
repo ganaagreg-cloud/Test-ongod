@@ -26,7 +26,7 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 
 ## Pre-deploy checks
 
-- Before deploying [[ADR-0046-remove-bank-transfer-path|ADR-0046]] run `SELECT COUNT(*) FROM Subscription WHERE status = 'PAYMENT_SUBMITTED'`; it must be 0, because such a request could no longer be decided. The old `RECEIPTS_DIR` folder is no longer read; keep it with the last backup until the owner deletes it
+- Before deploying [[ADR-0046-remove-bank-transfer-path|ADR-0046]] run `SELECT COUNT(*) FROM Subscription WHERE status = 'PAYMENT_SUBMITTED'`; it must be 0, because such a request could no longer be decided (there is no admin screen for it any more). If it is not 0, decide each such request by hand before deploying, or ask Ganaa. The iTools TEST database probably still has the seeded `saraa` request: delete that seed row there first. The old `RECEIPTS_DIR` folder is no longer read; keep it with the last backup until the owner deletes it. `RECEIPTS_DIR` and `BANK_*` can be removed from the production `.env` (unknown keys are ignored)
 
 ## Steps
 
@@ -35,7 +35,7 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 3. `pnpm --filter @ongod/api db:deploy`: apply migrations (never `migrate dev` or `reset` in production). Migration `20261023090000_drop_totp_columns` drops columns the OLD build still selects: restart the app immediately after `db:deploy`, because sign-in and refresh fail between the migration and the restart
 4. Start: `node apps/api/dist/server.js` (`pnpm start`)
 5. Check `https://<domain>/health` returns `{"status":"ok"}`
-6. Cron every 5 minutes: `curl -fsS -X POST -H "X-Cron-Secret: $CRON_SECRET" https://<domain>/v1/cron/tick`
+6. Cron every 5 minutes: `curl -fsS --max-time 120 -X POST -H "X-Cron-Secret: $CRON_SECRET" https://<domain>/v1/cron/tick` (a tick can take about 50 s: payment sync budget 20 s plus one 10 s Wire call, then the job drain)
 7. Uptime monitor on `/health`
 
 ## Rollback

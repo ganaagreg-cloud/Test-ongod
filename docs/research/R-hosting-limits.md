@@ -14,7 +14,7 @@ To verify with iTools:
 - database engine and version (MySQL 8 vs PostgreSQL)
 - cron support (needed for `/v1/cron/tick`)
 - process and memory limits
-- request upload size and timeout (receipts up to 5 MB, tus chunks)
+- request upload size and timeout (tus chunks; receipt uploads were removed by [[ADR-0046-remove-bank-transfer-path|ADR-0046]])
 - whether the Node process is put to sleep when idle
 
 ## How it was checked
