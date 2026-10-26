@@ -232,7 +232,7 @@ export function useCategoryActions() {
   return { create, update, remove, reorder, uploadCover };
 }
 
-type Transition = 'publish' | 'unschedule' | 'archive' | 'restore' | 'media/retry';
+type Transition = 'publish' | 'unschedule' | 'archive' | 'unarchive' | 'restore' | 'media/retry';
 
 export function useEpisodeActions(episodeId: string | undefined) {
   const invalidate = useInvalidate();
@@ -302,6 +302,23 @@ export function useEpisodeActions(episodeId: string | undefined) {
     onSuccess: done,
   });
   return { create, update, duplicate, preview, remove, transition, schedule, uploadCover };
+}
+
+/** The undo of an archive: published again with the same date and no push (one call per item). */
+export function useUnarchive() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      Promise.all(
+        ids.map((id) =>
+          api(`/admin/episodes/${id}/unarchive`, {
+            method: 'POST',
+            schema: adminEpisodeResponseSchema,
+          }),
+        ),
+      ),
+    onSettled: () => invalidate('episodes', 'episode', 'categories', 'dashboard'),
+  });
 }
 
 // ---- Tags, series and playlists (ADR-0042) ----

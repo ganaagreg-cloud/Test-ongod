@@ -28,6 +28,7 @@ test('every var(--...) in admin.css exists in the tokens or the component CSS', 
       [
         readFileSync(new URL('../../../packages/tokens/css/tokens.css', import.meta.url), 'utf8'),
         readFileSync(new URL('../../../packages/ui-web/src/ui.css', import.meta.url), 'utf8'),
+        source, // admin.css may define its own composed vars (--admin-control, --side-muted)
       ]
         .join('\n')
         .matchAll(/(--[a-z0-9-]+)\s*:/g),

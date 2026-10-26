@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import type { mn as Mn } from '../src/i18n/mn';
 
 export const ORIGIN = process.env.ADMIN_E2E_URL ?? 'http://localhost:3000';
@@ -170,7 +170,58 @@ export async function cleanUp(page: Page, mn: typeof Mn) {
     await page.getByLabel(mn.episodes.searchLabel).fill('E2E анги');
     await again;
   }
+
+  // Series, lists, tags and categories the tests made. Order matters: a category with episodes
+  // cannot go, and the episodes are already deleted above.
+  await sweep(page, mn, mn.nav.series, async (row) => {
+    await row.getByRole('button', { name: mn.common.edit }).click({ timeout: 5000 });
+    await page.getByRole('button', { name: mn.series.deleteSeries }).click({ timeout: 5000 });
+    await page
+      .getByRole('dialog', { name: mn.series.deleteTitle })
+      .getByRole('button', { name: mn.common.delete })
+      .click();
+  });
+  const viaRowButton = (title: string) => async (row: Locator) => {
+    await row.getByRole('button', { name: mn.common.delete }).click({ timeout: 5000 });
+    await page
+      .getByRole('dialog', { name: title })
+      .getByRole('button', { name: mn.common.delete })
+      .click();
+  };
+  await sweep(page, mn, mn.nav.playlists, viaRowButton(mn.playlists.deleteTitle));
+  await sweep(page, mn, mn.nav.tags, viaRowButton(mn.tags.deleteTitle));
+  await sweep(page, mn, mn.nav.categories, viaRowButton(mn.categories.deleteTitle));
 }
+
+/**
+ * Opens a list from the sidebar and deletes its rows whose text says "E2E" (and only those), one
+ * at a time, until none is left. `remove` does the deleting for one row.
+ */
+async function sweep(
+  page: Page,
+  mn: typeof Mn,
+  navLabel: string,
+  remove: (row: Locator) => Promise<void>,
+) {
+  const link = page
+    .getByRole('navigation', { name: mn.nav.label })
+    .getByRole('link', { name: navLabel, exact: true });
+  const mine = () => page.getByRole('row').filter({ hasText: E2E_MARK });
+  for (let guard = 0; guard < 20; guard++) {
+    await link.click();
+    // The page's own heading: rows of the page we just left must not be counted.
+    await page.getByRole('heading', { level: 1, name: navLabel }).waitFor();
+    // The list first shows cached data (with the row just deleted) or nothing yet: let it refetch.
+    await page.waitForLoadState('networkidle');
+    if ((await mine().count()) === 0) return;
+    // A row that vanishes under the click (the list refreshed) is not an error: look again.
+    await remove(mine().first()).catch(() => undefined);
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  }
+}
+
+/** Every record the e2e tests create has this in its name (the one-time script uses it too). */
+export const E2E_MARK = 'E2E';
 
 /** How many rows of a list are NOT test data (the cleanup must leave this number alone). */
 export async function foreignEpisodes(page: Page): Promise<number> {

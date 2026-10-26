@@ -1,19 +1,46 @@
-import { Button, MountainLine } from '@ongod/ui-web';
+import { Icon, MountainLine } from '@ongod/ui-web';
+import type { IconName } from '@ongod/tokens';
 import { NavLink, Outlet } from 'react-router';
 import { useAdmin, useAuth } from '../auth/AuthContext';
+import { Menu, MenuItem } from '../components/Menu';
 import { mn } from '../i18n/mn';
 
-const LINKS = [
-  { to: '/', label: mn.nav.dashboard, end: true },
-  { to: '/payments', label: mn.nav.payments },
-  { to: '/users', label: mn.nav.users },
-  { to: '/episodes', label: mn.nav.episodes },
-  { to: '/series', label: mn.nav.series },
-  { to: '/playlists', label: mn.nav.playlists },
-  { to: '/categories', label: mn.nav.categories },
-  { to: '/tags', label: mn.nav.tags },
-  { to: '/audit', label: mn.nav.audit },
-] as const;
+interface NavItem {
+  to: string;
+  label: string;
+  icon: IconName;
+  end?: boolean;
+}
+
+const GROUPS: ReadonlyArray<{ label?: string; items: NavItem[] }> = [
+  {
+    items: [
+      { to: '/', label: mn.nav.dashboard, icon: 'home', end: true },
+      { to: '/payments', label: mn.nav.payments, icon: 'doc' },
+      { to: '/users', label: mn.nav.users, icon: 'profile' },
+    ],
+  },
+  {
+    label: mn.nav.groupContent,
+    items: [
+      { to: '/episodes', label: mn.nav.episodes, icon: 'play' },
+      { to: '/series', label: mn.nav.series, icon: 'library' },
+      { to: '/playlists', label: mn.nav.playlists, icon: 'bookmark' },
+      { to: '/categories', label: mn.nav.categories, icon: 'device' },
+      { to: '/tags', label: mn.nav.tags, icon: 'copy' },
+    ],
+  },
+  { label: mn.nav.groupSystem, items: [{ to: '/audit', label: mn.nav.audit, icon: 'settings' }] },
+];
+
+const displayName = (user: { firstName?: string; lastName?: string; username: string }) =>
+  `${user.lastName ?? ''} ${user.firstName ?? ''}`.trim() || user.username;
+
+const initialsOf = (user: { firstName?: string; lastName?: string; username: string }) =>
+  (
+    [user.firstName, user.lastName].map((part) => part?.trim().charAt(0) ?? '').join('') ||
+    user.username.charAt(0)
+  ).toUpperCase();
 
 export function Shell() {
   const user = useAdmin();
@@ -29,21 +56,47 @@ export function Shell() {
           <span className="admin-sidebar__name">{mn.appName}</span>
         </div>
         <nav aria-label={mn.nav.label} className="admin-sidebar__nav">
-          {LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} end={'end' in link ? link.end : false}>
-              {link.label}
-            </NavLink>
+          {GROUPS.map((group, index) => (
+            <div key={index} className="admin-sidebar__group">
+              {group.label ? <p className="admin-sidebar__group-label">{group.label}</p> : null}
+              {group.items.map((item) => (
+                <NavLink key={item.to} to={item.to} end={item.end ?? false}>
+                  <Icon name={item.icon} size="small" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="admin-sidebar__user">
-          <p className="admin-sidebar__who">
-            <span>{mn.nav.signedInAs}</span>
-            <strong>{user.username}</strong>
-            <span>{mn.roles[user.role]}</span>
-          </p>
-          <Button variant="secondary" onClick={() => void logout()}>
-            {mn.nav.logout}
-          </Button>
+          <Menu
+            label={mn.nav.userMenu}
+            align="start"
+            side="up"
+            triggerClassName="admin-user"
+            trigger={
+              <>
+                <span className="admin-user__avatar" aria-hidden="true">
+                  {initialsOf(user)}
+                </span>
+                <span className="admin-user__text">
+                  <span className="admin-user__name">{displayName(user)}</span>
+                  <span className="admin-user__role">{mn.roles[user.role]}</span>
+                </span>
+              </>
+            }
+          >
+            {(close) => (
+              <MenuItem
+                onClick={() => {
+                  close();
+                  void logout();
+                }}
+              >
+                {mn.nav.logout}
+              </MenuItem>
+            )}
+          </Menu>
         </div>
       </aside>
       <main id="main" className="admin-main">

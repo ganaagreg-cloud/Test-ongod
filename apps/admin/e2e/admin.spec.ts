@@ -38,6 +38,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
+  // Each sweep opens a list and deletes the e2e rows one by one; the default 90 s is not enough.
+  test.setTimeout(240_000);
   // The cleanup removes leftover test episodes and nothing else: the rows that are not test data
   // are the same before and after.
   const before = await foreignEpisodes(page);
@@ -45,9 +47,10 @@ test.afterAll(async () => {
   expect(await foreignEpisodes(page)).toBe(before);
 
   // Signing out ends the session for good: a reload stays on the login screen.
-  const logout = page.getByRole('button', { name: mn.nav.logout });
-  if (await logout.isVisible()) {
-    await logout.click();
+  const userMenu = page.getByRole('button', { name: mn.nav.userMenu });
+  if (await userMenu.isVisible()) {
+    await userMenu.click();
+    await page.getByRole('menuitem', { name: mn.nav.logout }).click();
     await expect(page.getByRole('heading', { name: mn.login.title })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('heading', { name: mn.login.title })).toBeVisible();
@@ -240,17 +243,19 @@ test('episodes: create, cover, and an audio upload that resumes after a page ref
   const category = page.getByLabel(mn.episodes.form.category);
   await category.selectOption({ index: 1 });
   await page.getByRole('button', { name: mn.episodes.form.create }).click();
-  await expect(toast(mn.episodes.created)).toBeVisible();
+  await expect(toast(mn.episodes.workspace.saved).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
   await expect(page.getByText(mn.episodes.status.DRAFT).first()).toBeVisible();
 
   // nothing can be published yet, and the page says why
   await expect(page.getByRole('button', { name: mn.episodes.publish.now })).toBeDisabled();
-  await expect(
-    page.getByText(
-      mn.episodes.missing.text(`${mn.episodes.missing.cover}, ${mn.episodes.missing.media}`),
-    ),
-  ).toBeVisible();
+  // The checklist: title and category are done, cover and file are not.
+  const checklist = page.getByRole('list', { name: mn.episodes.workspace.checklistTitle });
+  await expect(checklist.locator('li.is-ok')).toHaveCount(1);
+  await expect(checklist.locator('li:not(.is-ok)')).toHaveText([
+    mn.episodes.workspace.checkCover,
+    mn.episodes.workspace.checkMedia,
+  ]);
 
   // cover
   const cover = await sharp({
@@ -333,10 +338,50 @@ async function createDraft(label: string, stamp: number): Promise<string> {
   await page.getByLabel(mn.episodes.form.title).fill(title);
   await page.getByLabel(mn.episodes.form.category).selectOption({ index: 1 });
   await page.getByRole('button', { name: mn.episodes.form.create }).click();
-  await expect(toast(mn.episodes.created)).toBeVisible();
+  await expect(toast(mn.episodes.workspace.saved).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
   return title;
 }
+
+test('one page: files picked before the draft exists wait, then go up when it is made', async () => {
+  const title = `E2E анги ${Date.now()}`;
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.new }).click();
+
+  // A cover and an audio file first, with no title yet: both are kept and nothing is created.
+  const cover = await sharp({
+    create: { width: 600, height: 600, channels: 3, background: '#665544' },
+  })
+    .png()
+    .toBuffer();
+  await page
+    .getByLabel(mn.episodes.cover.choose)
+    .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: cover });
+  await expect(page.getByRole('img', { name: mn.episodes.cover.alt })).toBeVisible();
+  const folder = mkdtempSync(join(tmpdir(), 'ongod-e2e-'));
+  const audioPath = join(folder, 'e2e-staged.mp3');
+  writeFileSync(audioPath, Buffer.alloc(1024 * 1024, 3));
+  await page.getByLabel(mn.episodes.audio.choose).setInputFiles(audioPath);
+  await expect(page.getByText('e2e-staged.mp3')).toBeVisible();
+  await expect(page).toHaveURL(/episodes\/new$/);
+
+  // Details filled in and saved: the draft is made, the URL moves to it, the files go up.
+  const chunk = page.waitForResponse(
+    (res) =>
+      res.request().method() === 'PATCH' &&
+      res.url().includes('/v1/admin/uploads/') &&
+      res.status() === 204,
+  );
+  await page.getByLabel(mn.episodes.form.title).fill(title);
+  await page.getByLabel(mn.episodes.form.category).selectOption({ index: 1 });
+  await page.getByRole('button', { name: mn.episodes.form.create }).click();
+  await expect(toast(mn.episodes.workspace.saved).first()).toBeVisible();
+  await expect(page).toHaveURL(/episodes\/(?!new)[a-z0-9]+$/);
+  await expect(toast(mn.episodes.cover.uploaded)).toBeVisible();
+  await chunk;
+  await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
+  rmSync(folder, { recursive: true, force: true });
+});
 
 test('series: create, add two existing items, move the second up, order survives a reload', async () => {
   const stamp = Date.now();
@@ -497,7 +542,7 @@ test('content: series, part and tags are saved; filter by tag; bulk tag; duplica
     page.getByRole('button', { name: mn.episodes.tagPicker.remove(tagOne) }),
   ).toBeVisible();
   await page.getByRole('button', { name: f.create }).click();
-  await expect(toast(mn.episodes.created)).toBeVisible();
+  await expect(toast(mn.episodes.workspace.saved).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: first, level: 1 })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: first, level: 1 })).toBeVisible({
@@ -536,6 +581,8 @@ test('content: series, part and tags are saved; filter by tag; bulk tag; duplica
   );
   await page.getByLabel(mn.episodes.searchLabel).fill(String(stamp));
   await searched;
+  // Tag, series, list, file status and sort sit in the collapsible filter panel.
+  await page.getByRole('button', { name: mn.episodes.filterPanel.toggle }).click();
   await page.getByLabel(mn.episodes.filters.tag, { exact: true }).selectOption({ label: tagOne });
   const rowOf = (title: string) => page.getByRole('row').filter({ hasText: title });
   await expect(rowOf(first)).toBeVisible();

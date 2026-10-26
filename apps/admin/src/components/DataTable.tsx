@@ -29,7 +29,7 @@ interface DataTableProps<T extends RowData> {
   onRowOpen?: (row: T) => void;
 }
 
-const SKELETON_ROWS = 6;
+const SKELETON_ROWS = 8;
 
 export function DataTable<T extends RowData>({
   caption,
@@ -101,7 +101,7 @@ export function DataTable<T extends RowData>({
         </tbody>
       </table>
       {!loading && data.length === 0 ? (
-        <p className="admin-table__empty">{empty ?? mn.common.empty}</p>
+        <div className="admin-table__empty">{empty ?? mn.common.empty}</div>
       ) : null}
     </div>
   );

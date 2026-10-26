@@ -60,8 +60,8 @@ export function EpisodeBadge({ status }: { status: keyof typeof mn.episodes.stat
 }
 
 const MEDIA_TONE: Record<keyof typeof mn.episodes.mediaStatus, BadgeTone> = {
-  UPLOADING: 'info',
-  PROCESSING: 'info',
+  UPLOADING: 'warning',
+  PROCESSING: 'warning',
   READY: 'success',
   FAILED: 'danger',
 };
@@ -123,10 +123,21 @@ export function Pager({
 }
 
 /** Title row of a page: heading on the left, actions on the right. */
-export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <header className="admin-page-header">
-      <h1 className="admin-page-title">{title}</h1>
+      <div className="admin-page-heading">
+        <h1 className="admin-page-title">{title}</h1>
+        {subtitle ? <p className="admin-page-subtitle">{subtitle}</p> : null}
+      </div>
       {children ? <div className="admin-page-actions">{children}</div> : null}
     </header>
   );

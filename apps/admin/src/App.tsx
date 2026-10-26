@@ -56,7 +56,6 @@ export function App() {
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
             <Route path="episodes" element={<EpisodesPage />} />
-            <Route path="episodes/new" element={<EpisodeEditPage />} />
             <Route path="episodes/:id" element={<EpisodeEditPage />} />
             <Route path="series" element={<SeriesPage />} />
             <Route path="series/new" element={<SeriesEditPage />} />

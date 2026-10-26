@@ -3,7 +3,13 @@ import { BULK_MAX_IDS, type BulkAction } from '@ongod/shared';
 import { Button, Notice, useToast } from '@ongod/ui-web';
 import { useState } from 'react';
 import { ApiError } from '../api/client';
-import { categoriesQuery, playlistsQuery, tagsQuery, useBulkEpisodes } from '../api/queries';
+import {
+  categoriesQuery,
+  playlistsQuery,
+  tagsQuery,
+  useBulkEpisodes,
+  useUnarchive,
+} from '../api/queries';
 import { mn } from '../i18n/mn';
 import { SelectField } from './bits';
 import { ConfirmDialog, errorText } from './Modal';
@@ -33,6 +39,7 @@ const t = mn.episodes.bulk;
 export function BulkBar({ selectedIds, titles, onDone, onClear }: BulkBarProps) {
   const toast = useToast();
   const bulk = useBulkEpisodes();
+  const unarchive = useUnarchive();
   const categories = useQuery(categoriesQuery());
   const playlists = useQuery(playlistsQuery());
   const tags = useQuery(tagsQuery());
@@ -77,7 +84,21 @@ export function BulkBar({ selectedIds, titles, onDone, onClear }: BulkBarProps) 
     setFailure(undefined);
     try {
       const { updated } = await bulk.mutateAsync({ ids: selectedIds, action: act });
-      toast.show(t.done(updated), { tone: 'success' });
+      if (act.type === 'archive') {
+        const ids = selectedIds;
+        toast.show(mn.episodes.archivedMany(updated), {
+          tone: 'success',
+          action: {
+            label: mn.episodes.undo,
+            onClick: () =>
+              unarchive.mutate(ids, {
+                onSuccess: () => toast.show(mn.episodes.undone, { tone: 'success' }),
+              }),
+          },
+        });
+      } else {
+        toast.show(t.done(updated), { tone: 'success' });
+      }
       setType('');
       setTarget('');
       onDone();

@@ -54,7 +54,7 @@ function Data({ children }: { children: ReactNode }) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename="/admin">
-      <ToastProvider closeLabel={mn.common.close}>
+      <ToastProvider closeLabel={mn.common.close} placement="end">
         <Data>
           <App />
         </Data>

@@ -5,12 +5,13 @@ import {
   mediaKindOfFile,
   type AdminEpisodeDto,
 } from '@ongod/shared';
-import { Button, FileField, Notice, useToast } from '@ongod/ui-web';
+import { Button, Icon, Notice, useToast } from '@ongod/ui-web';
 import { DetailedError, Upload } from 'tus-js-client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ApiError, refreshSession, session } from '../api/client';
 import { useEpisodeActions, useInvalidate } from '../api/queries';
 import { MediaBadge } from '../components/bits';
+import { DropZone } from '../components/DropZone';
 import { ConfirmDialog } from '../components/Modal';
 import { formatBytes, formatDuration } from '../lib/format';
 import { mn } from '../i18n/mn';
@@ -83,7 +84,16 @@ function describe(err: Error): string {
 }
 
 /** One media file per episode: audio (Bunny Storage) or video (Bunny Stream), ADR-0038. */
-export function MediaUploader({ episode }: { episode: AdminEpisodeDto }) {
+export function MediaUploader({
+  episode,
+  initialFile,
+  onInitialStarted,
+}: {
+  episode: AdminEpisodeDto;
+  /** A file picked before the episode existed: it starts as soon as this mounts. */
+  initialFile?: File | undefined;
+  onInitialStarted?: () => void;
+}) {
   const t = mn.episodes.audio;
   const invalidate = useInvalidate();
   const upload = useRef<Upload>(undefined);
@@ -98,6 +108,13 @@ export function MediaUploader({ episode }: { episode: AdminEpisodeDto }) {
   const [pickerKey, setPickerKey] = useState(0);
 
   const media = episode.media;
+  const startInitial = useEffectEvent((file: File) => {
+    choose(file);
+    onInitialStarted?.();
+  });
+  useEffect(() => {
+    if (initialFile) startInitial(initialFile);
+  }, [initialFile]);
   // Set on a refreshed page: the server still has the half-finished upload, the file is gone.
   const pending =
     phase === 'idle' && media?.status === 'UPLOADING' ? hint.read(episode.id) : undefined;
@@ -266,16 +283,22 @@ export function MediaUploader({ episode }: { episode: AdminEpisodeDto }) {
           </div>
         </div>
       ) : (
-        <FileField
-          key={pickerKey}
-          label={t.choose}
-          hint={media && media.status !== 'FAILED' ? `${t.hint} ${t.replaceNotice}` : t.hint}
-          accept={ACCEPT}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) choose(file);
-          }}
-        />
+        <>
+          <DropZone key={pickerKey} label={t.choose} accept={ACCEPT} onFile={choose}>
+            <span className="admin-drop__icon">
+              <Icon name="audio" />
+            </span>
+            <strong>{mn.episodes.workspace.fileEmpty}</strong>
+            <span className="admin-drop__sub">
+              {mn.episodes.workspace.fileOr} <u>{mn.episodes.workspace.filePick}</u>
+              <br />
+              {mn.episodes.workspace.fileFormats}
+            </span>
+          </DropZone>
+          <p className="admin-hint">
+            {media && media.status !== 'FAILED' ? `${t.hint} ${t.replaceNotice}` : t.hint}
+          </p>
+        </>
       )}
 
       <ConfirmDialog
