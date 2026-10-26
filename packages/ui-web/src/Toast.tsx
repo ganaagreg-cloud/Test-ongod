@@ -18,10 +18,17 @@ interface ToastItem {
   id: number;
   message: string;
   tone: ToastTone;
+  action?: ToastAction;
+}
+
+/** A button inside the toast, e.g. "Undo". Pressing it also dismisses the toast. */
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
 }
 
 interface ToastApi {
-  show: (message: string, options?: { tone?: ToastTone }) => void;
+  show: (message: string, options?: { tone?: ToastTone; action?: ToastAction }) => void;
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
@@ -48,9 +55,10 @@ function ToastView({
   const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (paused) return;
-    const timer = setTimeout(() => onDismiss(item.id), durationMs);
+    // A toast with a button stays twice as long: there is something to read and decide.
+    const timer = setTimeout(() => onDismiss(item.id), item.action ? durationMs * 2 : durationMs);
     return () => clearTimeout(timer);
-  }, [paused, durationMs, item.id, onDismiss]);
+  }, [paused, durationMs, item.id, item.action, onDismiss]);
 
   return (
     <div
@@ -63,6 +71,18 @@ function ToastView({
     >
       <Icon name={ICON[item.tone]} />
       <span className="ui-toast__message">{item.message}</span>
+      {item.action ? (
+        <button
+          type="button"
+          className="ui-toast__action"
+          onClick={() => {
+            item.action?.onClick();
+            onDismiss(item.id);
+          }}
+        >
+          {item.action.label}
+        </button>
+      ) : null}
       <IconButton icon="close" label={closeLabel} onClick={() => onDismiss(item.id)} />
     </div>
   );
@@ -73,10 +93,13 @@ export function ToastProvider({
   children,
   closeLabel,
   durationMs = 4000,
+  placement = 'center',
 }: {
   children: ReactNode;
   closeLabel: string;
   durationMs?: number;
+  /** Bottom centre (default, the portal) or the bottom right corner (the admin). */
+  placement?: 'center' | 'end';
 }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
@@ -87,14 +110,22 @@ export function ToastProvider({
   );
   const show = useCallback<ToastApi['show']>((message, options) => {
     const id = nextId.current++;
-    setItems((all) => [...all.slice(-2), { id, message, tone: options?.tone ?? 'info' }]);
+    setItems((all) => [
+      ...all.slice(-2),
+      {
+        id,
+        message,
+        tone: options?.tone ?? 'info',
+        ...(options?.action ? { action: options.action } : {}),
+      },
+    ]);
   }, []);
   const api = useMemo(() => ({ show }), [show]);
 
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="ui-toasts">
+      <div className={cx('ui-toasts', placement === 'end' && 'ui-toasts--end')}>
         {items.map((item) => (
           <ToastView
             key={item.id}

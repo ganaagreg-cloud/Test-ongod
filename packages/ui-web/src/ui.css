@@ -496,6 +496,21 @@ button.ui-episode-card {
   color: var(--color-info);
 }
 
+.ui-toasts--end {
+  align-items: flex-end;
+}
+
+.ui-toast__action {
+  min-height: var(--layout-touch-target);
+  padding: 0 var(--space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-weight: var(--text-h2-weight);
+  cursor: pointer;
+}
+
 /* ---------- EmptyState ---------- */
 .ui-empty {
   display: flex;

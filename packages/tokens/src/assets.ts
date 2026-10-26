@@ -29,7 +29,15 @@ export type IconName =
   | 'settings'
   | 'device'
   | 'doc'
-  | 'logout';
+  | 'logout'
+  | 'audio'
+  | 'video'
+  | 'plus'
+  | 'more'
+  | 'filter'
+  | 'trash'
+  | 'edit'
+  | 'eye';
 
 /** Path data per icon; `filled` icons are painted solid instead of stroked. */
 export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: true }> = {
@@ -72,6 +80,26 @@ export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: tr
   },
   doc: { paths: ['M7 3h7l4 4v14H7z', 'M14 3v4h4', 'M9.5 12h5', 'M9.5 15.5h5'] },
   logout: { paths: ['M10 5H5v14h5', 'M14 8l4 4-4 4', 'M18 12H9'] },
+  audio: { paths: ['M4 14v-2a8 8 0 0 1 16 0v2', 'M4 14h3.5v5.5H4z', 'M16.5 14H20v5.5h-3.5z'] },
+  video: { paths: ['M3.5 6.5h12v11h-12z', 'M15.5 10.5l5-3v9l-5-3'] },
+  plus: { paths: ['M12 5v14', 'M5 12h14'] },
+  more: {
+    paths: [
+      'M5 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+      'M12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+      'M19 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+    ],
+    filled: true,
+  },
+  filter: { paths: ['M4 6h16', 'M7 12h10', 'M10 18h4'] },
+  trash: { paths: ['M5 7h14', 'M10 7V4.5h4V7', 'M6.5 7l1 13h9l1-13'] },
+  edit: { paths: ['M4 20h4L19 9l-4-4L4 16z', 'M13 7l4 4'] },
+  eye: {
+    paths: [
+      'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z',
+      'M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+    ],
+  },
   mail: {
     paths: [
       'M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z',

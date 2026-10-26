@@ -17,4 +17,4 @@ export { Notice, type NoticeTone } from './Notice';
 export { EpisodeRowSkeleton, Skeleton } from './Skeleton';
 export { Textarea, type TextareaProps } from './Textarea';
 export { Timeline, type TimelineState, type TimelineStep } from './Timeline';
-export { ToastProvider, useToast, type ToastTone } from './Toast';
+export { ToastProvider, useToast, type ToastAction, type ToastTone } from './Toast';
