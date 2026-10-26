@@ -619,6 +619,9 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'POST /v1/admin/episodes/:id/archive': admin('Take a published episode out of the library', {
     responses: { 200: adminEpisodeResponseSchema },
   }),
+  'POST /v1/admin/episodes/:id/unarchive': admin('Undo archive: back to published, no push', {
+    responses: { 200: adminEpisodeResponseSchema },
+  }),
   'POST /v1/admin/episodes/:id/restore': admin('Archived episode back to draft', {
     responses: { 200: adminEpisodeResponseSchema },
   }),

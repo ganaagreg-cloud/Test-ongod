@@ -359,6 +359,8 @@ model MediaAsset {
   failReason  String?       @db.Text
   sizeBytes   BigInt?
   durationSec Int?
+  /// Last write to this row; an UPLOADING row that stays untouched is shown as stuck in the admin.
+  updatedAt   DateTime      @default(now()) @updatedAt
 
   episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 

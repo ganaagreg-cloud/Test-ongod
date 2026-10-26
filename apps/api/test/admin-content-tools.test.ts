@@ -28,6 +28,7 @@ afterEach(async () => {
 const TOOL_ROUTES: Array<['GET' | 'POST', string, unknown?]> = [
   ['POST', '/v1/admin/episodes/x/duplicate'],
   ['POST', '/v1/admin/episodes/x/preview'],
+  ['POST', '/v1/admin/episodes/x/unarchive'],
   ['POST', '/v1/admin/episodes/bulk', { ids: ['a'], action: { type: 'archive' } }],
 ];
 
@@ -88,6 +89,34 @@ describe('list filters', () => {
     const newer = await makeEpisode(category.id, { publishedAt: new Date('2026-02-01T00:00:00Z') });
     const res = await call(app, 'GET', '/v1/admin/episodes?sort=published', admin.accessToken);
     expect(res.json().items.map((i: { id: string }) => i.id)).toEqual([newer.id, older.id]);
+  });
+
+  it('counts episodes per status under every filter except the status itself', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const other = await makeCategory();
+    await makeEpisode(category.id, { status: 'DRAFT' });
+    await makeEpisode(category.id, { status: 'DRAFT' });
+    await makeEpisode(category.id, { status: 'PUBLISHED', publishedAt: new Date() });
+    await makeEpisode(other.id, { status: 'SCHEDULED', scheduledFor: new Date(Date.now() + DAY) });
+
+    const all = await call(app, 'GET', '/v1/admin/episodes', admin.accessToken);
+    expect(all.json().counts).toMatchObject({ DRAFT: 2, PUBLISHED: 1, SCHEDULED: 1, ARCHIVED: 0 });
+
+    // the list follows the status, the counts do not; the other filters apply to both
+    const drafts = await call(
+      app,
+      'GET',
+      `/v1/admin/episodes?status=DRAFT&categoryId=${category.id}`,
+      admin.accessToken,
+    );
+    expect(drafts.json().total).toBe(2);
+    expect(drafts.json().counts).toMatchObject({
+      DRAFT: 2,
+      PUBLISHED: 1,
+      SCHEDULED: 0,
+      ARCHIVED: 0,
+    });
   });
 
   it('from/to returns items scheduled or published in range (from inclusive, to exclusive)', async () => {
@@ -434,6 +463,37 @@ describe('bulk', () => {
     expect((await testDb.episode.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe(
       'DRAFT',
     );
+  });
+
+  it('unarchive undoes an archive: published again with the same date, no second push', async () => {
+    const admin = await makeAdmin(app);
+    const category = await makeCategory();
+    const live = await makeEpisode(category.id, { publishedAt: new Date('2026-03-01T00:00:00Z') });
+    await bulk(admin.accessToken, [live.id], { type: 'archive' });
+    const jobsBefore = await testDb.job.count();
+
+    const res = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${live.id}/unarchive`,
+      admin.accessToken,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.json().episode).toMatchObject({
+      status: 'PUBLISHED',
+      publishedAt: '2026-03-01T00:00:00.000Z',
+    });
+    expect(await testDb.job.count()).toBe(jobsBefore);
+    expect(await auditCount('episode.unarchive')).toBe(1);
+
+    // not archived any more: the precondition fails, nothing changes
+    const again = await call(
+      app,
+      'POST',
+      `/v1/admin/episodes/${live.id}/unarchive`,
+      admin.accessToken,
+    );
+    expect(again.statusCode).toBe(409);
   });
 
   it('archive with one DRAFT: 409 EPISODE_STATE, nothing archived', async () => {

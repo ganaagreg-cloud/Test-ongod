@@ -88,6 +88,7 @@ export function createContentService(deps: {
         failReason: asset.failReason,
         sizeBytes: asset.sizeBytes === null ? null : Number(asset.sizeBytes),
         durationSec: asset.durationSec,
+        updatedAt: asset.updatedAt.toISOString(),
       },
       missing,
       series: row.series,
@@ -321,8 +322,8 @@ export function createContentService(deps: {
     // ---------- Episodes ----------
 
     async listEpisodes(query: ListAdminEpisodesQuery) {
-      const where: Prisma.EpisodeWhereInput = {
-        ...(query.status ? { status: query.status } : {}),
+      // Every filter but the status: the tab counts use it as it is.
+      const withoutStatus: Prisma.EpisodeWhereInput = {
         ...(query.categoryId ? { categoryId: query.categoryId } : {}),
         ...(query.seriesId ? { seriesId: query.seriesId } : {}),
         ...(query.tagId ? { tags: { some: { tagId: query.tagId } } } : {}),
@@ -342,10 +343,14 @@ export function createContentService(deps: {
           : {}),
         ...(query.q ? { title: { contains: escapeLike(query.q) } } : {}),
       };
+      const where: Prisma.EpisodeWhereInput = {
+        ...withoutStatus,
+        ...(query.status ? { status: query.status } : {}),
+      };
       const sortField = (
         { created: 'createdAt', published: 'publishedAt', scheduled: 'scheduledFor' } as const
       )[query.sort];
-      const [rows, total] = await Promise.all([
+      const [rows, total, grouped] = await Promise.all([
         db.episode.findMany({
           where,
           include: episodeInclude,
@@ -354,8 +359,17 @@ export function createContentService(deps: {
           take: query.limit,
         }),
         db.episode.count({ where }),
+        db.episode.groupBy({ by: ['status'], where: withoutStatus, _count: { _all: true } }),
       ]);
-      return { items: rows.map(toEpisodeDto), total, page: query.page, limit: query.limit };
+      const counts = { DRAFT: 0, SCHEDULED: 0, PUBLISHED: 0, ARCHIVED: 0 };
+      for (const group of grouped) counts[group.status] = group._count._all;
+      return {
+        items: rows.map(toEpisodeDto),
+        total,
+        counts,
+        page: query.page,
+        limit: query.limit,
+      };
     },
 
     async getEpisode(id: string) {
@@ -493,6 +507,15 @@ export function createContentService(deps: {
     /** PUBLISHED -> ARCHIVED: gone from the library, kept in admin. */
     async archive(actor: User, id: string) {
       await this.transition(actor, id, 'PUBLISHED', 'ARCHIVED', 'episode.archive');
+      return this.getEpisode(id);
+    },
+
+    /**
+     * ARCHIVED -> PUBLISHED: the undo of `archive`. It keeps publishedAt and sends no push (that
+     * only happens in `publish`), so the item is back in the library exactly as it was.
+     */
+    async unarchive(actor: User, id: string) {
+      await this.transition(actor, id, 'ARCHIVED', 'PUBLISHED', 'episode.unarchive');
       return this.getEpisode(id);
     },
 

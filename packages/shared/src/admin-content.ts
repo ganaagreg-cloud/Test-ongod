@@ -190,6 +190,8 @@ export const adminMediaSchema = z.object({
   failReason: z.string().nullable(),
   sizeBytes: z.number().int().nullable(),
   durationSec: z.number().int().nullable(),
+  /** Last change of the file's row; an old UPLOADING one means the upload is stuck. */
+  updatedAt: z.iso.datetime(),
 });
 
 export const adminEpisodeSchema = z.object({
@@ -255,6 +257,8 @@ export type ListAdminEpisodesQuery = z.infer<typeof listAdminEpisodesQuerySchema
 export const adminEpisodesPageSchema = z.object({
   items: z.array(adminEpisodeSchema),
   total: z.number().int(),
+  /** Episodes per status under every filter except `status` itself (the tab counts). */
+  counts: z.record(episodeStatusSchema, z.number().int()),
   page: z.number().int(),
   limit: z.number().int(),
 });

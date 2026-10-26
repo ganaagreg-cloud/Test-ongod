@@ -343,6 +343,10 @@ export async function adminContentRoutes(
     transition((req, id) => content.archive(authOf(req).user, id)),
   );
   app.post(
+    '/admin/episodes/:id/unarchive',
+    transition((req, id) => content.unarchive(authOf(req).user, id)),
+  );
+  app.post(
     '/admin/episodes/:id/restore',
     transition((req, id) => content.restore(authOf(req).user, id)),
   );
