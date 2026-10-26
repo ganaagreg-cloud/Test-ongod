@@ -86,6 +86,12 @@ Light, dense, functional. Dashboard counters, Payments (list of all requests: ta
 - Tag picker: type to filter, Enter creates a tag.
 - Free item ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]]): checkbox "Үнэгүй" on the episode edit page with the hint "Нэвтэрсэн бүх хэрэглэгч сонсож болно"; in the Контент list a `ui-badge` "Үнэгүй" in the info tone. CSS variables only.
 
+Admin shell and density ([[ADR-0050-admin-dense-forest-sidebar|ADR-0050]]): forest `--color-brand` sidebar with a gold active marker and grouped nav; 32 px controls with `radius-small`; one joined counter strip on the dashboard; detail panels are a right slide-over, not a side column.
+
+Контент list ([[ADR-0051-admin-content-list-redesign|ADR-0051]]): status tabs with counts, search + Ангилал always visible and the rest in a collapsible Шүүлтүүр panel with removable chips, state in the URL; 48 px thumbnail with a brand-green fallback tile; dot badges (Ноорог has a gray border); row tools on hover; the bulk bar is fixed to the bottom of the viewport; admin toasts bottom right with an Undo button.
+
+Episode editor ([[ADR-0052-episode-one-page-editor|ADR-0052]]): one page for new and existing items. Cover (16:9) and the audio or video drop zone first, then the details; a sticky right panel for publishing with a checklist, Одоо or Товлох, and a day-chip and time-grid schedule picker.
+
 Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme="light">`). It has the same token keys as the dark theme, so components work in both. The app's cream surface (`themes.cream`) is a separate set.
 
 Light theme colors (contrast ratios against white unless noted):

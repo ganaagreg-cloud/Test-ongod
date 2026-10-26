@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-24
+updated: 2026-10-26
 tags: [index]
 ---
 
@@ -69,6 +69,9 @@ tags: [index]
 | ADR-0045 | [[ADR-0045-audit-hardening-limits-refresh-jobs-payments]] | accepted (item 3 amended by ADR-0047)              |
 | ADR-0046 | [[ADR-0046-remove-bank-transfer-path]]                    | accepted                                           |
 | ADR-0047 | [[ADR-0047-wire-payment-sync-window]]                     | accepted                                           |
+| ADR-0050 | [[ADR-0050-admin-dense-forest-sidebar]]                   | accepted                                           |
+| ADR-0051 | [[ADR-0051-admin-content-list-redesign]]                  | accepted                                           |
+| ADR-0052 | [[ADR-0052-episode-one-page-editor]]                      | accepted                                           |
 
 ## Research
 
@@ -113,13 +116,13 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-10-26]]
 - [[2026-10-24]]
 - [[2026-10-23]]
 - [[2026-10-22]]
 - [[2026-10-19]]
 - [[2026-10-18]]
 - [[2026-10-17]]
-- [[2026-10-09]]
 
 ## Runbooks
 
