@@ -145,6 +145,7 @@ export async function buildApp(deps: AppDeps) {
         ipMax: env.AUTH_RATE_LIMIT_IP_MAX,
         identifierMax: env.AUTH_RATE_LIMIT_IDENTIFIER_MAX,
         identifierCeiling: env.AUTH_RATE_LIMIT_IDENTIFIER_CEILING,
+        refreshDeviceMax: env.AUTH_REFRESH_DEVICE_MAX,
         windowSeconds: env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
       });
       await v1.register(authRoutes, { auth, limiter, webSession: createWebSession(env) });

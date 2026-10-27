@@ -428,6 +428,29 @@ describe('SPEC B: refresh', () => {
   const refresh = (app: Awaited<ReturnType<typeof authApp>>, refreshToken: string, d = device(1)) =>
     post(app, '/v1/auth/refresh', { refreshToken, deviceId: d.deviceId });
 
+  it('people behind one IP do not share a refresh limit; one device has its own (ADR-0054)', async () => {
+    const app = await authApp({
+      AUTH_RATE_LIMIT_IP_MAX: '3',
+      AUTH_RATE_LIMIT_IDENTIFIER_MAX: '3',
+      AUTH_REFRESH_DEVICE_MAX: '5',
+    });
+    const s = await signedIn(app);
+    // All requests come from the same IP: more than the IP and identifier limits of the other
+    // auth endpoints, still fine for refresh.
+    let token = s.refreshToken;
+    for (let i = 0; i < 5; i++) {
+      const res = await refresh(app, token);
+      expect(res.statusCode).toBe(200);
+      token = res.json().refreshToken;
+    }
+    const over = await refresh(app, token);
+    expect(over.statusCode).toBe(429);
+    expect(over.json().error.code).toBe('RATE_LIMITED');
+    // Another device from the same IP still refreshes.
+    const other = await loginOn(app, EMAIL, device(2));
+    expect((await refresh(app, other.refreshToken, device(2))).statusCode).toBe(200);
+  });
+
   it('rotates: the new token works, the old one does not', async () => {
     const app = await authApp();
     const s = await signedIn(app);
@@ -863,6 +886,7 @@ describe('rate limits', () => {
       ipMax: 30,
       identifierMax: 5,
       identifierCeiling: 100,
+      refreshDeviceMax: 60,
       windowSeconds: 60,
     });
     const req = (ip: string) => ({ ip }) as never;
@@ -884,6 +908,7 @@ describe('rate limits', () => {
       ipMax: 30,
       identifierMax: 3,
       identifierCeiling: 100,
+      refreshDeviceMax: 60,
       windowSeconds: 60,
     });
     const req = { ip: '1.1.1.1' } as never;
@@ -898,6 +923,7 @@ describe('rate limits', () => {
       ipMax: 30,
       identifierMax: 5,
       identifierCeiling: 4,
+      refreshDeviceMax: 60,
       windowSeconds: 60,
     });
     const req = (n: number) => ({ ip: `10.0.0.${n}` }) as never;
@@ -913,6 +939,7 @@ describe('rate limits', () => {
       ipMax: 2,
       identifierMax: 5,
       identifierCeiling: 100,
+      refreshDeviceMax: 60,
       windowSeconds: 60,
     });
     const req = (ip: string) => ({ ip }) as never;
@@ -922,5 +949,21 @@ describe('rate limits', () => {
     expect(() => limiter.check(req('2.2.2.2'), 'login', 'c')).not.toThrow();
     // Different scope, same IP: separate counter.
     expect(() => limiter.check(req('1.1.1.1'), 'register', 'a')).not.toThrow();
+  });
+  it('AuthLimiter counts refreshes per device only, not per IP (ADR-0054)', () => {
+    const limiter = new AuthLimiter({
+      ipMax: 2,
+      identifierMax: 2,
+      identifierCeiling: 2,
+      refreshDeviceMax: 3,
+      windowSeconds: 60,
+    });
+    // Ten devices behind one IP: far over ipMax, and nobody is refused.
+    for (let n = 0; n < 10; n++) limiter.checkRefresh(`device-${n}`);
+    for (let i = 0; i < 2; i++) limiter.checkRefresh('device-0');
+    expect(() => limiter.checkRefresh('device-0')).toThrow(
+      expect.objectContaining({ statusCode: 429, code: 'RATE_LIMITED' }),
+    );
+    expect(() => limiter.checkRefresh('device-1')).not.toThrow();
   });
 });
