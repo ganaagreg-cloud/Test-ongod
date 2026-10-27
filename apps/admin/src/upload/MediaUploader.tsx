@@ -151,7 +151,8 @@ export function MediaUploader({
         if (token) req.setHeader('Authorization', `Bearer ${token}`);
       },
       onAfterResponse: async (_req, res) => {
-        if (res.getStatus() === 401) await refreshSession();
+        // A failed refresh (offline, rate limit) is left to the retry below.
+        if (res.getStatus() === 401) await refreshSession().catch(() => false);
       },
       onShouldRetry: (err, attempt) => {
         const status = err.originalResponse?.getStatus() ?? 0;

@@ -34,6 +34,11 @@
   font-size: var(--text-small-size);
 }
 
+/* A textarea needs room above the first line; the 0 vertical padding is for one-line controls. */
+.admin-shell .ui-field__input--multiline {
+  padding: var(--space-xs) var(--space-sm);
+}
+
 /* One badge look for the whole admin: a colored dot, bigger text, and a visible gray draft. */
 .admin-shell .ui-badge {
   gap: var(--space-xs);
@@ -245,11 +250,6 @@
   gap: var(--space-sm);
 }
 
-/* The base CSS resets the font of buttons and inputs only; a <select> would keep the browser's. */
-select.ui-field__input {
-  font: inherit;
-}
-
 .admin-code {
   white-space: nowrap;
   padding: 0 var(--space-xxs);
@@ -304,7 +304,9 @@ select.ui-field__input {
 
 /* ---------- Table ---------- */
 .admin-table-wrap {
-  overflow-x: clip; /* not auto: a scroll container would stop the header from sticking */
+  /* auto, not clip: a clipped column hid data (Users at 1440 px). The header then sticks inside
+     the table only. */
+  overflow-x: auto;
   border: var(--layout-border-width) solid var(--color-hairline);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -321,6 +323,12 @@ select.ui-field__input {
   text-align: start;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
+}
+
+/* Dense rows (ADR-0050): cells in the small size, so dates are not bigger than titles. */
+.admin-table td {
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
 }
 
 .admin-table th {
@@ -395,7 +403,8 @@ select.ui-field__input {
 .admin-episode-cell__text {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  /* A title column narrower than this wraps word by word (1024 px screens). */
+  min-width: var(--admin-sidebar);
 }
 
 .admin-episode-cell__title {
