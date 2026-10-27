@@ -264,6 +264,8 @@ export const mn = {
           text: 'Онгод нь гишүүдэд зориулсан аудио сан. Агуулгыг зөвхөн идэвхтэй эрхтэй гишүүн сонсоно. [TODO]',
         },
         {
+          // Left out of the app copy (/app/terms): the apps show no payment wording (ADR-0053).
+          payment: true,
           title: 'Эрх ба төлбөр',
           text: 'Эрхийг QPay-ээр төлж авна. Төлбөр баталгаажмагц эрх идэвхжинэ. [TODO: буцаалтын нөхцөл]',
         },

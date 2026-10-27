@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Route, Routes } from 'react-router';
 import { Skeleton } from '@ongod/ui-web';
 import { RequireAuth } from './components/RequireAuth';
+import { AppLayout } from './layout/AppLayout';
 import { Layout } from './layout/Layout';
 import Landing from './pages/Landing';
 import { mn } from './i18n/mn';
@@ -21,6 +22,8 @@ const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
+const AppPrivacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.AppPrivacy })));
+const AppTerms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.AppTerms })));
 
 /**
  * Dev-only component page at /dev/ui. The import sits inside an `import.meta.env.DEV` block,
@@ -45,6 +48,11 @@ export function App() {
     <Suspense fallback={Loading}>
       <Routes>
         {devRoute}
+        {/* What the mobile apps open: no navigation, no plans, no payment wording (ADR-0053). */}
+        <Route path="app" element={<AppLayout />}>
+          <Route path="terms" element={<AppTerms />} />
+          <Route path="privacy" element={<AppPrivacy />} />
+        </Route>
         <Route element={<Layout />}>
           <Route index element={<Landing />} />
           <Route path="plans" element={<Plans />} />

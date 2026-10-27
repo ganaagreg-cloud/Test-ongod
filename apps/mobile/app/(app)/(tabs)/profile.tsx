@@ -40,8 +40,8 @@ export default function Profile() {
   if (!user) return null;
   const access = accessState(user.accessUntil, new Date());
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
-  const termsUrl = portalLink(env.portalUrl, '/terms');
-  const privacyUrl = portalLink(env.portalUrl, '/privacy');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms');
+  const privacyUrl = portalLink(env.portalUrl, '/app/privacy');
 
   return (
     <SurfaceProvider surface="dark">

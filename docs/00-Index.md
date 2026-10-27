@@ -72,6 +72,7 @@ tags: [index]
 | ADR-0050 | [[ADR-0050-admin-dense-forest-sidebar]]                   | accepted                                           |
 | ADR-0051 | [[ADR-0051-admin-content-list-redesign]]                  | accepted                                           |
 | ADR-0052 | [[ADR-0052-episode-one-page-editor]]                      | accepted                                           |
+| ADR-0053 | [[ADR-0053-app-only-legal-pages]]                         | accepted                                           |
 
 ## Research
 

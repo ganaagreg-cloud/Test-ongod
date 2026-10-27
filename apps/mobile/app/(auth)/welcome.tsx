@@ -27,7 +27,7 @@ export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // Hidden until the portal address is set (EXPO_PUBLIC_PORTAL_URL).
-  const termsUrl = portalLink(env.portalUrl, '/terms');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms');
   return (
     <SurfaceProvider surface="dark">
       <View style={styles.root}>
