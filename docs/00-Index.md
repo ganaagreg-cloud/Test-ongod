@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-26
+updated: 2026-10-27
 tags: [index]
 ---
 
@@ -12,7 +12,7 @@ tags: [index]
 ## Specs
 
 - [[SPEC]]: product, workflows, data model, acceptance tests
-- Latest audit: [[AUDIT-2026-10-17]] (state, iOS route, test plan)
+- Latest audit: [[AUDIT-2026-10-27]] (admin, portal, app after the redesign merge) · [[AUDIT-2026-10-17]]
 - [[DESIGN]]: tokens, components, screens (v2) · [[DESIGN-v2-aurora]] · mockups `docs/design/v2-screens/` · screenshots `docs/screens/`
 - [[glossary]]
 - [[open-questions]]
@@ -116,13 +116,13 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-10-27]]
 - [[2026-10-26]]
 - [[2026-10-24]]
 - [[2026-10-23]]
 - [[2026-10-22]]
 - [[2026-10-19]]
 - [[2026-10-18]]
-- [[2026-10-17]]
 
 ## Runbooks
 
