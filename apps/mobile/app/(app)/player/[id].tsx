@@ -3,13 +3,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { EpisodeItem } from '@ongod/shared';
-import { colors, layout, motion, nativeFontFamily, nativeTextStyle, spacing } from '@ongod/tokens';
+import { colors, layout, motion, nativeTextStyle, spacing } from '@ongod/tokens';
 import { player, usePlayerState } from '../../../src/audio/player';
 import { useAuth } from '../../../src/auth/AuthContext';
 import { useAppConfig } from '../../../src/config/useAppConfig';
 import { useEpisode, useToggleSaved } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
-import { clockLabel, episodeMeta, isLocked, playerLabel, resumeAt } from '../../../src/lib/episode';
+import { clockLabel, episodeMeta, isLocked, resumeAt } from '../../../src/lib/episode';
 import { failureOf, startEpisode, type StartFailure } from '../../../src/playback/nowPlaying';
 import { nextInQueue } from '../../../src/playback/queue';
 import { NoAccessSheet } from '../../../src/screens/NoAccessSheet';
@@ -151,7 +151,7 @@ export default function PlayerScreen() {
     return (
       <SurfaceProvider surface="dark">
         <View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
-          <TopBar onClose={() => router.back()} label={playerLabel(false, undefined)} />
+          <TopBar onClose={() => router.back()} />
           {episode.isError ? (
             <EmptyState
               title={mn.episode.loadError}
@@ -184,7 +184,6 @@ export default function PlayerScreen() {
         <AuroraBackground variant="player" />
         <TopBar
           onClose={() => router.back()}
-          label={playerLabel(loaded, item.category.name)}
           saved={item.saved}
           onToggleSave={() => {
             toggleSaved.mutate({ id: item.id, saved: !item.saved });
@@ -268,7 +267,10 @@ export default function PlayerScreen() {
 
         <ScrollView
           style={styles.descriptionArea}
-          contentContainerStyle={[styles.description, { paddingBottom: insets.bottom + spacing.md }]}
+          contentContainerStyle={[
+            styles.description,
+            { paddingBottom: insets.bottom + spacing.md },
+          ]}
         >
           {item.description.trim() ? <DescriptionText text={item.description} /> : null}
           <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
@@ -337,15 +339,13 @@ function AutoplayCountdown({
   );
 }
 
-/** Close (chevron down), the label (playerLabel), and the bookmark. */
+/** Close (chevron down) and the bookmark; no label (ADR-0049). */
 function TopBar({
   onClose,
-  label,
   saved,
   onToggleSave,
 }: {
   onClose: () => void;
-  label: string;
   saved?: boolean;
   onToggleSave?: () => void;
 }) {
@@ -360,9 +360,6 @@ function TopBar({
       >
         <Icon name="chevronDown" color={colors.textPrimary} />
       </PressableScale>
-      <Text style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
       {onToggleSave ? (
         <PressableScale
           accessibilityRole="button"
@@ -407,14 +404,6 @@ const styles = StyleSheet.create({
     height: layout.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  label: {
-    flexShrink: 1,
-    textAlign: 'center',
-    color: colors.textSecondary,
-    ...nativeTextStyle('caption'),
-    fontFamily: nativeFontFamily.ui[600],
-    letterSpacing: layout.heroTracking,
   },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   time: {

@@ -3,7 +3,11 @@ id: ADR-0048
 title: 'Upgrade the mobile app to Expo SDK 58 (react-native 0.88, React 19.3.0 in every app)'
 status: accepted
 date: 2026-10-24
-supersedes: [ADR-0017 (only the React 19.2.3 pin), ADR-0033 and ADR-0034 (only the premise "Expo Go runs SDK 57")]
+supersedes:
+  [
+    ADR-0017 (only the React 19.2.3 pin),
+    ADR-0033 and ADR-0034 (only the premise "Expo Go runs SDK 57"),
+  ]
 tags: [adr, area/mobile, tooling]
 ---
 

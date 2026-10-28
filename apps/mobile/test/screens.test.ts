@@ -16,7 +16,6 @@ import {
   isLocked,
   listenedHours,
   pagesWithSaved,
-  playerLabel,
   progressFraction,
   remainingLabel,
   resumeAt,
@@ -314,12 +313,4 @@ test('"Дараагийн" is the item after this one in the list the Player was
   assert.equal(nextInQueue('zzz'), undefined, 'not in the list (push): the API order is used');
   setPlayQueue([]);
   assert.equal(nextInQueue('a'), undefined, 'a screen without a list forgets the old one');
-});
-
-test('the Player says "now playing" only for the episode in the player, else its category', () => {
-  assert.equal(playerLabel(true, 'Ярилцлага'), mn.player.nowPlaying);
-  assert.equal(playerLabel(false, 'Ярилцлага'), 'ЯРИЛЦЛАГА');
-  // Mongolian Ө and Ү upper-case correctly.
-  assert.equal(playerLabel(false, 'Өв уламжлал үү'), 'ӨВ УЛАМЖЛАЛ ҮҮ');
-  assert.equal(playerLabel(false, undefined), mn.player.nowPlaying);
 });

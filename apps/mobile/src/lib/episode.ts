@@ -49,15 +49,6 @@ function yearOf(iso: string): string {
 }
 
 /** "Сэтгэл зүй · 2026" under a title; "Сэтгэл зүй · 2026 · 36 мин" with `withLength`. */
-/**
- * The Player's top label: "ОДОО ТОГЛУУЛЖ БАЙНА" only while this episode is the one in the player;
- * before that (and for a paid item without access) the category, in the same capitals.
- */
-export function playerLabel(loaded: boolean, categoryName: string | undefined): string {
-  if (loaded || !categoryName) return mn.player.nowPlaying;
-  return categoryName.toUpperCase();
-}
-
 export function episodeMeta(item: EpisodeItem, withLength = false): string {
   const parts = [item.category.name, yearOf(item.publishedAt)];
   if (item.series?.part != null) parts.push(mn.series.part(item.series.part));

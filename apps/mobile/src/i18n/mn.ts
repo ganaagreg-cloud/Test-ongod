@@ -197,7 +197,6 @@ export const mn = {
   },
 
   player: {
-    nowPlaying: 'ОДОО ТОГЛУУЛЖ БАЙНА',
     close: 'Хаах',
     back15: '15 секунд ухраах',
     forward30: '30 секунд гүйлгэх',

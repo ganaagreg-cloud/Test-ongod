@@ -13,7 +13,8 @@ import { coverFamilyFor, EpisodeThumb, PressableScale, useThemedStyles } from '.
 import { SectionHeader } from '../SectionHeader';
 
 /**
- * "Дараагийн": the one item that comes next, 16:9 picture, tap plays it; "Бүгд" opens the full list
+ * "Дараагийн": the one item that comes next. The title sits beside the picture, so the
+ * typographic cover (no picture) does not repeat it in the small tile., 16:9 picture, tap plays it; "Бүгд" opens the full list
  * (DESIGN "Player", ADR-0049). `ofSeries`: it is the next part of the series ("Дараагийн хэсэг").
  */
 export function NextList({
@@ -47,7 +48,6 @@ export function NextList({
           variant="artwork"
           width={layout.nextThumbWidth}
           uri={item.coverUrl}
-          title={item.title}
           family={coverFamilyFor(item.id)}
           durationLabel={durationBadge(item)}
           progress={progressFraction(item)}
