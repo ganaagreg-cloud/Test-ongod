@@ -48,7 +48,7 @@ import { socialRoutes } from './routes/social';
 import { subscriptionRoutes } from './routes/subscriptions';
 import { webhookRoutes } from './routes/webhooks';
 import { appConfigRoutes, healthRoutes } from './routes/system';
-import { defaultStaticDirs, registerStatic } from './static';
+import { defaultStaticDirs, isApiPath, registerStatic } from './static';
 
 export interface AppDeps {
   env: Env;
@@ -120,6 +120,9 @@ export async function buildApp(deps: AppDeps) {
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
+    // Only the API counts (ADR-0057): the portal and admin files are cheap and cached, and one
+    // page load fetches several of them, which used up the limit and broke the session renewal.
+    allowList: (req) => !isApiPath(req.url),
   });
 
   app.setErrorHandler<FastifyError>((err, req, reply) =>

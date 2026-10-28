@@ -76,6 +76,7 @@ tags: [index]
 | ADR-0054 | [[ADR-0054-refresh-limit-per-device]]                     | accepted                                                  |
 | ADR-0055 | [[ADR-0055-push-token-registration]]                      | accepted                                                  |
 | ADR-0056 | [[ADR-0056-admin-dashboard-overview]]                     | accepted                                                  |
+| ADR-0057 | [[ADR-0057-global-rate-limit-api-only]]                   | accepted                                                  |
 
 ## Research
 
