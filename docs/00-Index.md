@@ -81,6 +81,7 @@ tags: [index]
 | ADR-0059 | [[ADR-0059-admin-plan-editor]]                            | accepted                                                  |
 | ADR-0060 | [[ADR-0060-gift-access]]                                  | accepted                                                  |
 | ADR-0061 | [[ADR-0061-episode-comments]]                             | accepted                                                  |
+| ADR-0062 | [[ADR-0062-comments-without-contact-gate]]                | accepted                                                  |
 
 ## Research
 

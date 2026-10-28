@@ -217,11 +217,9 @@ export default function PlayerScreen() {
             </Enter>
           ) : null}
 
-          {supportEmail ? (
-            <Enter index={5}>
-              <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
-            </Enter>
-          ) : null}
+          <Enter index={5}>
+            <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
+          </Enter>
 
           <Enter index={6}>
             <NextList
