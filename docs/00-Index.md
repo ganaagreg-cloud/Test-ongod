@@ -75,6 +75,7 @@ tags: [index]
 | ADR-0053 | [[ADR-0053-app-only-legal-pages]]                         | accepted                                                  |
 | ADR-0054 | [[ADR-0054-refresh-limit-per-device]]                     | accepted                                                  |
 | ADR-0055 | [[ADR-0055-push-token-registration]]                      | accepted                                                  |
+| ADR-0056 | [[ADR-0056-admin-dashboard-overview]]                     | accepted                                                  |
 
 ## Research
 

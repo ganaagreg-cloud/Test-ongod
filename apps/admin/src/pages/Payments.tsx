@@ -1,8 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { AdminStatusFilter, AdminSubscriptionDto } from '@ongod/shared';
+import {
+  adminStatusFilterSchema,
+  type AdminStatusFilter,
+  type AdminSubscriptionDto,
+} from '@ongod/shared';
 import { Button, Input, Skeleton, useToast } from '@ongod/ui-web';
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { downloadPaymentsCsv, subscriptionHistoryQuery, subscriptionsQuery } from '../api/queries';
 import {
   Fact,
@@ -66,7 +70,11 @@ const columns = [
 
 /** Every payment request (newest first) with search, a status filter and the CSV export. */
 export function PaymentsPage() {
-  const [status, setStatus] = useState<AdminStatusFilter>('ACTIVE');
+  // ?status= sets the first filter (the dashboard links to the waiting requests, ADR-0056).
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState<AdminStatusFilter>(
+    () => adminStatusFilterSchema.safeParse(params.get('status')).data ?? 'ACTIVE',
+  );
   const [search, setSearch] = useState('');
   const q = useDebounced(search.trim());
   const [page, setPage] = usePage(`${status}|${q}`);

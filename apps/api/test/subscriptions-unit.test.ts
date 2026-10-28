@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ubDate, ubDateTime, ubDayStart } from '../src/lib/dates';
+import { ubDate, ubDateTime, ubDayStart, ubMonthStart } from '../src/lib/dates';
 import { sniffImage } from '../src/lib/image';
 import { computePeriod, generateReferenceCode } from '../src/subscriptions/period';
 
@@ -79,5 +79,15 @@ describe('Ulaanbaatar dates', () => {
 
   it('day start is midnight in Ulaanbaatar', () => {
     expect(ubDayStart('2026-10-09').toISOString()).toBe('2026-10-08T16:00:00.000Z');
+  });
+
+  it('month start follows the Ulaanbaatar calendar, also across a year', () => {
+    // 2026-10-31 18:00 UTC is already 1 November in Ulaanbaatar.
+    const d = new Date('2026-10-31T18:00:00Z');
+    expect(ubMonthStart(d).toISOString()).toBe('2026-10-31T16:00:00.000Z');
+    expect(ubMonthStart(d, 1).toISOString()).toBe('2026-09-30T16:00:00.000Z');
+    expect(ubMonthStart(new Date('2027-01-15T00:00:00Z'), 1).toISOString()).toBe(
+      '2026-11-30T16:00:00.000Z',
+    );
   });
 });

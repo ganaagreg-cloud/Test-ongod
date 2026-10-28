@@ -59,19 +59,32 @@ test.afterAll(async () => {
 });
 
 const toast = (text: string) => page.getByRole('status').filter({ hasText: text });
+/** A sidebar link: the dashboard has links with the same words (ADR-0056). */
+const navLink = (name: string) =>
+  page.getByRole('navigation', { name: mn.nav.label }).getByRole('link', { name, exact: true });
 const dialog = (name: string) => page.getByRole('dialog', { name });
 
-test('dashboard shows the counters; there is no payments queue any more', async () => {
+test('dashboard shows the counters and the cards; there is no payments queue any more', async () => {
   await expect(page.getByRole('heading', { name: mn.dashboard.title })).toBeVisible();
   const counters = page.locator('.admin-counter');
-  await expect(counters).toHaveCount(4);
+  await expect(counters).toHaveCount(5);
+  await expect(counters.filter({ hasText: mn.dashboard.revenue })).toBeVisible();
   await expect(counters.filter({ hasText: mn.dashboard.pendingPayment })).toBeVisible();
+  // ADR-0056: the four cards.
+  for (const title of [
+    mn.dashboard.recentPayments,
+    mn.dashboard.upcoming,
+    mn.dashboard.mediaProblems,
+    mn.dashboard.expiringSoon,
+  ]) {
+    await expect(page.getByRole('region', { name: title })).toBeVisible();
+  }
   await expect(page.getByText('Шалгах төлбөр')).toHaveCount(0);
   await page.screenshot({ path: shot('admin-dashboard') });
 });
 
 test('payments: the list of every request, search, side panel and its history', async () => {
-  await page.getByRole('link', { name: mn.nav.payments }).click();
+  await navLink(mn.nav.payments).click();
   // The list starts on ACTIVE; the removed bank-transfer states are not offered.
   const filter = page.getByLabel(mn.payments.statusLabel);
   await expect(filter).toHaveValue('ACTIVE');
@@ -117,7 +130,7 @@ test('payments: the CSV export', async () => {
 });
 
 test('users: search, grant, remove a device and revoke, each behind a confirmation', async () => {
-  await page.getByRole('link', { name: mn.nav.users }).click();
+  await navLink(mn.nav.users).click();
   await page.getByLabel(mn.users.searchLabel).fill(paid.username);
   await page.getByRole('row', { name: new RegExp(paid.username) }).click();
   await expect(page.getByRole('heading', { name: paid.name })).toBeVisible();
@@ -161,7 +174,7 @@ test('users: search, grant, remove a device and revoke, each behind a confirmati
 test('categories: create, reorder, edit and delete', async () => {
   const stamp = Date.now();
   const name = `Тест ангилал ${stamp}`;
-  await page.getByRole('link', { name: mn.nav.categories }).click();
+  await navLink(mn.nav.categories).click();
   await page.getByRole('button', { name: mn.categories.new }).first().click();
   const form = dialog(mn.categories.formCreate);
   await form.getByLabel(mn.categories.name).fill(name);
@@ -200,7 +213,7 @@ test('categories: create, reorder, edit and delete', async () => {
 test('categories: upload a cover and see the preview', async () => {
   const stamp = Date.now();
   const name = `Зурагтай ангилал ${stamp}`;
-  await page.getByRole('link', { name: mn.nav.categories }).click();
+  await navLink(mn.nav.categories).click();
   await page.getByRole('button', { name: mn.categories.new }).first().click();
   const form = dialog(mn.categories.formCreate);
   await form.getByLabel(mn.categories.name).fill(name);
@@ -236,7 +249,7 @@ test('categories: upload a cover and see the preview', async () => {
 
 test('episodes: create, cover, and an audio upload that resumes after a page refresh', async () => {
   test.setTimeout(150_000);
-  await page.getByRole('link', { name: mn.nav.episodes }).click();
+  await navLink(mn.nav.episodes).click();
   await page.getByRole('button', { name: mn.episodes.new }).click();
   const title = `E2E анги ${Date.now()}`;
   await page.getByLabel(mn.episodes.form.title).fill(title);
@@ -720,7 +733,7 @@ test('content: the calendar shows a scheduled item on its day and opens it', asy
 });
 
 test('audit log lists what was done, and can be filtered', async () => {
-  await page.getByRole('link', { name: mn.nav.audit }).click();
+  await navLink(mn.nav.audit).click();
   await expect(page.getByRole('heading', { name: mn.audit.title })).toBeVisible();
   await page.getByLabel(mn.audit.actionLabel).fill('subscription.revoke');
   const rows = page.getByRole('row').filter({ hasText: 'subscription.revoke' });

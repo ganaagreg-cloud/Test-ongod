@@ -76,7 +76,7 @@ Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login
 
 Decisions: [[ADR-0014-admin-light-theme|ADR-0014]] · Facts: [[R-admin-light-contrast]]
 
-Light, dense, functional. Dashboard counters, Payments (list of all requests: table + side panel with history, status filter, CSV export; no queue or receipt panel, [[ADR-0046-remove-bank-transfer-path|ADR-0046]]), Users, Контент (episodes), Цуврал, Жагсаалт, Шошго, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
+Light, dense, functional. Dashboard ([[ADR-0056-admin-dashboard-overview|ADR-0056]]): actions "Шинэ бичлэг" and "Хэрэглэгчид", the joined counter strip with the month's income first, then cards in an auto-fit grid (Сүүлийн төлбөр, Удахгүй нийтлэгдэх, Файлын асуудал, Эрх нь дуусах гишүүд), rows linking to their item. Payments (list of all requests: table + side panel with history, status filter, CSV export; no queue or receipt panel, [[ADR-0046-remove-bank-transfer-path|ADR-0046]]), Users, Контент (episodes), Цуврал, Жагсаалт, Шошго, Categories, Upload, Audit log. The episode picture field expects 16:9 (recommend 1280×720) and shows a 16:9 preview; the category cover upload uses `coverPath`.
 
 Контент tools ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]), all through CSS variables:
 

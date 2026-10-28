@@ -122,6 +122,14 @@ export const adminUserDetailResponseSchema = z.object({
 
 // ---- Dashboard, audit, export ----
 
+const dashboardMemberSchema = z.object({
+  id: idSchema,
+  username: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+});
+
+/** GET /v1/admin/dashboard (ADR-0056). Months are Ulaanbaatar calendar months. */
 export const dashboardResponseSchema = z.object({
   /** Users whose access has not ended. */
   activeUsers: z.number().int(),
@@ -130,7 +138,40 @@ export const dashboardResponseSchema = z.object({
   expiringIn30Days: z.number().int(),
   /** Registered in the last 7 days. */
   newUsersThisWeek: z.number().int(),
+  /** COMPLETED payments that carry money (no manual grants, no refunds). */
+  revenue: z.object({
+    thisMonthMnt: z.number().int(),
+    lastMonthMnt: z.number().int(),
+    paymentsThisMonth: z.number().int(),
+  }),
+  recentPayments: z.array(
+    z.object({
+      id: idSchema,
+      subscriptionId: idSchema,
+      referenceCode: z.string(),
+      amountMnt: z.number().int(),
+      method: z.enum(['QPAY', 'BANK_TRANSFER']),
+      createdAt: z.iso.datetime(),
+      user: dashboardMemberSchema,
+    }),
+  ),
+  upcoming: z.array(z.object({ id: idSchema, title: z.string(), scheduledFor: z.iso.datetime() })),
+  mediaProblems: z.object({
+    failed: z.number().int(),
+    stuck: z.number().int(),
+    items: z.array(
+      z.object({
+        episodeId: idSchema,
+        title: z.string(),
+        status: z.enum(['FAILED', 'UPLOADING']),
+        failReason: z.string().nullable(),
+        updatedAt: z.iso.datetime(),
+      }),
+    ),
+  }),
+  expiringSoon: z.array(dashboardMemberSchema.extend({ accessUntil: z.iso.datetime() })),
 });
+export type DashboardDto = z.infer<typeof dashboardResponseSchema>;
 
 export const listAuditQuerySchema = z.object({
   actorId: z.preprocess(emptyToUndefined, idSchema.optional()),
