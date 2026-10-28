@@ -96,6 +96,11 @@ export default function Plans() {
         ))}
         {plans.data && plans.data.plans.length === 0 ? <p>{mn.plans.empty}</p> : null}
       </div>
+      {status === 'authenticated' ? (
+        <p>
+          <Link to="/gift">{mn.gift.giveLink}</Link>
+        </p>
+      ) : null}
     </div>
   );
 }

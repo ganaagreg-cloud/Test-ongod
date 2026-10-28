@@ -120,6 +120,9 @@ model User {
   emailCodes       EmailCode[]
   subscriptions    Subscription[]     @relation("SubscriptionUser")
   decisions        Subscription[]     @relation("SubscriptionDecidedBy")
+  giftsBought      Gift[]             @relation("GiftBuyer")
+  giftsRedeemed    Gift[]             @relation("GiftRedeemer")
+  giftsVoided      Gift[]             @relation("GiftVoider")
   playbackProgress PlaybackProgress[]
   savedEpisodes    SavedEpisode[]
   notifications    Notification[]
@@ -193,6 +196,7 @@ model Plan {
   active       Boolean @default(true)
 
   subscriptions Subscription[]
+  gifts         Gift[]
 }
 
 model Subscription {
@@ -224,6 +228,7 @@ model Subscription {
   plan      Plan      @relation(fields: [planId], references: [id])
   decidedBy User?     @relation("SubscriptionDecidedBy", fields: [decidedById], references: [id])
   payments  Payment[]
+  gift      Gift?
 
   @@index([userId, status])
   @@index([status, createdAt])
@@ -242,6 +247,49 @@ model Payment {
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@index([subscriptionId])
+}
+
+enum GiftStatus {
+  PENDING_PAYMENT
+  PAID
+  REDEEMED
+  CANCELLED
+  EXPIRED
+  VOID
+}
+
+/// Access bought for someone else (SPEC J, ADR-0060). The code exists once the gift is PAID.
+model Gift {
+  id                  String          @id @default(cuid())
+  buyerId             String
+  planId              String
+  status              GiftStatus      @default(PENDING_PAYMENT)
+  /// Price and length are copied when the gift is bought: a later plan edit does not change it.
+  amountMnt           Int
+  durationDays        Int
+  /// XXXX-XXXX-XXXX, set when the gift is paid; the buyer can read it again, so it is not hashed.
+  code                String?         @unique
+  paymentProvider     PaymentProvider @default(NONE)
+  wirePaymentIntentId String?         @unique
+  checkoutUrl         String?         @db.Text
+  paidAt              DateTime?
+  expiresAt           DateTime?
+  redeemedById        String?
+  redeemedAt          DateTime?
+  subscriptionId      String?         @unique
+  voidedById          String?
+  voidReason          String?         @db.Text
+  createdAt           DateTime        @default(now())
+
+  buyer        User          @relation("GiftBuyer", fields: [buyerId], references: [id])
+  plan         Plan          @relation(fields: [planId], references: [id])
+  redeemedBy   User?         @relation("GiftRedeemer", fields: [redeemedById], references: [id])
+  voidedBy     User?         @relation("GiftVoider", fields: [voidedById], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([buyerId, status])
+  @@index([status, createdAt])
+  @@index([status, expiresAt])
 }
 
 /// Wire event ids already handled, so a retried webhook does its work once (ADR-0041).

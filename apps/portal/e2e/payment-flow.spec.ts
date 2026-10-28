@@ -181,3 +181,64 @@ test('the third device is refused with a list to remove one (SPEC B)', async ({ 
 
   await Promise.all([first.close(), second.close(), third.close()]);
 });
+
+/** Register, verify the email and sign in; ends on Миний бүртгэл. */
+async function signUp(page: Page, email: string, username: string) {
+  await register(page, email, username);
+  await page.getByLabel('Баталгаажуулах код').fill(await emailedCode(email));
+  await page.getByRole('button', { name: 'Баталгаажуулах' }).click();
+  await page.getByLabel('Нууц үг').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Нэвтрэх', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Миний бүртгэл' })).toBeVisible();
+}
+
+test('gift: one member buys with the mock checkout, another redeems the code (SPEC J)', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(180_000);
+  const stamp = Date.now();
+
+  // ---- the buyer pays for a gift and reads the code ----
+  await signUp(page, `e2e-giver-${stamp}@example.com`, `e2eg${stamp}`);
+  await page.getByRole('link', { name: 'Бусдад эрх бэлэглэх' }).click();
+  await expect(page.getByRole('heading', { name: 'Эрх бэлэглэх', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'Бэлэглэх' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Туршилтын төлбөр' })).toBeVisible();
+  await page.getByRole('button', { name: 'Төлбөр амжилттай болсон гэж үзэх' }).click();
+  await expect(page.getByRole('heading', { name: 'Миний бэлгүүд' })).toBeVisible();
+  const codeEl = page.locator('.portal-giftcode__value').first();
+  await expect(codeEl).toBeVisible();
+  const code = (await codeEl.textContent())!.trim();
+  expect(code).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+  await page.screenshot({ path: shots('portal-gifts'), fullPage: true });
+
+  // The buyer has no access from it.
+  await page.getByRole('link', { name: 'Миний бүртгэл' }).first().click();
+  await expect(page.getByText('Идэвхгүй', { exact: true })).toBeVisible();
+
+  // ---- another member redeems it ----
+  const friendCtx = await browser.newContext({ baseURL: 'http://localhost:5173' });
+  const friend = await friendCtx.newPage();
+  await signUp(friend, `e2e-friend-${stamp}@example.com`, `e2ef${stamp}`);
+  await friend.goto('/redeem');
+  await friend.getByLabel('Бэлгийн код').fill('ZZZZ-ZZZZ-ZZZZ');
+  await friend.getByRole('button', { name: 'Ашиглах' }).click();
+  await expect(friend.getByText(/буруу, ашиглагдсан эсвэл хугацаа нь дууссан/)).toBeVisible();
+  await friend.getByLabel('Бэлгийн код').fill(code.toLowerCase());
+  await friend.getByRole('button', { name: 'Ашиглах' }).click();
+  await expect(friend.getByRole('heading', { name: 'Эрх идэвхжлээ' })).toBeVisible();
+  await expect(friend.getByText(/Таны эрх \d{4}\.\d{2}\.\d{2} хүртэл хүчинтэй\./)).toBeVisible();
+
+  // The same code does not work again.
+  await friend.goto('/redeem');
+  await friend.getByLabel('Бэлгийн код').fill(code);
+  await friend.getByRole('button', { name: 'Ашиглах' }).click();
+  await expect(friend.getByText(/буруу, ашиглагдсан эсвэл хугацаа нь дууссан/)).toBeVisible();
+  await friendCtx.close();
+
+  // The buyer's list shows it as used, without the code.
+  await page.goto('/gifts');
+  await expect(page.getByText('Ашигласан', { exact: true })).toBeVisible();
+  await expect(page.locator('.portal-giftcode__value')).toHaveCount(0);
+});

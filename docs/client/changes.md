@@ -68,7 +68,7 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Client asked** (relayed by Ganaa, 2026-10-28): a member can buy access as a gift for someone else.
 - **In scope:** yes, accepted as a paid add-on (2026-10-28). Before: no, [[SPEC#Workflows]] D covered only a member paying for their own access; SPEC J now covers gifts.
 - **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): API 3–4 days (gift purchase through Wire/QPay, a one-time gift code, redemption that grants access in a transaction with a status precondition, emails, tests), portal 1.5–2 days (buy a gift, redeem a code, gifts in "Миний бүртгэл"), admin 0.5–1 day (gifts in Төлбөр), docs 0.5 = **5.5–7.5 days**. At the example rate of ~125,000 ₮/day (2026-10-18 entry, not confirmed) about 700,000–950,000 ₮.
-- **Status:** accepted as a paid add-on. Work not started. Needs first: answers to [[open-questions]] #29, then an ADR.
+- **Status:** built 2026-10-28 ([[ADR-0060-gift-access|ADR-0060]]): API, portal pages and the admin Бэлэг page. Built on stated assumptions for [[open-questions]] #29 (recipient needs an account, 365-day code, buyer passes the code on); each is a small change if the client answers differently.
 - **Notes:** questions before an ADR: does the recipient need an account first, or a code they redeem after signing up? Can a gift be refunded or re-sent? Gifts are bought and redeemed on the portal only: the apps show no payment wording ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[R-apple-no-payment-ui]]).
 
 ### 2026-10-28: Monthly and yearly plans

@@ -16,6 +16,10 @@ const Forgot = lazy(() => import('./pages/Forgot'));
 const Reset = lazy(() => import('./pages/Reset'));
 const Pay = lazy(() => import('./pages/Pay'));
 const MockCheckout = lazy(() => import('./pages/MockCheckout'));
+const GiftBuy = lazy(() => import('./pages/GiftBuy'));
+const MyGifts = lazy(() => import('./pages/MyGifts'));
+const Redeem = lazy(() => import('./pages/Redeem'));
+const MockGiftCheckout = lazy(() => import('./pages/MockGiftCheckout'));
 const Status = lazy(() => import('./pages/Status'));
 const Account = lazy(() => import('./pages/Account'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
@@ -64,6 +68,10 @@ export function App() {
           <Route element={<RequireAuth />}>
             <Route path="pay" element={<Pay />} />
             <Route path="pay/mock/:id" element={<MockCheckout />} />
+            <Route path="pay/mock/gift/:id" element={<MockGiftCheckout />} />
+            <Route path="gift" element={<GiftBuy />} />
+            <Route path="gifts" element={<MyGifts />} />
+            <Route path="redeem" element={<Redeem />} />
             <Route path="status" element={<Status />} />
             <Route path="account" element={<Account />} />
           </Route>

@@ -54,6 +54,10 @@ test('no page text is hardcoded in the pages (it lives in i18n/mn.ts)', () => {
     'Legal',
     'DeleteAccount',
     'NotFound',
+    'GiftBuy',
+    'MyGifts',
+    'Redeem',
+    'MockGiftCheckout',
   ];
   for (const page of pages) {
     const code = readFileSync(new URL(`../src/pages/${page}.tsx`, import.meta.url), 'utf8')

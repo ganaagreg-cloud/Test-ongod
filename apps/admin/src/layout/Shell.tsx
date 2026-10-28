@@ -18,6 +18,7 @@ const GROUPS: ReadonlyArray<{ label?: string; items: NavItem[] }> = [
       { to: '/', label: mn.nav.dashboard, icon: 'home', end: true },
       { to: '/payments', label: mn.nav.payments, icon: 'doc' },
       { to: '/plans', label: mn.nav.plans, icon: 'check' },
+      { to: '/gifts', label: mn.nav.gifts, icon: 'bookmark' },
       { to: '/users', label: mn.nav.users, icon: 'profile' },
     ],
   },

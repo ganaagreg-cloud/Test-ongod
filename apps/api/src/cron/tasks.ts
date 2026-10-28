@@ -98,6 +98,64 @@ export const syncWaitingPayments = (
   },
 });
 
+/**
+ * SPEC J (ADR-0060): like syncWaitingPayments, for gifts. A gift whose webhook was lost is paid
+ * within one tick; granting goes through the payment service (one transaction, status
+ * precondition), so repeated ticks issue one code.
+ */
+export const syncWaitingGifts = (
+  payments: Pick<PaymentService, 'syncGift'>,
+  opts: SyncWaitingPaymentsOptions = {},
+): CronTask => ({
+  name: 'syncWaitingGifts',
+  async run({ db, now }) {
+    const budgetMs = opts.budgetMs ?? 20_000;
+    const callTimeoutMs = opts.callTimeoutMs ?? 10_000;
+    const startedAt = Date.now();
+    const waiting = await db.gift.findMany({
+      where: {
+        paymentProvider: 'WIRE',
+        wirePaymentIntentId: { not: null },
+        status: { in: ['PENDING_PAYMENT', 'EXPIRED'] },
+        paidAt: null,
+        createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: opts.limit ?? 50,
+    });
+    let paid = 0;
+    for (const gift of waiting) {
+      if (Date.now() - startedAt >= budgetMs) break;
+      if (!(await settlesWithin(payments.syncGift(gift), callTimeoutMs))) continue;
+      const after = await db.gift.findUnique({ where: { id: gift.id }, select: { status: true } });
+      if (after?.status === 'PAID') paid++;
+    }
+    return { affected: paid };
+  },
+});
+
+/**
+ * SPEC J: an unpaid gift expires after 7 days (like a payment request); a paid one that nobody
+ * redeemed by its `expiresAt` becomes EXPIRED. Nothing is refunded automatically.
+ */
+export const expireGifts: CronTask = {
+  name: 'expireGifts',
+  async run({ db, now }) {
+    const unpaid = await db.gift.updateMany({
+      where: {
+        status: 'PENDING_PAYMENT',
+        createdAt: { lt: new Date(now.getTime() - PENDING_PAYMENT_TTL_DAYS * DAY_MS) },
+      },
+      data: { status: 'EXPIRED' },
+    });
+    const unredeemed = await db.gift.updateMany({
+      where: { status: 'PAID', expiresAt: { lte: now } },
+      data: { status: 'EXPIRED' },
+    });
+    return { affected: unpaid.count + unredeemed.count };
+  },
+};
+
 /** SPEC D: PENDING_PAYMENT expires after 7 days. */
 export const expirePendingPayments: CronTask = {
   name: 'expirePendingPayments',
