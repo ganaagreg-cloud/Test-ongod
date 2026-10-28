@@ -62,3 +62,27 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** set by Ganaa.
 - **Status:** in progress (price pending). Phase 1 (organise, admin tools, push on publish) decided in [[ADR-0042-content-organisation-and-publish-push|ADR-0042]] (accepted).
 - **Notes:** design: [[2026-10-21-content-management-design]]. Free content (phase 2) is now allowed ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]): delivered per item (`isFree`, admin switch), login required, a registered device required; paid items without access show a blurred cover and the activate text in the app. Price field stays blank: Ganaa sets it.
+
+### 2026-10-28: Gift access (Эрх бэлэглэх)
+
+- **Client asked** (relayed by Ganaa, 2026-10-28): a member can buy access as a gift for someone else.
+- **In scope:** yes, accepted as a paid add-on (2026-10-28). Before: no, [[SPEC#Workflows]] D covered only a member paying for their own access; SPEC J now covers gifts.
+- **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): API 3–4 days (gift purchase through Wire/QPay, a one-time gift code, redemption that grants access in a transaction with a status precondition, emails, tests), portal 1.5–2 days (buy a gift, redeem a code, gifts in "Миний бүртгэл"), admin 0.5–1 day (gifts in Төлбөр), docs 0.5 = **5.5–7.5 days**. At the example rate of ~125,000 ₮/day (2026-10-18 entry, not confirmed) about 700,000–950,000 ₮.
+- **Status:** accepted as a paid add-on. Work not started. Needs first: answers to [[open-questions]] #29, then an ADR.
+- **Notes:** questions before an ADR: does the recipient need an account first, or a code they redeem after signing up? Can a gift be refunded or re-sent? Gifts are bought and redeemed on the portal only: the apps show no payment wording ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[R-apple-no-payment-ui]]).
+
+### 2026-10-28: Monthly and yearly plans
+
+- **Client asked** (relayed by Ganaa, 2026-10-28): offer a monthly plan next to the yearly one.
+- **In scope:** yes, accepted as a paid add-on (2026-10-28); SPEC [[SPEC#Product]] and K updated. Before: partly. The data model and the portal already handle several plans ([[SPEC#Data model (Prisma)]] `Plan`, `GET /v1/plans`). Missing: a way for the owner to add and edit plans (today only the seed creates one) and wording: [[SPEC#Product]] says "paid yearly access", the portal copy says "Жилийн эрх" in several places.
+- **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): admin "Багц" page (list, add, edit price and days, switch off; changes audited) 0.5–1 day, API routes and tests 0.5 day, portal and email wording 0.25 day = **1.25–1.75 days**.
+- **Status:** accepted as a paid add-on. Work not started. Needs first: the monthly price and length ([[open-questions]] #30), then an ADR.
+- **Notes:** the owner decides the monthly price and days (30 or 31). A plan that is switched off keeps its old subscriptions. Renewal stays manual (no automatic charging; QPay has no saved cards in our flow).
+
+### 2026-10-28: Comments on episodes
+
+- **Client asked** (relayed by Ganaa, 2026-10-28): members can comment on episodes.
+- **In scope:** yes, accepted as a paid add-on (2026-10-28). Before: no, [[SPEC#Out of scope (paid add-ons)]] listed "comments/social feed"; comments are now SPEC L and off that list (a social feed stays out).
+- **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): API 2–3 days (comments per episode, edit/delete own, report, rate limit, admin hide/delete, tests), app 2–3 days (comment list and box on the Player, report, block), admin 1–1.5 days (moderation queue), store rules research and docs 0.5–1 day = **5.5–8.5 days**.
+- **Status:** accepted as a paid add-on. Work not started. Needs first: a research note on App Store and Google Play rules for user comments ([[open-questions]] #32, TO-VERIFY), answers to #31, then an ADR.
+- **Notes:** the App Store and Google Play have rules for user-generated content (filtering, reporting, blocking, a way to contact the developer); a research note is needed before an ADR (TO-VERIFY, no note yet). Moderation is ongoing work for the owner. Who may comment: members with access only, or free users too ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]])?

@@ -24,6 +24,6 @@ All three add what the portal lacks today: the forest brand instead of near-blac
 - The price is the seed plan (100,000₮ for 365 days); the real page reads the active plan.
 - Copy is a first draft for the owner to approve. Lock-screen listening (B) is built but not yet checked on a phone ([[DEVICE_SMOKE]] gate B).
 
-## Next
+## Chosen
 
-The owner picks one (or mixes parts). Then: an ADR for the portal redesign, DESIGN "Portal screens" updated, and the build in `apps/portal` with the existing tests and CSS checks.
+A · Aurora (2026-10-28), built in `apps/portal`: [[ADR-0058-portal-design-a-aurora|ADR-0058]]. Not built from the mockup: the payment history table (no API for it yet) and the header section links on phones.
