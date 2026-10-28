@@ -15,6 +15,7 @@ import {
   isLocked,
   listenedHours,
   pagesWithSaved,
+  playerLabel,
   progressFraction,
   remainingLabel,
   resumeAt,
@@ -301,4 +302,12 @@ test('series part label and series/playlist/tag calls', async () => {
     ['GET', '/tags'],
     ['GET', '/episodes?category=psy&tag=stoic'],
   ]);
+});
+
+test('the Player says "now playing" only for the episode in the player, else its category', () => {
+  assert.equal(playerLabel(true, 'Ярилцлага'), mn.player.nowPlaying);
+  assert.equal(playerLabel(false, 'Ярилцлага'), 'ЯРИЛЦЛАГА');
+  // Mongolian Ө and Ү upper-case correctly.
+  assert.equal(playerLabel(false, 'Өв уламжлал үү'), 'ӨВ УЛАМЖЛАЛ ҮҮ');
+  assert.equal(playerLabel(false, undefined), mn.player.nowPlaying);
 });
