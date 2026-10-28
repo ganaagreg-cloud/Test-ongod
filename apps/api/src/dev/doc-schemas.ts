@@ -2,6 +2,16 @@
 // packages/shared. The routes themselves validate with zod inside the handler, so nothing
 // here changes how the API behaves; a test fails when a route has no entry.
 import {
+  adminCommentsPageSchema,
+  blockedUsersResponseSchema,
+  commentResponseSchema,
+  commentsPageSchema,
+  createCommentRequestSchema,
+  listAdminCommentsQuerySchema,
+  listCommentsQuerySchema,
+  muteUserResponseSchema,
+  reportCommentRequestSchema,
+  updateCommentRequestSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
   createGiftRequestSchema,
@@ -388,6 +398,34 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: z.object({ subscription: subscriptionSchema }) },
     },
   ),
+  'GET /v1/episodes/:id/comments': user('app', 'L. Comments of an episode, newest first, cursor', {
+    query: listCommentsQuerySchema,
+    responses: { 200: commentsPageSchema },
+  }),
+  'POST /v1/episodes/:id/comments': user('app', 'L. Post a comment (access or a free episode)', {
+    body: createCommentRequestSchema,
+    responses: { 201: commentResponseSchema },
+  }),
+  'PATCH /v1/comments/:id': user('app', 'L. Edit your own comment', {
+    body: updateCommentRequestSchema,
+    responses: { 200: commentResponseSchema },
+  }),
+  'DELETE /v1/comments/:id': user('app', 'L. Delete your own comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/comments/:id/report': user('app', 'L. Report a comment (3 reports hide it)', {
+    body: reportCommentRequestSchema,
+    responses: { 204: noContent },
+  }),
+  'POST /v1/comments/:id/block': user('app', 'L. Block the author of a comment', {
+    responses: { 204: noContent },
+  }),
+  'GET /v1/me/blocks': user('app', 'L. Users I blocked', {
+    responses: { 200: blockedUsersResponseSchema },
+  }),
+  'DELETE /v1/me/blocks/:userId': user('app', 'L. Unblock a user', {
+    responses: { 204: noContent },
+  }),
   'POST /v1/gifts': user('portal', 'J. Buy a gift: an unpaid gift with its QPay checkout', {
     body: createGiftRequestSchema,
     responses: { 201: giftResponseSchema },
@@ -445,6 +483,31 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'POST /v1/admin/users/:id/grants': admin('E. Manual grant (gift, store-reviewer demo account)', {
     body: grantRequestSchema,
     responses: { 201: adminSubscriptionResponseSchema },
+  }),
+  'GET /v1/admin/comments': admin('L. Comments by filter (reported first), with search', {
+    query: listAdminCommentsQuerySchema,
+    responses: { 200: adminCommentsPageSchema },
+  }),
+  'POST /v1/admin/comments/:id/hide': admin('L. Hide a visible comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/comments/:id/restore': admin(
+    'L. Show a hidden comment again (clears its reports)',
+    {
+      responses: { 204: noContent },
+    },
+  ),
+  'POST /v1/admin/comments/:id/dismiss': admin('L. Dismiss the reports on a visible comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/comments/:id/delete': admin('L. Delete a comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/users/:id/comment-mute': admin('L. Stop a user from posting comments', {
+    responses: { 200: muteUserResponseSchema },
+  }),
+  'DELETE /v1/admin/users/:id/comment-mute': admin('L. Let a muted user post comments again', {
+    responses: { 200: muteUserResponseSchema },
   }),
   'GET /v1/admin/gifts': admin('J. Gifts with status filter and the unredeemed amount', {
     query: listGiftsQuerySchema,

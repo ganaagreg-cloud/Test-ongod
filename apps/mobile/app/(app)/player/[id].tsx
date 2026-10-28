@@ -6,12 +6,14 @@ import type { EpisodeItem } from '@ongod/shared';
 import { colors, layout, motion, nativeFontFamily, nativeTextStyle, spacing } from '@ongod/tokens';
 import { player, usePlayerState } from '../../../src/audio/player';
 import { useAuth } from '../../../src/auth/AuthContext';
+import { useAppConfig } from '../../../src/config/useAppConfig';
 import { useEpisode, useToggleSaved } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
 import { clockLabel, episodeMeta, isLocked, playerLabel, resumeAt } from '../../../src/lib/episode';
 import { failureOf, startEpisode, type StartFailure } from '../../../src/playback/nowPlaying';
 import { NoAccessSheet } from '../../../src/screens/NoAccessSheet';
 import { openLibrary } from '../../../src/screens/navigation';
+import { CommentsSection } from '../../../src/screens/player/CommentsSection';
 import { DescriptionCard } from '../../../src/screens/player/DescriptionCard';
 import { NextList } from '../../../src/screens/player/NextList';
 import { PlayerControls } from '../../../src/screens/player/PlayerControls';
@@ -42,6 +44,7 @@ export default function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { user } = useAuth();
+  const { supportEmail } = useAppConfig();
   const episode = useEpisode(id);
   const state = usePlayerState();
   const toggleSaved = useToggleSaved();
@@ -214,7 +217,13 @@ export default function PlayerScreen() {
             </Enter>
           ) : null}
 
-          <Enter index={5}>
+          {supportEmail ? (
+            <Enter index={5}>
+              <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
+            </Enter>
+          ) : null}
+
+          <Enter index={6}>
             <NextList
               items={item.next}
               nextInSeries={item.nextInSeries}

@@ -46,7 +46,7 @@ type EpisodeRow = Prisma.EpisodeGetPayload<{ include: typeof itemInclude }>;
  * What users may see: PUBLISHED and already due. Status alone is enough in normal operation;
  * the time check is a second lock so an episode with a future publish time can never leak.
  */
-const publishedWhere = (now: Date) =>
+export const publishedWhere = (now: Date) =>
   ({ status: 'PUBLISHED', publishedAt: { lte: now } }) satisfies Prisma.EpisodeWhereInput;
 
 const SORTS: Record<ListEpisodesQuery['sort'], Direction> = {

@@ -80,12 +80,14 @@ tags: [index]
 | ADR-0058 | [[ADR-0058-portal-design-a-aurora]]                       | accepted                                                  |
 | ADR-0059 | [[ADR-0059-admin-plan-editor]]                            | accepted                                                  |
 | ADR-0060 | [[ADR-0060-gift-access]]                                  | accepted                                                  |
+| ADR-0061 | [[ADR-0061-episode-comments]]                             | accepted                                                  |
 
 ## Research
 
 | Note                               | Status     | Recheck after |
 | ---------------------------------- | ---------- | ------------- |
 | [[R-account-deletion-stores]]      | TO-VERIFY  | —             |
+| [[R-store-ugc-rules]]              | TO-VERIFY  | 2027-01-26    |
 | [[R-admin-light-contrast]]         | VERIFIED   | —             |
 | [[R-apple-login-services-4-8]]     | VERIFIED   | 2027-01-06    |
 | [[R-apple-id-token-verification]]  | VERIFIED   | 2027-01-06    |

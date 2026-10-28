@@ -113,6 +113,8 @@ model User {
   accessUntil     DateTime?
   createdAt       DateTime   @default(now())
   deletedAt       DateTime?
+  /// Set by an admin: this user cannot post comments (SPEC L).
+  commentMutedAt  DateTime?
 
   identities       AuthIdentity[]
   sessions         Session[]
@@ -123,6 +125,10 @@ model User {
   giftsBought      Gift[]             @relation("GiftBuyer")
   giftsRedeemed    Gift[]             @relation("GiftRedeemer")
   giftsVoided      Gift[]             @relation("GiftVoider")
+  comments         Comment[]          @relation("CommentAuthor")
+  commentReports   CommentReport[]    @relation("CommentReporter")
+  commentBlocks    CommentBlock[]     @relation("CommentBlocker")
+  commentBlockedBy CommentBlock[]     @relation("CommentBlocked")
   playbackProgress PlaybackProgress[]
   savedEpisodes    SavedEpisode[]
   notifications    Notification[]
@@ -292,6 +298,67 @@ model Gift {
   @@index([status, expiresAt])
 }
 
+enum CommentStatus {
+  VISIBLE
+  HIDDEN
+  DELETED
+}
+
+enum CommentReportReason {
+  SPAM
+  ABUSE
+  OTHER
+}
+
+/// A text comment on a published episode (SPEC L, ADR-0061).
+model Comment {
+  id        String        @id @default(cuid())
+  episodeId String
+  authorId  String
+  body      String        @db.Text
+  status    CommentStatus @default(VISIBLE)
+  /// Why it is not VISIBLE: "reports" (3 reports) or an admin's action; for the audit.
+  hiddenBy  String?
+  editedAt  DateTime?
+  createdAt DateTime      @default(now())
+
+  episode Episode         @relation(fields: [episodeId], references: [id])
+  author  User            @relation("CommentAuthor", fields: [authorId], references: [id])
+  reports CommentReport[]
+
+  @@index([episodeId, status, createdAt])
+  @@index([authorId, createdAt])
+  @@index([status, createdAt])
+}
+
+/// One report per user and comment.
+model CommentReport {
+  id         String              @id @default(cuid())
+  commentId  String
+  reporterId String
+  reason     CommentReportReason
+  createdAt  DateTime            @default(now())
+
+  comment  Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporter User    @relation("CommentReporter", fields: [reporterId], references: [id])
+
+  @@unique([commentId, reporterId])
+  @@index([reporterId])
+}
+
+/// A user hides another user's comments from their own view.
+model CommentBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("CommentBlocker", fields: [blockerId], references: [id])
+  blocked User @relation("CommentBlocked", fields: [blockedId], references: [id])
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
 /// Wire event ids already handled, so a retried webhook does its work once (ADR-0041).
 model WebhookEvent {
   id         String   @id
@@ -331,6 +398,7 @@ model Episode {
   mediaAssets      MediaAsset[]
   playbackProgress PlaybackProgress[]
   savedBy          SavedEpisode[]
+  comments         Comment[]
   tags             EpisodeTag[]
   playlistItems    PlaylistItem[]
 

@@ -1765,3 +1765,14 @@
   font: var(--text-caption-weight) var(--text-caption-size) / var(--text-caption-line)
     var(--text-caption-font);
 }
+
+/* The comment text in the moderation list: long comments stay readable but do not fill the screen. */
+.admin-comment-body {
+  display: -webkit-box;
+  max-width: calc(var(--layout-overlay-max-width) * 1.2);
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
