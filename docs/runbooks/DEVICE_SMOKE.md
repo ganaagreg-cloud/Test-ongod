@@ -111,12 +111,12 @@ Built in parallel with gate A. Needs the seeded catalog (`pnpm --filter @ongod/a
 
 ### Social sign-in and push (gate B, only with `SOCIAL_LOGIN=true` and real client IDs)
 
-| #   | Gate | Check                                                                                                                                             | Result |
-| --- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 32  | B    | Google, new account: the Google sheet opens, then "Профайлаа гүйцээнэ үү" with the email as username; after saving, the home screen               |        |
-| 33  | B    | Google, email of an existing password user: the LINK_REQUIRED message; the password login still works                                             |        |
-| 34  | B    | iPhone: Sign in with Apple works (checks the nonce handling, [[R-expo-apple-authentication]]); Google is shown on iPhone only together with Apple |        |
-| 35  | B    | Push: a test push arrives (after push registration is built)                                                                                      |        |
+| #   | Gate | Check                                                                                                                                                                                                                                               | Result |
+| --- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 32  | B    | Google, new account: the Google sheet opens, then "Профайлаа гүйцээнэ үү" with the email as username; after saving, the home screen                                                                                                                 |        |
+| 33  | B    | Google, email of an existing password user: the LINK_REQUIRED message; the password login still works                                                                                                                                               |        |
+| 34  | B    | iPhone: Sign in with Apple works (checks the nonce handling, [[R-expo-apple-authentication]]); Google is shown on iPhone only together with Apple                                                                                                   |        |
+| 35  | B    | Push ([[ADR-0055-push-token-registration\|ADR-0055]]): after sign-in the system asks once; the Device row gets a token; publishing an episode with the push switch on brings a banner; tapping it opens the Player; Профайл → Мэдэгдэл off stops it |        |
 
 ## 4. Record
 

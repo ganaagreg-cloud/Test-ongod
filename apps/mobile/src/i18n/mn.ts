@@ -263,6 +263,12 @@ export const mn = {
     hours: 'Сонссон цаг',
     settings: 'Тохиргоо',
     devices: 'Төхөөрөмжүүд',
+    notifications: 'Мэдэгдэл',
+  },
+
+  push: {
+    /** Android notification channel name (system settings). */
+    channel: 'Мэдэгдэл',
   },
 
   settings: {

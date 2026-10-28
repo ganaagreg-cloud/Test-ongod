@@ -590,6 +590,27 @@ export function createAuthService(deps: { db: Db; env: Env }) {
       return devices.map((d) => ({ ...toDeviceDto(d), current: d.deviceId === currentDeviceId }));
     },
 
+    /**
+     * Stores the push token on the device of the calling session, or clears it (ADR-0055). The
+     * same token on any other device row (another account signed in earlier on this phone) is
+     * cleared first, so a phone only gets the pushes of the account signed in on it now.
+     */
+    async setPushToken(userId: string, deviceId: string, token: string | null): Promise<void> {
+      await db.$transaction(async (tx) => {
+        if (token) {
+          await tx.device.updateMany({
+            where: { pushToken: token, NOT: { userId, deviceId } },
+            data: { pushToken: null },
+          });
+        }
+        const done = await tx.device.updateMany({
+          where: { userId, deviceId },
+          data: { pushToken: token },
+        });
+        if (done.count !== 1) throw new AppError(404, 'NOT_FOUND');
+      });
+    },
+
     async removeDevice(user: User, id: string, password: string): Promise<void> {
       if (!user.passwordHash || !(await verifyPassword(user.passwordHash, password))) {
         throw new AppError(401, 'INVALID_CREDENTIALS');

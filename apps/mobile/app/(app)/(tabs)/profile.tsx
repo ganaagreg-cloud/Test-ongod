@@ -11,6 +11,7 @@ import { accessState, listenedHours } from '../../../src/lib/episode';
 import { portalLink } from '../../../src/lib/portalLink';
 import { useBottomSpace } from '../../../src/screens/layout';
 import { AccessCard } from '../../../src/screens/profile/AccessCard';
+import { PushSwitch } from '../../../src/screens/profile/PushSwitch';
 import {
   AuroraBackground,
   Button,
@@ -100,6 +101,7 @@ export default function Profile() {
                 onPress={() => void Linking.openURL(privacyUrl)}
               />
             ) : null}
+            <PushSwitch />
           </Enter>
 
           {/* DEV ONLY: Expo Go cannot type a route, so the device-gate benches are one tap away

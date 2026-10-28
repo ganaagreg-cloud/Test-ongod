@@ -81,6 +81,7 @@ import {
   refreshRequestSchema,
   registerRequestSchema,
   registerResponseSchema,
+  pushTokenRequestSchema,
   removeDeviceRequestSchema,
   resendCodeRequestSchema,
   resetPasswordRequestSchema,
@@ -275,6 +276,10 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   }),
   'DELETE /v1/me/devices/:id': user('me', 'Remove a device (needs the password)', {
     body: removeDeviceRequestSchema,
+    responses: { 204: noContent },
+  }),
+  'PUT /v1/me/push-token': user('me', "This device's push token, or null to stop push (ADR-0055)", {
+    body: pushTokenRequestSchema,
     responses: { 204: noContent },
   }),
   'DELETE /v1/me': user('me', 'H. Delete the account (soft delete, anonymises personal data)', {

@@ -15,7 +15,7 @@ Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-
   - Real phone on the same Wi-Fi: `http://<LAN IP of the computer>:3000`
   - iOS simulator or the browser preview: `http://localhost:3000`
 - `EXPO_PUBLIC_*` values end up inside the app: no secrets. `SENTRY_AUTH_TOKEN` is the only secret and goes into EAS secrets, never a file in the repo ([[SECRETS]]).
-- Preview and production builds read the same names from **EAS environment variables** (`environment` in `eas.json`). Create them once per environment (check `eas env:create --help` for the current flags): `EXPO_PUBLIC_API_URL` (the real https address), `EXPO_PUBLIC_PORTAL_URL` (the portal's https address: terms and privacy links; empty hides them), `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_IOS_STORE_URL`, `EXPO_PUBLIC_ANDROID_STORE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and the build-time `GOOGLE_IOS_URL_SCHEME`, `SENTRY_ORG`, `SENTRY_PROJECT`.
+- Preview and production builds read the same names from **EAS environment variables** (`environment` in `eas.json`). Create them once per environment (check `eas env:create --help` for the current flags): `EXPO_PUBLIC_API_URL` (the real https address), `EXPO_PUBLIC_PORTAL_URL` (the portal's https address: terms and privacy links; empty hides them), `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_IOS_STORE_URL`, `EXPO_PUBLIC_ANDROID_STORE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, and the build-time `GOOGLE_IOS_URL_SCHEME`, `SENTRY_ORG`, `SENTRY_PROJECT`, `EAS_PROJECT_ID` (push tokens need it; without it the app skips push) and `GOOGLE_SERVICES_FILE` (an EAS file variable with `google-services.json`, Android push through Firebase).
 
 ## Run
 
@@ -43,4 +43,5 @@ Decisions: [[ADR-0030-mobile-app-foundation|ADR-0030]], [[ADR-0001-mobile-react-
 
 - No build has run on a real device or in EAS. Google and Apple sign-in, SecureStore, the keyboard and the Sentry plugin are untested on hardware ([[open-questions]] #12).
 - Video ([[ADR-0038-video-episodes-bunny-stream|ADR-0038]]) added two native modules, `expo-video` (plugin: background playback on, picture in picture off) and `expo-screen-orientation` (iOS starts portrait). A dev build made before 2026-10-18 does not contain them: build again before the video rows of [[DEVICE_SMOKE]].
+- Push ([[ADR-0055-push-token-registration|ADR-0055]]) added `expo-notifications`: build again. Delivery needs the EAS project, a Firebase project with an FCM v1 key in EAS credentials (Android) and an APNs key (iOS, paid Apple Developer Program); these steps are TO-VERIFY ([[R-expo-notifications-sdk57]]).
 - Google Cloud console and Apple developer setup (client IDs, signing fingerprints, Sign in with Apple identifier) are the owner's steps; none are recorded as verified.

@@ -74,6 +74,7 @@ tags: [index]
 | ADR-0052 | [[ADR-0052-episode-one-page-editor]]                      | accepted                                                  |
 | ADR-0053 | [[ADR-0053-app-only-legal-pages]]                         | accepted                                                  |
 | ADR-0054 | [[ADR-0054-refresh-limit-per-device]]                     | accepted                                                  |
+| ADR-0055 | [[ADR-0055-push-token-registration]]                      | accepted                                                  |
 
 ## Research
 
@@ -95,6 +96,7 @@ tags: [index]
 | [[R-expo-apple-authentication]]    | TO-VERIFY  | 2026-11-08    |
 | [[R-expo-audio-sdk57]]             | VERIFIED   | 2026-12-08    |
 | [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
+| [[R-expo-notifications-sdk57]]     | VERIFIED   | 2026-12-27    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
 | [[R-expo-video-sdk57]]             | VERIFIED   | 2026-12-17    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |

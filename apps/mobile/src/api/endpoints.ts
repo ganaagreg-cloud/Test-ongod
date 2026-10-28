@@ -188,6 +188,10 @@ export function createEndpoints(client: ApiClient) {
     /** Soft delete (SPEC H): the server anonymises the account and ends every session. */
     deleteAccount: () => request('/me', { method: 'DELETE' }),
 
+    /** This phone's Expo push token, or null to stop push here (ADR-0055). */
+    setPushToken: (token: string | null) =>
+      request('/me/push-token', { method: 'PUT', body: { token } }),
+
     logout: async () => {
       const refreshToken = await client.getRefreshToken();
       if (refreshToken) {
