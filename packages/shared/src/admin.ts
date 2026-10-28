@@ -75,6 +75,41 @@ export const grantRequestSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
+// ---- Plans (SPEC K, ADR-0059) ----
+
+export const PLAN_PRICE_MIN_MNT = 100;
+export const PLAN_PRICE_MAX_MNT = 100_000_000;
+
+export const adminPlanSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  durationDays: z.number().int().positive(),
+  priceMnt: z.number().int().nonnegative(),
+  active: z.boolean(),
+  /** Every subscription on the plan, open or closed. The days are fixed once this is above 0. */
+  subscriptionCount: z.number().int().nonnegative(),
+});
+export type AdminPlanDto = z.infer<typeof adminPlanSchema>;
+export const adminPlansResponseSchema = z.object({ plans: z.array(adminPlanSchema) });
+export const adminPlanResponseSchema = z.object({ plan: adminPlanSchema });
+
+const planFields = {
+  name: z.string().trim().min(2).max(60),
+  durationDays: z.number().int().min(1).max(3660),
+  priceMnt: z.number().int().min(PLAN_PRICE_MIN_MNT).max(PLAN_PRICE_MAX_MNT),
+  active: z.boolean(),
+};
+export const createPlanRequestSchema = z.object({
+  ...planFields,
+  active: planFields.active.default(true),
+});
+export type CreatePlanRequest = z.input<typeof createPlanRequestSchema>;
+export const updatePlanRequestSchema = z
+  .object(planFields)
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to change' });
+export type UpdatePlanRequest = z.infer<typeof updatePlanRequestSchema>;
+
 // ---- Users ----
 
 export const listUsersQuerySchema = z.object({ q: searchQuery, ...pageQuery });

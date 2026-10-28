@@ -42,7 +42,8 @@ async function main() {
   const plan = await db.plan.upsert({
     where: { id: 'seed_plan_yearly' },
     create: { id: 'seed_plan_yearly', name: 'Жилийн эрх', durationDays: 365, priceMnt: 100000 },
-    update: { name: 'Жилийн эрх', durationDays: 365, priceMnt: 100000, active: true },
+    // Created once; after that the owner edits plans in the admin (ADR-0059), so no update.
+    update: {},
   });
 
   // --- Users: one per status, plus access variations ---

@@ -76,7 +76,7 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Client asked** (relayed by Ganaa, 2026-10-28): offer a monthly plan next to the yearly one.
 - **In scope:** yes, accepted as a paid add-on (2026-10-28); SPEC [[SPEC#Product]] and K updated. Before: partly. The data model and the portal already handle several plans ([[SPEC#Data model (Prisma)]] `Plan`, `GET /v1/plans`). Missing: a way for the owner to add and edit plans (today only the seed creates one) and wording: [[SPEC#Product]] says "paid yearly access", the portal copy says "Жилийн эрх" in several places.
 - **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): admin "Багц" page (list, add, edit price and days, switch off; changes audited) 0.5–1 day, API routes and tests 0.5 day, portal and email wording 0.25 day = **1.25–1.75 days**.
-- **Status:** accepted as a paid add-on. Work not started. Needs first: the monthly price and length ([[open-questions]] #30), then an ADR.
+- **Status:** built 2026-10-28 ([[ADR-0059-admin-plan-editor|ADR-0059]]): admin "Багц" page and API. The owner adds the monthly plan there once the price is set ([[open-questions]] #30).
 - **Notes:** the owner decides the monthly price and days (30 or 31). A plan that is switched off keeps its old subscriptions. Renewal stays manual (no automatic charging; QPay has no saved cards in our flow).
 
 ### 2026-10-28: Comments on episodes

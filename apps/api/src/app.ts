@@ -10,6 +10,7 @@ import { createBulkService } from './admin/bulk';
 import { createContentService } from './admin/content';
 import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
+import { createPlanService } from './admin/plans';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
@@ -186,6 +187,7 @@ export async function buildApp(deps: AppDeps) {
         guards: createAdminGuards(requireAuth),
         decisions: createDecisionService({ db, now: deps.now }),
         queries: createAdminQueries({ db, now: deps.now }),
+        plans: createPlanService({ db }),
       });
       const contentService = createContentService({
         db,

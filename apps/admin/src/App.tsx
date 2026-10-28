@@ -14,6 +14,7 @@ import { PlaylistEditPage } from './pages/PlaylistEdit';
 import { PlaylistsPage } from './pages/Playlists';
 import { SeriesEditPage } from './pages/SeriesEdit';
 import { SeriesPage } from './pages/Series';
+import { PlansPage } from './pages/Plans';
 import { TagsPage } from './pages/Tags';
 import { UserDetailPage } from './pages/UserDetail';
 import { UsersPage } from './pages/Users';
@@ -53,6 +54,7 @@ export function App() {
           <Route element={<Shell />}>
             <Route index element={<DashboardPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="plans" element={<PlansPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
             <Route path="episodes" element={<EpisodesPage />} />
