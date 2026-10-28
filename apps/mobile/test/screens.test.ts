@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import type { EpisodeItem, EpisodesPage, HomeResponse } from '@ongod/shared';
 import { createEndpoints, queryString } from '../src/api/endpoints';
 import { mn } from '../src/i18n/mn';
+import { nextInQueue, setPlayQueue } from '../src/playback/queue';
 import { homeRows } from '../src/screens/home/homeRows';
 import {
   accessState,
@@ -301,4 +302,15 @@ test('series part label and series/playlist/tag calls', async () => {
     ['GET', '/tags'],
     ['GET', '/episodes?category=psy&tag=stoic'],
   ]);
+});
+
+test('"Дараагийн" is the item after this one in the list the Player was opened from', () => {
+  const [a, b, c] = [episode({ id: 'a' }), episode({ id: 'b' }), episode({ id: 'c' })] as const;
+  setPlayQueue([a, b, c]);
+  assert.equal(nextInQueue('a'), b);
+  assert.equal(nextInQueue('b'), c);
+  assert.equal(nextInQueue('c'), null, 'the last one: nothing next, no row');
+  assert.equal(nextInQueue('zzz'), undefined, 'not in the list (push): the API order is used');
+  setPlayQueue([]);
+  assert.equal(nextInQueue('a'), undefined, 'a screen without a list forgets the old one');
 });

@@ -197,7 +197,6 @@ export const mn = {
   },
 
   player: {
-    nowPlaying: 'ОДОО ТОГЛУУЛЖ БАЙНА',
     close: 'Хаах',
     back15: '15 секунд ухраах',
     forward30: '30 секунд гүйлгэх',
@@ -213,6 +212,8 @@ export const mn = {
     less: 'Хураах',
     next: 'Дараагийн',
     nextInSeries: 'Дараагийн хэсэг',
+    autoplayIn: (seconds: number) => `Дараагийн дугаар ${seconds} секундын дараа эхэлнэ`,
+    autoplayCancel: 'Болих',
     notReady: 'Энэ дугаарын файл бэлэн болоогүй байна.',
     videoUnsupported: 'Энэ төхөөрөмж дээр видео тоглох боломжгүй байна.',
     playError: 'Тоглуулж чадсангүй. Дахин оролдоно уу.',

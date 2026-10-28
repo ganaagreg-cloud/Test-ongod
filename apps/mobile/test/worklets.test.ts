@@ -95,12 +95,19 @@ function violations(source: string, filename: string): string[] {
           init?.type === 'MemberExpression' &&
           init.object.type === 'ThisExpression' &&
           init.property.type === 'Identifier' &&
-          init.property.name === '__closure' &&
-          path.node.id.type === 'ObjectPattern'
+          init.property.name === '__closure'
         ) {
-          for (const p of path.node.id.properties) {
-            if (p.type === 'ObjectProperty' && p.value.type === 'Identifier') {
-              captured.add(p.value.name);
+          const id = path.node.id;
+          // worklets 0.13 (SDK 58) destructures an array; 0.10 (SDK 57) destructured an object.
+          if (id.type === 'ArrayPattern') {
+            for (const element of id.elements) {
+              if (element?.type === 'Identifier') captured.add(element.name);
+            }
+          } else if (id.type === 'ObjectPattern') {
+            for (const p of id.properties) {
+              if (p.type === 'ObjectProperty' && p.value.type === 'Identifier') {
+                captured.add(p.value.name);
+              }
             }
           }
         }

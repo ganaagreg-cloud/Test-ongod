@@ -84,7 +84,8 @@ export default function Home() {
 
   const name = user ? user.firstName.trim() || user.username : '';
   const data = home.data;
-  const open = (item: EpisodeItem, autoplay = false) => openPlayer(router, item.id, autoplay);
+  const open = (item: EpisodeItem, autoplay = false, list: readonly EpisodeItem[] = []) =>
+    openPlayer(router, item.id, autoplay, list);
   // Phase 1 is members only: always logged in (the logged-out Нүүр comes later).
   const rows = data ? homeRows(data, true) : [];
 
@@ -111,7 +112,7 @@ export default function Home() {
             family={coverFamilyFor(item.id)}
             locked={lockedOf(item)}
             width={layout.cardWidth}
-            onPress={() => open(item)}
+            onPress={() => open(item, false, row.items)}
           />
         ))}
       </ScrollView>
@@ -137,11 +138,11 @@ export default function Home() {
               items={hero}
               onOpen={(slide) => {
                 const item = byId.get(slide.id);
-                if (item) open(item);
+                if (item) open(item, false, row.items);
               }}
               onPlay={(slide) => {
                 const item = byId.get(slide.id);
-                if (item) open(item, true);
+                if (item) open(item, true, row.items);
               }}
               playLabel={mn.episode.play}
               slideLabel={mn.home.slide}

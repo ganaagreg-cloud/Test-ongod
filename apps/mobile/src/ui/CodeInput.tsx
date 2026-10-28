@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import Animated, {
   ReduceMotion,
   cancelAnimation,
@@ -57,7 +57,7 @@ export function CodeInput({
   autoFocus = false,
 }: CodeInputProps) {
   const styles = useThemedStyles(makeStyles);
-  const field = useRef<TextInput>(null);
+  const field = useRef<TextInputInstance>(null);
   const [focused, setFocused] = useState(autoFocus);
   const [boxWidth, setBoxWidth] = useState(0);
   const digits = value.split('');

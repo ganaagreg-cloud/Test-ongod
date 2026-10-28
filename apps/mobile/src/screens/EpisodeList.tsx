@@ -60,7 +60,7 @@ export function EpisodeList({
           empty
         )
       }
-      ListFooterComponent={loadingMore ? <EpisodeRowSkeleton /> : null}
+      ListFooterComponent={loadingMore ? <EpisodeRowSkeleton /> : undefined}
       contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
       onEndReachedThreshold={0.5}
       onEndReached={onEndReached}

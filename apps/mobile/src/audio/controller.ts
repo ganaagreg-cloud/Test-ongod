@@ -36,6 +36,8 @@ export interface PlayerState extends EngineState {
   /** What is loaded: VIDEO shows <VideoSurface />. null before the first play URL. */
   kind: MediaKind | null;
   sleep: SleepState;
+  /** A sleep timer is set or has fired for this episode: nothing may start by itself (ADR-0049). */
+  autoplayBlocked: boolean;
   /** Set when asking for the play URL failed (e.g. NO_ACCESS): the screen shows the no-access sheet. */
   error: { code: string | undefined; message: string } | null;
 }
@@ -84,9 +86,13 @@ export function createPlayerController(deps: ControllerDeps) {
   let lastStatus = engine.getState().status;
   const listeners = new Set<(state: PlayerState) => void>();
 
+  /** The timer fired since the member last opened an episode by hand. */
+  let sleepFired = false;
   const sleep = createSleepTimer(() => {
+    sleepFired = true;
     engine.pause();
     void saver.flush('sleep');
+    emit();
   }, deps.sleepDeps);
 
   const state = (): PlayerState => ({
@@ -94,6 +100,7 @@ export function createPlayerController(deps: ControllerDeps) {
     episodeId: episode?.id ?? null,
     kind,
     sleep: sleep.getState(),
+    autoplayBlocked: sleepFired || sleep.getState().mode !== null,
     error,
   });
   const emit = () => {
@@ -191,6 +198,7 @@ export function createPlayerController(deps: ControllerDeps) {
     /** Load an episode and start it. Throws the API error (e.g. NO_ACCESS) if the URL is refused. */
     async open(next: EpisodeToPlay): Promise<void> {
       const token = ++openToken;
+      sleepFired = false;
       await saver.flush('switch');
       episode = next;
       error = null;
@@ -245,6 +253,7 @@ export function createPlayerController(deps: ControllerDeps) {
     /** Stop everything (sign-out, no access): final save, unload, lock-screen controls removed. */
     async close(): Promise<void> {
       openToken++;
+      sleepFired = false;
       sleep.cancel();
       await saver.flush('close');
       saver.clear();

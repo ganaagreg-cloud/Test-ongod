@@ -38,7 +38,7 @@ tags: [index]
 | ADR-0014 | [[ADR-0014-admin-light-theme]]                            | accepted                                           |
 | ADR-0015 | [[ADR-0015-local-first-android-smoke-test]]               | superseded by ADR-0034                             |
 | ADR-0016 | [[ADR-0016-monitoring-logs-alert-emails]]                 | accepted                                           |
-| ADR-0017 | [[ADR-0017-toolchain-version-pins]]                       | accepted                                           |
+| ADR-0017 | [[ADR-0017-toolchain-version-pins]]                       | accepted (React pin amended by ADR-0048)           |
 | ADR-0018 | [[ADR-0018-auth-implementation-details]]                  | accepted (items 5, 8 amended by ADR-0045)          |
 | ADR-0019 | [[ADR-0019-social-login-implementation]]                  | accepted                                           |
 | ADR-0020 | [[ADR-0020-bunny-signed-urls-hs256-no-ip]]                | accepted                                           |
@@ -54,8 +54,8 @@ tags: [index]
 | ADR-0030 | [[ADR-0030-mobile-app-foundation]]                        | accepted                                           |
 | ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]              | accepted                                           |
 | ADR-0032 | [[ADR-0032-audio-expo-audio-instead-of-track-player]]     | accepted                                           |
-| ADR-0033 | [[ADR-0033-expo-go-preview-only]]                         | accepted                                           |
-| ADR-0034 | [[ADR-0034-ios-first-zero-cost-device-gate]]              | accepted                                           |
+| ADR-0033 | [[ADR-0033-expo-go-preview-only]]                         | accepted (SDK premise amended by ADR-0048)         |
+| ADR-0034 | [[ADR-0034-ios-first-zero-cost-device-gate]]              | accepted (SDK premise amended by ADR-0048)         |
 | ADR-0035 | [[ADR-0035-episode-pictures-16x9-files]]                  | accepted                                           |
 | ADR-0036 | [[ADR-0036-ci-github-actions]]                            | accepted                                           |
 | ADR-0037 | [[ADR-0037-unverified-signup-can-be-replaced]]            | accepted                                           |
@@ -69,6 +69,8 @@ tags: [index]
 | ADR-0045 | [[ADR-0045-audit-hardening-limits-refresh-jobs-payments]] | accepted (item 3 amended by ADR-0047)              |
 | ADR-0046 | [[ADR-0046-remove-bank-transfer-path]]                    | accepted                                           |
 | ADR-0047 | [[ADR-0047-wire-payment-sync-window]]                     | accepted                                           |
+| ADR-0048 | [[ADR-0048-upgrade-to-expo-sdk-58]]                       | accepted                                           |
+| ADR-0049 | [[ADR-0049-player-next-episode-and-autoplay]]             | accepted                                           |
 | ADR-0050 | [[ADR-0050-admin-dense-forest-sidebar]]                   | accepted                                           |
 | ADR-0051 | [[ADR-0051-admin-content-list-redesign]]                  | accepted                                           |
 | ADR-0052 | [[ADR-0052-episode-one-page-editor]]                      | accepted                                           |
@@ -94,6 +96,7 @@ tags: [index]
 | [[R-expo-audio-sdk57]]             | VERIFIED   | 2026-12-08    |
 | [[R-expo-push-api]]                | VERIFIED   | 2026-12-07    |
 | [[R-expo-sdk-57-versions]]         | VERIFIED   | 2026-12-07    |
+| [[R-expo-sdk-58-versions]]         | VERIFIED   | 2026-12-23    |
 | [[R-expo-video-sdk57]]             | VERIFIED   | 2026-12-17    |
 | [[R-fonts-mongolian-cyrillic]]     | VERIFIED   | —             |
 | [[R-fontsource-subset-css]]        | VERIFIED   | 2026-12-07    |

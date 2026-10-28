@@ -91,7 +91,7 @@ export function CollectionScreen({
           loadingMore={false}
           header={header}
           empty={empty}
-          onOpen={(item) => openPlayer(router, item.id)}
+          onOpen={(item) => openPlayer(router, item.id, false, page?.items ?? [])}
           onEndReached={() => undefined}
           refreshing={refreshing}
           onRefresh={() => void refresh()}

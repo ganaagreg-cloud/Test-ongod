@@ -1,7 +1,7 @@
 ---
 id: ADR-0034
 title: iPhone first at zero cost; device gate split into Expo Go (A) and native build (B)
-status: accepted
+status: 'accepted (the premise "Expo Go runs SDK 57" superseded by [[ADR-0048-upgrade-to-expo-sdk-58|ADR-0048]]; the gates stand)'
 date: 2026-10-17
 supersedes: [ADR-0015, ADR-0033 (only "Expo Go results never count for DEVICE_SMOKE")]
 tags: [adr, area/mobile, area/process]

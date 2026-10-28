@@ -157,7 +157,7 @@ export default function Library() {
           loadingMore={list.isFetchingNextPage}
           header={header}
           empty={empty}
-          onOpen={(item) => openPlayer(router, item.id)}
+          onOpen={(item) => openPlayer(router, item.id, false, items)}
           onEndReached={() => {
             if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
           }}

@@ -17,7 +17,7 @@ export const TABS: readonly TabItem[] = [
   { key: 'profile', label: mn.tabs.profile, icon: 'profile' },
 ];
 
-export function AppTabBar({ state, navigation }: BottomTabBarProps) {
+export function AppTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const nowPlaying = useNowPlaying();
@@ -27,8 +27,8 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const select = (name: string) => {
     const route = state.routes.find((r) => r.name === name);
     if (!route) return;
-    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-    if (!event.defaultPrevented && route.name !== active) navigation.navigate(route.name);
+    const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+    if (!event.defaultPrevented && route.name !== active) navigateToTab(route.key);
   };
 
   const openPlayer = () => {
