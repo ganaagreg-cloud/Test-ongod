@@ -70,7 +70,7 @@ export default function Plans() {
 
       <div className="portal-plans" aria-busy={plans.loading}>
         {plans.loading && !plans.data ? (
-          <div className="portal-plan">
+          <div className="portal-card">
             <Skeleton width="50%" />
             <Skeleton width="35%" />
             <Skeleton shape="pill" width="100%" />

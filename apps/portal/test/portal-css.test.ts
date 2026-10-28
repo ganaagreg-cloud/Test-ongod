@@ -16,13 +16,15 @@ test('portal.css has no raw colors, pixel sizes or font names', () => {
   assert.doesNotMatch(source, /font-family:\s*(?!var\()/, 'font family');
 });
 
-test('every var(--...) in portal.css exists in the tokens or the component CSS', () => {
+test('every var(--...) in portal.css exists in the tokens, the component CSS or portal.css', () => {
   // Array.from, not .matchAll(...).map: iterator helpers only exist from Node 22 (.nvmrc is 20).
   const defined = new Set(
     Array.from(
       [
         readFileSync(new URL('../../../packages/tokens/css/tokens.css', import.meta.url), 'utf8'),
         readFileSync(new URL('../../../packages/ui-web/src/ui.css', import.meta.url), 'utf8'),
+        // Custom properties portal.css declares itself (e.g. --portal-ring, set from a page).
+        source,
       ]
         .join('\n')
         .matchAll(/(--[a-z0-9-]+)\s*:/g),

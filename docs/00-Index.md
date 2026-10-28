@@ -77,6 +77,7 @@ tags: [index]
 | ADR-0055 | [[ADR-0055-push-token-registration]]                      | accepted                                                  |
 | ADR-0056 | [[ADR-0056-admin-dashboard-overview]]                     | accepted                                                  |
 | ADR-0057 | [[ADR-0057-global-rate-limit-api-only]]                   | accepted                                                  |
+| ADR-0058 | [[ADR-0058-portal-design-a-aurora]]                       | accepted                                                  |
 
 ## Research
 

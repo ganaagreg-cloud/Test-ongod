@@ -70,7 +70,9 @@ Tabs: Нүүр / Сан / Хадгалсан / Профайл.
 
 # Portal screens (web, same tokens as CSS vars)
 
-Landing (what it is, 3 sample covers, plan card with price, CTA), Register/Login, Email code, Plans, Pay (amount + QPay button, then waits for the payment), Status (active: Хүлээгдэж байна → Идэвхжсэн with the end date; otherwise closed + choose a plan), My account (status, end date, renew), Privacy, Terms, Delete account.
+Decisions: [[ADR-0058-portal-design-a-aurora|ADR-0058]] (design A "Aurora", mockup `docs/design/portal-mockups/A-aurora.html`)
+
+Landing (header over a forest aurora hero with tilted typographic covers, motif, label, title in the hero size, two buttons and the price line; facts strip; "Шинээр нэмэгдсэн" sample 16:9 covers; "Гурван алхам"; plan cards; App Store / Google Play badges "Удахгүй"; questions), Register/Login, Email code, Plans (split plan card: forest panel with price and length, list of what it includes, action), Pay (amount + QPay button, then waits for the payment), Status (active: Хүлээгдэж байна → Идэвхжсэн with the end date; otherwise closed + choose a plan), My account (access card with the days-left ring, end date and renew; last request; app badges; Мэдээлэл with "Бүртгэл устгах"), Privacy, Terms, Delete account. Gold: one element per region (main button, motif, small section labels). No width media queries; grids use `auto-fit`.
 
 # Admin screens
 
