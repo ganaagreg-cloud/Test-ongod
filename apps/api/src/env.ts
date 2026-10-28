@@ -57,7 +57,7 @@ export const envSchema = z
     ALERT_EMAILS: csv.pipe(z.array(z.email())),
     ALERT_THROTTLE_MINUTES: z.coerce.number().int().positive().default(60),
 
-    /** Published contact for the stores' user-content rules (SPEC L, ADR-0061). Empty = no comments in the app. */
+    /** Published contact for the stores' user-content rules (SPEC L, ADR-0061). Empty = no contact line under the comments (set it before a store build, ADR-0062). */
     SUPPORT_EMAIL: z.preprocess(emptyToUndefined, z.email().optional()),
     /** Comma-separated words that make a comment be refused (ADR-0061). Empty = only the link filter. */
     COMMENT_BANNED_WORDS: csv,

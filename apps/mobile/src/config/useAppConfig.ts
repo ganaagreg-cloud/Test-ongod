@@ -30,7 +30,7 @@ export function useAppConfig() {
     updateRequired: minimum !== undefined && isBelowMinVersion(installedVersion(), minimum),
     /** The server offers Google / Apple sign-in (SOCIAL_LOGIN). */
     socialLogin: query.data?.socialLogin ?? false,
-    /** The published contact; comments are shown only when it is set (SPEC L, ADR-0061). */
+    /** The published contact shown under the comments when set (SPEC L, ADR-0062). */
     supportEmail: query.data?.supportEmail ?? null,
   };
 }

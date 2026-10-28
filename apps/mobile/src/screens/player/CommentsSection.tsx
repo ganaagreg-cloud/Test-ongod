@@ -43,7 +43,7 @@ export function CommentsSection({
   supportEmail,
 }: {
   episodeId: string;
-  supportEmail: string;
+  supportEmail: string | null;
 }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useSurface();
@@ -188,7 +188,9 @@ export function CommentsSection({
         </View>
       )}
 
-      <Text style={styles.contact}>{mn.comments.contact(supportEmail)}</Text>
+      {supportEmail ? (
+        <Text style={styles.contact}>{mn.comments.contact(supportEmail)}</Text>
+      ) : null}
 
       <Sheet
         visible={menu !== null}

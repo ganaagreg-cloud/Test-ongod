@@ -6,7 +6,6 @@ import { colors, layout, nativeFontFamily, nativeTextStyle, radius, spacing } fr
 import { useAuth } from '../../../src/auth/AuthContext';
 import { env } from '../../../src/config/env';
 import { useStats } from '../../../src/data/queries';
-import { useAppConfig } from '../../../src/config/useAppConfig';
 import { mn } from '../../../src/i18n/mn';
 import { accessState, listenedHours } from '../../../src/lib/episode';
 import { portalLink } from '../../../src/lib/portalLink';
@@ -26,7 +25,6 @@ import {
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const router = useRouter();
-  const { supportEmail } = useAppConfig();
   const insets = useSafeAreaInsets();
   const bottom = useBottomSpace();
   const stats = useStats();
@@ -89,13 +87,11 @@ export default function Profile() {
               icon="device"
               onPress={() => router.push('/settings/devices')}
             />
-            {supportEmail ? (
-              <ListItem
-                title={mn.profile.blocked}
-                icon="profile"
-                onPress={() => router.push('/settings/blocked')}
-              />
-            ) : null}
+            <ListItem
+              title={mn.profile.blocked}
+              icon="profile"
+              onPress={() => router.push('/settings/blocked')}
+            />
             {termsUrl ? (
               <ListItem
                 title={mn.legal.terms}
