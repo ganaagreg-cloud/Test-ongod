@@ -9,6 +9,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import type {
+  CommentReportReason,
   EpisodeDetail,
   EpisodesPage,
   EpisodeSort,
@@ -41,6 +42,9 @@ export const keys = {
   saved: ['saved'] as const,
   stats: ['me', 'stats'] as const,
   devices: ['me', 'devices'] as const,
+  comments: (episodeId: string) => ['comments', episodeId] as const,
+  commentsAll: ['comments'] as const,
+  blocks: ['me', 'blocks'] as const,
 };
 
 /** Library and saved pages: 20 per request. */
@@ -144,6 +148,62 @@ export function useToggleSaved() {
     // A newly saved episode belongs at the top of Хадгалсан: fetch that list again.
     onSettled: (_data, _error, { saved }) => {
       if (saved) void client.invalidateQueries({ queryKey: keys.saved });
+    },
+  });
+}
+
+// ---- Сэтгэгдэл (SPEC L, ADR-0061) ----
+
+export const useComments = (episodeId: string, enabled = true) =>
+  useInfiniteQuery({
+    queryKey: keys.comments(episodeId),
+    queryFn: ({ pageParam }) => api.comments(episodeId, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled,
+  });
+
+/** Post, edit, delete, report and block all end by reading the list again. */
+export function useCommentActions(episodeId: string) {
+  const client = useQueryClient();
+  const refresh = () => client.invalidateQueries({ queryKey: keys.comments(episodeId) });
+  return {
+    post: useMutation({
+      mutationFn: (body: string) => api.postComment(episodeId, body),
+      onSuccess: refresh,
+    }),
+    edit: useMutation({
+      mutationFn: (v: { id: string; body: string }) => api.editComment(v.id, v.body),
+      onSuccess: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => api.deleteComment(id),
+      onSuccess: refresh,
+    }),
+    report: useMutation({
+      mutationFn: (v: { id: string; reason: CommentReportReason }) =>
+        api.reportComment(v.id, v.reason),
+    }),
+    block: useMutation({
+      mutationFn: (id: string) => api.blockCommentAuthor(id),
+      onSuccess: () => {
+        void client.invalidateQueries({ queryKey: keys.commentsAll });
+        void client.invalidateQueries({ queryKey: keys.blocks });
+      },
+    }),
+  };
+}
+
+export const useBlockedUsers = () =>
+  useQuery({ queryKey: keys.blocks, queryFn: () => api.blockedUsers() });
+
+export function useUnblock() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api.unblockUser(userId),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: keys.blocks });
+      void client.invalidateQueries({ queryKey: keys.commentsAll });
     },
   });
 }

@@ -11,7 +11,9 @@ import { createContentService } from './admin/content';
 import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
 import { createPlanService } from './admin/plans';
+import { createCommentService } from './comments/service';
 import { createGiftService } from './gifts/service';
+import { commentRoutes } from './routes/comments';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
@@ -181,6 +183,11 @@ export async function buildApp(deps: AppDeps) {
         now: deps.now,
       });
       const gifts = createGiftService({ db, payments, now: deps.now });
+      const comments = createCommentService({
+        db,
+        bannedWords: env.COMMENT_BANNED_WORDS,
+        now: deps.now,
+      });
       await v1.register(subscriptionRoutes, {
         subscriptions: createSubscriptionService({ db, payments, now: deps.now }),
         payments,
@@ -194,7 +201,9 @@ export async function buildApp(deps: AppDeps) {
         queries: createAdminQueries({ db, now: deps.now }),
         plans: createPlanService({ db }),
         gifts,
+        comments,
       });
+      await v1.register(commentRoutes, { comments, requireAuth });
       const contentService = createContentService({
         db,
         media: mediaUrls,
@@ -226,7 +235,11 @@ export async function buildApp(deps: AppDeps) {
         }),
         tus,
       });
-      await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
+      await v1.register(appConfigRoutes, {
+        db,
+        socialLogin: env.SOCIAL_LOGIN,
+        supportEmail: env.SUPPORT_EMAIL ?? null,
+      });
       await v1.register(cronRoutes, {
         db,
         secret: env.CRON_SECRET,

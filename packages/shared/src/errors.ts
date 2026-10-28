@@ -44,6 +44,10 @@ export const errorCodes = [
   'GIFT_NOT_REDEEMABLE',
   'GIFT_LIMIT',
   'GIFT_STATE',
+  // Comments (SPEC L, ADR-0061)
+  'COMMENT_REJECTED',
+  'COMMENT_FORBIDDEN',
+  'COMMENT_STATE',
   // Content (SPEC G)
   'SLUG_TAKEN',
   'CATEGORY_NOT_EMPTY',

@@ -56,6 +56,7 @@ describe('GET /v1/app-config', () => {
     expect(res.json()).toEqual({
       minVersion: { ios: '1.2.0', android: '1.1.0' },
       socialLogin: false,
+      supportEmail: null,
     });
   });
 

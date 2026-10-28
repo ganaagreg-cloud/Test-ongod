@@ -547,6 +547,14 @@ test('gifts: the page lists gifts by status and shows the unredeemed amount', as
   await expect(page.getByRole('table')).toBeVisible();
 });
 
+test('comments: the moderation page opens with the reported filter and can switch', async () => {
+  await navLink(mn.nav.comments).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.comments.title })).toBeVisible();
+  await expect(page.getByLabel(mn.comments.filterLabel)).toHaveValue('REPORTED');
+  await page.getByLabel(mn.comments.filterLabel).selectOption('VISIBLE');
+  await expect(page.getByRole('table')).toBeVisible();
+});
+
 // Deletes one e2e draft through its edit screen (found by its exact title in the list).
 async function deleteDraft(title: string) {
   await sidebar(mn.nav.episodes).click();

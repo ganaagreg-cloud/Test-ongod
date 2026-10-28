@@ -4,6 +4,7 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminCommentsPageSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
   adminPlanResponseSchema,
@@ -25,6 +26,7 @@ import {
   historyResponseSchema,
   plansResponseSchema,
   type BulkAction,
+  type AdminCommentFilter,
   type GiftStatus,
   type CreatePlanRequest,
   type UpdatePlanRequest,
@@ -101,6 +103,32 @@ export const plansQuery = () =>
     queryFn: ({ signal }) => api('/plans', { schema: plansResponseSchema, auth: false, signal }),
     staleTime: 5 * 60_000,
   });
+
+// ---- Comments (SPEC L, ADR-0061) ----
+
+export const commentsQuery = (filter: { filter: AdminCommentFilter; q?: string; page: number }) =>
+  queryOptions({
+    queryKey: ['comments', filter],
+    queryFn: ({ signal }) =>
+      api(`/admin/comments${qs(filter)}`, { schema: adminCommentsPageSchema, signal }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useCommentActions() {
+  const invalidate = useInvalidate();
+  const done = () => invalidate('comments', 'audit');
+  const act = useMutation({
+    mutationFn: (v: { id: string; action: 'hide' | 'restore' | 'dismiss' | 'delete' }) =>
+      api(`/admin/comments/${v.id}/${v.action}`, { method: 'POST' }),
+    onSuccess: done,
+  });
+  const mute = useMutation({
+    mutationFn: (v: { userId: string; muted: boolean }) =>
+      api(`/admin/users/${v.userId}/comment-mute`, { method: v.muted ? 'POST' : 'DELETE' }),
+    onSuccess: done,
+  });
+  return { act, mute };
+}
 
 // ---- Gifts (SPEC J, ADR-0060) ----
 
