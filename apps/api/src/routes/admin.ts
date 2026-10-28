@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
+  listGiftsQuerySchema,
+  voidGiftRequestSchema,
   adminIdParamsSchema,
   adminPlanResponseSchema,
   adminPlansResponseSchema,
@@ -23,6 +27,7 @@ import type { AdminQueries } from '../admin/queries';
 import type { DecisionService } from '../admin/decisions';
 import type { AdminGuards } from '../admin/guard';
 import type { PlanService } from '../admin/plans';
+import type { GiftService } from '../gifts/service';
 import { authOf } from '../auth/guard';
 
 /**
@@ -36,9 +41,10 @@ export async function adminRoutes(
     decisions: DecisionService;
     queries: AdminQueries;
     plans: PlanService;
+    gifts: GiftService;
   },
 ) {
-  const { guards, decisions, queries, plans } = opts;
+  const { guards, decisions, queries, plans, gifts } = opts;
   app.addHook('onSend', async (_req, reply) => {
     reply.header('cache-control', 'private, no-store');
   });
@@ -73,6 +79,19 @@ export async function adminRoutes(
       const body = revokeRequestSchema.parse(req.body);
       const subscription = await decisions.revoke(authOf(req).user, id, body);
       return adminSubscriptionResponseSchema.parse({ subscription });
+    });
+
+    // ---- gifts (SPEC J, ADR-0060) ----
+    admin.get('/admin/gifts', async (req) =>
+      adminGiftsPageSchema.parse(await gifts.adminList(listGiftsQuerySchema.parse(req.query))),
+    );
+
+    admin.post('/admin/gifts/:id/void', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      const body = voidGiftRequestSchema.parse(req.body);
+      return adminGiftResponseSchema.parse({
+        gift: await gifts.adminVoid(authOf(req).user, id, body.reason),
+      });
     });
 
     // ---- plans (SPEC K, ADR-0059) ----

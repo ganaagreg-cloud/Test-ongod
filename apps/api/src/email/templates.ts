@@ -12,6 +12,13 @@ export const emailTemplateSchemas = {
   changeEmail: z.object({ firstName: name, code }),
   paymentApproved: z.object({ firstName: name, endsAt: z.string().min(1) }),
   accessEnding: z.object({ firstName: name, endsAt: z.string().min(1) }),
+  /** The buyer's gift is paid: the code to pass on (SPEC J). */
+  giftPurchased: z.object({
+    firstName: name,
+    code: z.string().regex(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/),
+    planName: z.string().min(1),
+    validUntil: z.string().min(1),
+  }),
   /** To ALERT_EMAILS (owner/admins), see monitoring/alerts.ts. */
   errorAlert: z.object({
     kind: z.enum(['http', 'job']),

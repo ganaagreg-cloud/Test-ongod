@@ -1,4 +1,7 @@
 import {
+  giftResponseSchema,
+  giftsResponseSchema,
+  redeemGiftResponseSchema,
   createSubscriptionResponseSchema,
   currentSubscriptionResponseSchema,
   loginResponseSchema,
@@ -87,3 +90,18 @@ export const mockPayment = (id: string, outcome: 'success' | 'cancel') =>
     body: { outcome },
     schema: z.object({ subscription: subscriptionSchema }),
   });
+
+// ---- Gifts (SPEC J, ADR-0060) ----
+
+export const createGift = (planId: string) =>
+  api('/gifts', { method: 'POST', body: { planId }, schema: giftResponseSchema });
+
+export const getMyGifts = (signal?: AbortSignal) =>
+  api('/gifts', { schema: giftsResponseSchema, ...(signal ? { signal } : {}) });
+
+export const redeemGift = (code: string) =>
+  api('/gifts/redeem', { method: 'POST', body: { code }, schema: redeemGiftResponseSchema });
+
+/** Development only: the mock checkout's two buttons for a gift (404 in production). */
+export const mockGiftPayment = (id: string, outcome: 'success' | 'cancel') =>
+  api(`/gifts/${id}/mock`, { method: 'POST', body: { outcome } });

@@ -4,6 +4,8 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
   adminPlanResponseSchema,
   adminPlansResponseSchema,
   adminPlaylistDetailResponseSchema,
@@ -23,6 +25,7 @@ import {
   historyResponseSchema,
   plansResponseSchema,
   type BulkAction,
+  type GiftStatus,
   type CreatePlanRequest,
   type UpdatePlanRequest,
   type CreateEpisodeRequest,
@@ -98,6 +101,29 @@ export const plansQuery = () =>
     queryFn: ({ signal }) => api('/plans', { schema: plansResponseSchema, auth: false, signal }),
     staleTime: 5 * 60_000,
   });
+
+// ---- Gifts (SPEC J, ADR-0060) ----
+
+export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: number }) =>
+  queryOptions({
+    queryKey: ['gifts', filter],
+    queryFn: ({ signal }) =>
+      api(`/admin/gifts${qs(filter)}`, { schema: adminGiftsPageSchema, signal }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useVoidGift() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { id: string; reason: string }) =>
+      api(`/admin/gifts/${v.id}/void`, {
+        method: 'POST',
+        body: { reason: v.reason },
+        schema: adminGiftResponseSchema,
+      }),
+    onSuccess: () => invalidate('gifts', 'audit'),
+  });
+}
 
 // ---- Plans (SPEC K, ADR-0059) ----
 

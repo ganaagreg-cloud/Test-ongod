@@ -40,6 +40,10 @@ export const errorCodes = [
   'PLAN_IN_USE',
   'LAST_ACTIVE_PLAN',
   'PLAN_CHANGED',
+  // Gifts (SPEC J, ADR-0060)
+  'GIFT_NOT_REDEEMABLE',
+  'GIFT_LIMIT',
+  'GIFT_STATE',
   // Content (SPEC G)
   'SLUG_TAKEN',
   'CATEGORY_NOT_EMPTY',

@@ -536,6 +536,17 @@ test('plans: add a switched-off plan, change its price; the days lock once it is
   await dialog(mn.plans.formEdit).getByRole('button', { name: mn.common.cancel }).click();
 });
 
+test('gifts: the page lists gifts by status and shows the unredeemed amount', async () => {
+  await navLink(mn.nav.gifts).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.gifts.title })).toBeVisible();
+  await expect(page.getByText(/Ашиглагдаагүй бэлгийн дүн: [\d,]+₮/)).toBeVisible();
+  await page.getByLabel(mn.gifts.statusLabel).selectOption('REDEEMED');
+  // Gifts redeemed by the portal e2e run, if any, show a code-less row with a recipient.
+  await expect(page.getByRole('table')).toBeVisible();
+  await page.getByLabel(mn.gifts.statusLabel).selectOption('PAID');
+  await expect(page.getByRole('table')).toBeVisible();
+});
+
 // Deletes one e2e draft through its edit screen (found by its exact title in the list).
 async function deleteDraft(title: string) {
   await sidebar(mn.nav.episodes).click();

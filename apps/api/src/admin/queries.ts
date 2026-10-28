@@ -21,9 +21,10 @@ const EXPORT_ROW_LIMIT = 50_000;
 const BOM = String.fromCharCode(0xfeff);
 
 /** Every word must match some field, so "бат 9911" finds a name plus a phone fragment. */
-const tokens = (q: string | undefined) => (q ? q.split(/\s+/).filter(Boolean).slice(0, 5) : []);
+export const tokens = (q: string | undefined) =>
+  q ? q.split(/\s+/).filter(Boolean).slice(0, 5) : [];
 
-const userMatches = (token: string): Prisma.UserWhereInput => {
+export const userMatches = (token: string): Prisma.UserWhereInput => {
   const c = { contains: escapeLike(token) };
   return {
     OR: [{ username: c }, { email: c }, { phone: c }, { firstName: c }, { lastName: c }],

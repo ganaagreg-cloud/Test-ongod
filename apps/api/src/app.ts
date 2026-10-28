@@ -11,6 +11,7 @@ import { createContentService } from './admin/content';
 import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
 import { createPlanService } from './admin/plans';
+import { createGiftService } from './gifts/service';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
@@ -24,6 +25,8 @@ import { createCatalogService } from './catalog/service';
 import {
   cleanupAbandonedUploads,
   cronTasks,
+  expireGifts,
+  syncWaitingGifts,
   syncWaitingPayments,
   type CronTask,
 } from './cron/tasks';
@@ -177,9 +180,11 @@ export async function buildApp(deps: AppDeps) {
         log: app.log,
         now: deps.now,
       });
+      const gifts = createGiftService({ db, payments, now: deps.now });
       await v1.register(subscriptionRoutes, {
         subscriptions: createSubscriptionService({ db, payments, now: deps.now }),
         payments,
+        gifts,
         requireAuth,
       });
       await v1.register(webhookRoutes, { payments });
@@ -188,6 +193,7 @@ export async function buildApp(deps: AppDeps) {
         decisions: createDecisionService({ db, now: deps.now }),
         queries: createAdminQueries({ db, now: deps.now }),
         plans: createPlanService({ db }),
+        gifts,
       });
       const contentService = createContentService({
         db,
@@ -227,7 +233,9 @@ export async function buildApp(deps: AppDeps) {
         tasks: deps.cronTasks ?? [
           // First, so a request about to expire is synced before expirePendingPayments runs.
           syncWaitingPayments(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
+          syncWaitingGifts(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
           ...cronTasks,
+          expireGifts,
           cleanupAbandonedUploads(() => tus.cleanUpExpired()),
         ],
         worker: deps.worker,

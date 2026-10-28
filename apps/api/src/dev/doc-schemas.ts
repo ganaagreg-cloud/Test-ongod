@@ -2,6 +2,15 @@
 // packages/shared. The routes themselves validate with zod inside the handler, so nothing
 // here changes how the API behaves; a test fails when a route has no entry.
 import {
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
+  createGiftRequestSchema,
+  giftResponseSchema,
+  giftsResponseSchema,
+  listGiftsQuerySchema,
+  redeemGiftRequestSchema,
+  redeemGiftResponseSchema,
+  voidGiftRequestSchema,
   adminPlanResponseSchema,
   adminPlansResponseSchema,
   createPlanRequestSchema,
@@ -379,6 +388,23 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: z.object({ subscription: subscriptionSchema }) },
     },
   ),
+  'POST /v1/gifts': user('portal', 'J. Buy a gift: an unpaid gift with its QPay checkout', {
+    body: createGiftRequestSchema,
+    responses: { 201: giftResponseSchema },
+  }),
+  'GET /v1/gifts': user('portal', 'J. My gifts, newest first; the code shows while PAID', {
+    responses: { 200: giftsResponseSchema },
+  }),
+  'POST /v1/gifts/redeem': user(
+    'portal',
+    'J. Redeem a gift code: access starts at once; one code works once',
+    { body: redeemGiftRequestSchema, responses: { 200: redeemGiftResponseSchema } },
+  ),
+  'POST /v1/gifts/:id/mock': user(
+    'portal',
+    'J. Development only: the mock checkout for a gift; 404 in production',
+    { body: mockPaymentRequestSchema, responses: { 204: noContent } },
+  ),
   'POST /v1/webhooks/wire': {
     tag: 'portal',
     summary: 'Wire tells us a QPay payment changed (signed; no login)',
@@ -420,6 +446,17 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     body: grantRequestSchema,
     responses: { 201: adminSubscriptionResponseSchema },
   }),
+  'GET /v1/admin/gifts': admin('J. Gifts with status filter and the unredeemed amount', {
+    query: listGiftsQuerySchema,
+    responses: { 200: adminGiftsPageSchema },
+  }),
+  'POST /v1/admin/gifts/:id/void': admin(
+    'J. Void a paid, unredeemed gift (refund outside the app)',
+    {
+      body: voidGiftRequestSchema,
+      responses: { 200: adminGiftResponseSchema },
+    },
+  ),
   'GET /v1/admin/plans': admin('K. Every plan, active first, with subscription counts', {
     responses: { 200: adminPlansResponseSchema },
   }),

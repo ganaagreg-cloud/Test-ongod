@@ -69,6 +69,7 @@ export async function resetDb(db = testDb) {
     db.episode.deleteMany(),
     db.series.deleteMany(),
     db.category.deleteMany(),
+    db.gift.deleteMany(),
     db.payment.deleteMany(),
     db.subscription.deleteMany(),
     db.plan.deleteMany(),

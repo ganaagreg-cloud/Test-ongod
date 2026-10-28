@@ -82,6 +82,11 @@ export default function Account() {
                   {accessUntil ? mn.account.renew : mn.account.getAccess}
                 </Link>
               )}
+              <p className="portal-gift-links">
+                <Link to="/gift">{mn.gift.giveLink}</Link>
+                <Link to="/redeem">{mn.gift.redeemLink}</Link>
+                <Link to="/gifts">{mn.gift.myTitle}</Link>
+              </p>
             </div>
           </section>
 

@@ -18,7 +18,8 @@ export function audit(
     | 'Tag'
     | 'Series'
     | 'Playlist'
-    | 'Plan',
+    | 'Plan'
+    | 'Gift',
   targetId: string,
   data: Prisma.InputJsonObject,
 ) {

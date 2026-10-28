@@ -154,6 +154,9 @@ export default function Landing() {
             </Notice>
           )}
           <p className="portal-muted">{mn.landing.payNote}</p>
+          <p>
+            <Link to={signedIn ? '/gift' : '/register'}>{mn.gift.giveLink}</Link>
+          </p>
         </div>
       </section>
 

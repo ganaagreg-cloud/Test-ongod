@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { giftStatusSchema } from './gifts';
 import { subscriptionSchema, subscriptionStatusSchema } from './subscriptions';
 
 // /v1/admin/* (SPEC E). Roles ADMIN and OWNER, password login only (ADR-0040).
@@ -226,3 +227,42 @@ export const exportPaymentsQuerySchema = z.object({
   from: z.preprocess(emptyToUndefined, z.iso.date().optional()),
   to: z.preprocess(emptyToUndefined, z.iso.date().optional()),
 });
+
+// ---- Gifts (SPEC J, ADR-0060) ----
+
+export const adminGiftSchema = z.object({
+  id: z.string(),
+  status: giftStatusSchema,
+  plan: z.object({ id: z.string(), name: z.string() }),
+  amountMnt: z.number().int().nonnegative(),
+  durationDays: z.number().int().positive(),
+  code: z.string().nullable(),
+  buyer: adminUserSummarySchema,
+  redeemedBy: adminUserSummarySchema.nullable(),
+  paidAt: z.iso.datetime().nullable(),
+  expiresAt: z.iso.datetime().nullable(),
+  redeemedAt: z.iso.datetime().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type AdminGiftDto = z.infer<typeof adminGiftSchema>;
+export const adminGiftResponseSchema = z.object({ gift: adminGiftSchema });
+
+export const listGiftsQuerySchema = z.object({
+  /** Default: PAID, the gifts waiting to be redeemed. */
+  status: giftStatusSchema.default('PAID'),
+  /** Code, buyer or recipient: username, email, phone or name. */
+  q: searchQuery,
+  ...pageQuery,
+});
+export type ListGiftsQuery = z.infer<typeof listGiftsQuerySchema>;
+export const adminGiftsPageSchema = z.object({
+  items: z.array(adminGiftSchema),
+  total: z.number().int(),
+  /** The money behind the PAID gifts that nobody has redeemed yet. */
+  unredeemedMnt: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+});
+
+export const voidGiftRequestSchema = z.object({ reason: reasonSchema });

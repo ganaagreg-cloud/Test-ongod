@@ -1,13 +1,14 @@
-import type { SubscriptionDto } from '@ongod/shared';
+import { GIFT_VALID_DAYS, type SubscriptionDto } from '@ongod/shared';
 import { audit } from '../admin/audit';
 import { isUniqueViolation, lockUser } from '../auth/service';
 import type { Db } from '../db';
 import { enqueueEmail } from '../email';
 import type { Env } from '../env';
 import { AppError } from '../errors';
-import type { Plan, Subscription, User } from '../generated/prisma/client';
+import type { Gift, Plan, Subscription, User } from '../generated/prisma/client';
 import { mn } from '../i18n/mn';
-import { ubDate } from '../lib/dates';
+import { DAY_MS, ubDate } from '../lib/dates';
+import { generateGiftCode } from '../gifts/code';
 import { enqueuePush } from '../push';
 import { latestActiveEnd, refreshAccessUntil } from '../subscriptions/access';
 import { toSubscriptionDto } from '../subscriptions/dto';
@@ -39,7 +40,19 @@ const isPayable = (sub: Pick<Subscription, 'status' | 'startsAt'>) =>
   sub.status === 'CANCELLED' ||
   (sub.status === 'EXPIRED' && sub.startsAt === null);
 
+/** Same rule for a gift (ADR-0060): paid late, or after the checkout was cancelled, still counts. */
+const GIFT_PAYABLE_WHERE = {
+  OR: [
+    { status: { in: ['PENDING_PAYMENT' as const, 'CANCELLED' as const] } },
+    { status: 'EXPIRED' as const, paidAt: null },
+  ],
+};
+
 type SubscriptionRow = Subscription & { plan: Plan };
+type GiftRow = Gift & { plan: Plan };
+
+/** What a Wire intent pays for: a subscription (SPEC D) or a gift (SPEC J). */
+type Target = { kind: 'subscription' | 'gift'; id: string; amountMnt: number };
 
 export type WebhookReply = { status: number; body: Record<string, unknown> };
 
@@ -132,26 +145,86 @@ export function createPaymentService(deps: {
   }
 
   /**
+   * A gift payment arrived: the gift becomes PAID and gets its code. Same shape as `grant`: one
+   * transaction, the buyer row locked first, a status precondition in the UPDATE, so running it
+   * twice issues one code. Returns whether this call did it.
+   */
+  async function grantGift(giftId: string, providerRef: string): Promise<boolean> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const found = await tx.gift.findUnique({
+            where: { id: giftId },
+            include: { plan: true, buyer: true },
+          });
+          if (!found) return false;
+          await lockUser(tx, found.buyerId);
+          const at = now();
+          const code = generateGiftCode();
+          const expiresAt = new Date(at.getTime() + GIFT_VALID_DAYS * DAY_MS);
+          const paid = await tx.gift.updateMany({
+            where: { id: giftId, ...GIFT_PAYABLE_WHERE },
+            data: {
+              status: 'PAID',
+              code,
+              paidAt: at,
+              expiresAt,
+            },
+          });
+          if (paid.count !== 1) return false;
+          await audit(tx, found.buyerId, 'gift.paid', 'Gift', giftId, {
+            amountMnt: found.amountMnt,
+            planId: found.planId,
+            provider: found.paymentProvider,
+            providerRef,
+            expiresAt: expiresAt.toISOString(),
+          });
+          await enqueueEmail(tx, found.buyer.email, 'giftPurchased', {
+            firstName: found.buyer.firstName,
+            code,
+            planName: found.plan.name,
+            validUntil: ubDate(expiresAt),
+          });
+          return true;
+        });
+      } catch (err) {
+        // Two gifts drew the same code: draw again.
+        if (isUniqueViolation(err) && attempt < 5) continue;
+        throw err;
+      }
+    }
+  }
+
+  async function markGiftDead(giftId: string): Promise<void> {
+    await db.gift.updateMany({
+      where: { id: giftId, status: 'PENDING_PAYMENT' },
+      data: { status: 'CANCELLED' },
+    });
+  }
+
+  /**
    * What Wire says about a payment, applied. Never trusts a webhook payload: the caller passes an
    * intent that was just read from Wire. Success needs the exact amount, and in production a live
    * (not test) intent, so a leftover sk_test key cannot unlock anything for free.
    */
-  async function applyIntent(sub: SubscriptionRow, intent: WireIntent): Promise<string> {
+  async function applyIntent(target: Target, intent: WireIntent): Promise<string> {
     if (isSucceeded(intent)) {
-      const exact = intent.amount === toMinor(sub.amountMnt);
+      const exact = intent.amount === toMinor(target.amountMnt);
       const live = env.NODE_ENV !== 'production' || intent.livemode;
       if (!exact || !live) {
         report(
-          { subscriptionId: sub.id, intentId: intent.id, amount: intent.amount, live },
+          { [`${target.kind}Id`]: target.id, intentId: intent.id, amount: intent.amount, live },
           'wire payment succeeded but amount or livemode did not match: not granted',
         );
         return 'rejected';
       }
-      await grant(sub.id, intent.id);
+      if (target.kind === 'gift') await grantGift(target.id, intent.id);
+      else await grant(target.id, intent.id);
       return 'paid';
     }
     if (isDead(intent)) {
-      await markDead(sub.id);
+      if (target.kind === 'gift') await markGiftDead(target.id);
+      else await markDead(target.id);
       return 'dead';
     }
     return 'pending';
@@ -215,11 +288,68 @@ export function createPaymentService(deps: {
         return;
       }
       try {
-        await applyIntent(sub, await gateway.retrieveIntent(sub.wirePaymentIntentId));
+        await applyIntent(
+          { kind: 'subscription', id: sub.id, amountMnt: sub.amountMnt },
+          await gateway.retrieveIntent(sub.wirePaymentIntentId),
+        );
       } catch (err) {
         // The status page asks again in a few seconds, the cron on its next tick; a Wire outage
         // must not break either.
         report({ err, subscriptionId: sub.id }, 'wire status check failed');
+      }
+    },
+
+    /** Gives an unpaid gift its checkout (ADR-0060). Repeating it returns the same checkout. */
+    async startGiftCheckout(gift: GiftRow): Promise<GiftRow> {
+      if (gift.checkoutUrl) return gift;
+      if (mode() === 'MOCK' || !gateway) {
+        return db.gift.update({
+          where: { id: gift.id },
+          data: { paymentProvider: 'MOCK', checkoutUrl: `/pay/mock/gift/${gift.id}` },
+          include: { plan: true },
+        });
+      }
+      const base = env.PUBLIC_BASE_URL.replace(/\/$/, '');
+      try {
+        const checkout = await gateway.createCheckout({
+          subscriptionId: `gift_${gift.id}`,
+          amountMnt: gift.amountMnt,
+          description: `Онгод бэлэг · ${gift.plan.name}`,
+          successUrl: `${base}/gifts`,
+          cancelUrl: `${base}/gift?canceled=1`,
+        });
+        return await db.gift.update({
+          where: { id: gift.id },
+          data: {
+            paymentProvider: 'WIRE',
+            wirePaymentIntentId: checkout.paymentIntentId,
+            checkoutUrl: checkout.checkoutUrl,
+          },
+          include: { plan: true },
+        });
+      } catch (err) {
+        report({ err, giftId: gift.id }, 'wire checkout could not be created for a gift');
+        throw new AppError(503, 'SERVICE_UNAVAILABLE');
+      }
+    },
+
+    /** Asks Wire about a waiting gift payment (the gifts page and the cron), like `sync`. */
+    async syncGift(gift: Gift): Promise<void> {
+      if (
+        !gateway ||
+        (gift.status !== 'PENDING_PAYMENT' && gift.status !== 'EXPIRED') ||
+        gift.paymentProvider !== 'WIRE' ||
+        !gift.wirePaymentIntentId
+      ) {
+        return;
+      }
+      try {
+        await applyIntent(
+          { kind: 'gift', id: gift.id, amountMnt: gift.amountMnt },
+          await gateway.retrieveIntent(gift.wirePaymentIntentId),
+        );
+      } catch (err) {
+        report({ err, giftId: gift.id }, 'wire status check failed for a gift');
       }
     },
 
@@ -250,18 +380,27 @@ export function createPaymentService(deps: {
         where: { wirePaymentIntentId: event.intentId },
         include: { plan: true },
       });
-      if (!sub) return { status: 200, body: { ok: true, unknown: true } };
+      const gift = sub
+        ? null
+        : await db.gift.findUnique({ where: { wirePaymentIntentId: event.intentId } });
+      const target: Target | null = sub
+        ? { kind: 'subscription', id: sub.id, amountMnt: sub.amountMnt }
+        : gift
+          ? { kind: 'gift', id: gift.id, amountMnt: gift.amountMnt }
+          : null;
+      if (!target) return { status: 200, body: { ok: true, unknown: true } };
 
       try {
         if (event.type === 'payment_intent.succeeded') {
           if (!gateway) throw new Error('webhook received but WIRE_API_KEY is not set');
           // Never trust the payload alone: read the intent again from Wire.
-          await applyIntent(sub, await gateway.retrieveIntent(event.intentId));
+          await applyIntent(target, await gateway.retrieveIntent(event.intentId));
         } else if (
           event.type === 'payment_intent.canceled' ||
           event.type === 'payment_intent.payment_failed'
         ) {
-          await markDead(sub.id);
+          if (target.kind === 'gift') await markGiftDead(target.id);
+          else await markDead(target.id);
         }
       } catch (err) {
         // Forget the event so Wire's retry is handled instead of skipped as a duplicate.
@@ -285,6 +424,21 @@ export function createPaymentService(deps: {
       if (outcome === 'success') await grant(sub.id, `mock:${sub.id}`);
       else await markDead(sub.id);
       return view(sub.id);
+    },
+
+    /** Development only: the mock checkout for a gift. Returns whether the gift is now PAID. */
+    async mockGiftOutcome(
+      user: User,
+      giftId: string,
+      outcome: 'success' | 'cancel',
+    ): Promise<void> {
+      if (!mockAllowed()) throw new AppError(404, 'NOT_FOUND');
+      const gift = await db.gift.findFirst({
+        where: { id: giftId, buyerId: user.id, paymentProvider: 'MOCK' },
+      });
+      if (!gift) throw new AppError(404, 'NOT_FOUND');
+      if (outcome === 'success') await grantGift(gift.id, `mock:gift:${gift.id}`);
+      else await markGiftDead(gift.id);
     },
   };
 }
