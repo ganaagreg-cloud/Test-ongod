@@ -78,6 +78,7 @@ tags: [index]
 | ADR-0056 | [[ADR-0056-admin-dashboard-overview]]                     | accepted                                                  |
 | ADR-0057 | [[ADR-0057-global-rate-limit-api-only]]                   | accepted                                                  |
 | ADR-0058 | [[ADR-0058-portal-design-a-aurora]]                       | accepted                                                  |
+| ADR-0059 | [[ADR-0059-admin-plan-editor]]                            | accepted                                                  |
 
 ## Research
 

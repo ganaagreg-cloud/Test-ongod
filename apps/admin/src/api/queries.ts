@@ -4,6 +4,8 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
   adminPlaylistDetailResponseSchema,
   adminPlaylistListResponseSchema,
   adminSeriesDetailResponseSchema,
@@ -21,6 +23,8 @@ import {
   historyResponseSchema,
   plansResponseSchema,
   type BulkAction,
+  type CreatePlanRequest,
+  type UpdatePlanRequest,
   type CreateEpisodeRequest,
   type CreatePlaylistRequest,
   type CreateSeriesRequest,
@@ -94,6 +98,31 @@ export const plansQuery = () =>
     queryFn: ({ signal }) => api('/plans', { schema: plansResponseSchema, auth: false, signal }),
     staleTime: 5 * 60_000,
   });
+
+// ---- Plans (SPEC K, ADR-0059) ----
+
+export const adminPlansQuery = () =>
+  queryOptions({
+    queryKey: ['admin-plans'],
+    queryFn: ({ signal }) => api('/admin/plans', { schema: adminPlansResponseSchema, signal }),
+  });
+
+export function usePlanActions() {
+  const invalidate = useInvalidate();
+  // 'plans' is the public list the grant dialog uses.
+  const done = () => invalidate('admin-plans', 'plans');
+  const create = useMutation({
+    mutationFn: (v: CreatePlanRequest) =>
+      api('/admin/plans', { method: 'POST', body: v, schema: adminPlanResponseSchema }),
+    onSuccess: done,
+  });
+  const update = useMutation({
+    mutationFn: ({ id, ...body }: UpdatePlanRequest & { id: string }) =>
+      api(`/admin/plans/${id}`, { method: 'PATCH', body, schema: adminPlanResponseSchema }),
+    onSuccess: done,
+  });
+  return { create, update };
+}
 
 export const auditQuery = (filter: { action?: string; targetType?: string; page: number }) =>
   queryOptions({

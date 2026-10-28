@@ -1,6 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import {
   adminIdParamsSchema,
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
+  createPlanRequestSchema,
+  updatePlanRequestSchema,
   adminSubscriptionResponseSchema,
   adminSubscriptionsPageSchema,
   adminUserDetailResponseSchema,
@@ -18,6 +22,7 @@ import {
 import type { AdminQueries } from '../admin/queries';
 import type { DecisionService } from '../admin/decisions';
 import type { AdminGuards } from '../admin/guard';
+import type { PlanService } from '../admin/plans';
 import { authOf } from '../auth/guard';
 
 /**
@@ -30,9 +35,10 @@ export async function adminRoutes(
     guards: AdminGuards;
     decisions: DecisionService;
     queries: AdminQueries;
+    plans: PlanService;
   },
 ) {
-  const { guards, decisions, queries } = opts;
+  const { guards, decisions, queries, plans } = opts;
   app.addHook('onSend', async (_req, reply) => {
     reply.header('cache-control', 'private, no-store');
   });
@@ -67,6 +73,25 @@ export async function adminRoutes(
       const body = revokeRequestSchema.parse(req.body);
       const subscription = await decisions.revoke(authOf(req).user, id, body);
       return adminSubscriptionResponseSchema.parse({ subscription });
+    });
+
+    // ---- plans (SPEC K, ADR-0059) ----
+    admin.get('/admin/plans', async () =>
+      adminPlansResponseSchema.parse({ plans: await plans.list() }),
+    );
+
+    admin.post('/admin/plans', async (req, reply) => {
+      const body = createPlanRequestSchema.parse(req.body);
+      const plan = await plans.create(authOf(req).user, body);
+      return reply.code(201).send(adminPlanResponseSchema.parse({ plan }));
+    });
+
+    admin.patch('/admin/plans/:id', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      const body = updatePlanRequestSchema.parse(req.body);
+      return adminPlanResponseSchema.parse({
+        plan: await plans.update(authOf(req).user, id, body),
+      });
     });
 
     admin.get('/admin/users', async (req) =>

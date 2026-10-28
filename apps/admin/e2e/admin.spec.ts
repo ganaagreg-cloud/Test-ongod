@@ -502,6 +502,40 @@ test('tags: create and delete', async () => {
   await expect(row).toHaveCount(0);
 });
 
+test('plans: add a switched-off plan, change its price; the days lock once it is used', async () => {
+  // Plans cannot be deleted (ADR-0059): the test plan is created switched off, so the portal
+  // never offers it.
+  const name = `E2E багц ${Date.now()}`;
+  await navLink(mn.nav.plans).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.plans.title })).toBeVisible();
+  await page.getByRole('button', { name: mn.plans.new }).first().click();
+  const create = dialog(mn.plans.formCreate);
+  await create.getByLabel(mn.plans.name).fill(name);
+  await create.getByLabel(mn.plans.price).fill('15,000');
+  await create.getByLabel(mn.plans.durationDays).fill('30');
+  await create.getByLabel(mn.plans.activeLabel).uncheck();
+  await create.getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.plans.created)).toBeVisible();
+
+  const row = page.getByRole('row', { name: new RegExp(name) });
+  await expect(row).toContainText('15,000₮');
+  await expect(row).toContainText(mn.plans.inactive);
+  await row.getByRole('button', { name: mn.common.edit }).click();
+  const edit = dialog(mn.plans.formEdit);
+  await expect(edit.getByLabel(mn.plans.durationDays)).toBeEnabled();
+  await edit.getByLabel(mn.plans.price).fill('17000');
+  await edit.getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.common.saved)).toBeVisible();
+  await expect(row).toContainText('17,000₮');
+
+  // The seeded yearly plan has subscriptions: its days cannot change.
+  const yearly = page.getByRole('row').filter({ hasText: '365' }).first();
+  await yearly.getByRole('button', { name: mn.common.edit }).click();
+  await expect(dialog(mn.plans.formEdit).getByLabel(mn.plans.durationDays)).toBeDisabled();
+  await expect(dialog(mn.plans.formEdit)).toContainText(mn.plans.daysLocked);
+  await dialog(mn.plans.formEdit).getByRole('button', { name: mn.common.cancel }).click();
+});
+
 // Deletes one e2e draft through its edit screen (found by its exact title in the list).
 async function deleteDraft(title: string) {
   await sidebar(mn.nav.episodes).click();

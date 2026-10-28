@@ -15,7 +15,7 @@ Decisions: [[ADR-0001-mobile-react-native-expo|ADR-0001]] · [[ADR-0002-api-fast
 
 - Mobile app (iOS + Android): sign up, log in, browse, play, save, comment on episodes (L), profile, settings, delete account, push notifications (asked once after sign-in, a switch on Профайл, [[ADR-0055-push-token-registration|ADR-0055]]). No payment UI (only a plain text telling a user without access to activate their package, [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]).
 - Portal (web, mobile-first): sign up, log in, plans, pay with QPay (via Wire, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]]), gift access (J), subscription status, privacy policy, terms, account deletion page. The apps open app-only copies of privacy and terms (`/app/privacy`, `/app/terms`: no navigation, no payment section, [[ADR-0053-app-only-legal-pages|ADR-0053]]).
-- Admin (web): payments (list of all requests, CSV export; [[ADR-0046-remove-bank-transfer-path|ADR-0046]]), plans (K), gifts (J), comment moderation (L), users, content (Контент), series (Цуврал), playlists (Жагсаалт), categories, tags (Шошго), uploads, dashboard, audit log ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]). Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
+- Admin (web): payments (list of all requests, CSV export; [[ADR-0046-remove-bank-transfer-path|ADR-0046]]), plans (Багц, K), gifts (J), comment moderation (L), users, content (Контент), series (Цуврал), playlists (Жагсаалт), categories, tags (Шошго), uploads, dashboard, audit log ([[ADR-0042-content-organisation-and-publish-push|ADR-0042]]). Roles OWNER and ADMIN. Password login only, no second factor ([[ADR-0040-admin-password-only-no-totp|ADR-0040]]).
 
 # Workflows
 
@@ -43,7 +43,7 @@ Added 2026-10-28 as paid add-ons ([[changes]]); the details are settled in an AD
 
 J. Gift access (portal only, "Эрх бэлэглэх"): a verified member pays for a plan through QPay as a gift; the payment creates a one-time gift code, emailed to the buyer. The recipient redeems it on the portal, which grants access like D (period as in E) in one transaction with a status precondition, so a code works once. Admin sees gifts in Төлбөр. The apps show nothing about buying or redeeming gifts. Open: [[open-questions]] #29.
 
-K. Plans: the owner adds and edits plans in the admin (name, price, days, on/off), for example monthly and yearly; changes are audited. A plan switched off is no longer offered but keeps its subscriptions. Renewal stays a manual payment (no automatic charging). The apps never show plan names or prices. Open: [[open-questions]] #30.
+K. Plans: the owner adds and edits plans in the admin (name, price, days, on/off), for example monthly and yearly; changes are audited. A plan switched off is no longer offered but keeps its subscriptions. Renewal stays a manual payment (no automatic charging). The apps never show plan names or prices. No delete: a plan is switched off; its days are fixed once it has subscriptions; the last active plan stays on ([[ADR-0059-admin-plan-editor|ADR-0059]]). Open: [[open-questions]] #30 (the monthly price).
 
 L. Comments: logged-in members comment on an episode in the app (text only); they can edit or delete their own comments and report others. Admin hides or deletes comments and sees reports. Rate limited; the store rules for user content (filtering, reporting, blocking, contact) are met before release. Open: [[open-questions]] #31, #32.
 

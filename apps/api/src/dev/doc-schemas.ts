@@ -2,6 +2,10 @@
 // packages/shared. The routes themselves validate with zod inside the handler, so nothing
 // here changes how the API behaves; a test fails when a route has no entry.
 import {
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
+  createPlanRequestSchema,
+  updatePlanRequestSchema,
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
   adminPlaylistDetailResponseSchema,
@@ -416,6 +420,17 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     body: grantRequestSchema,
     responses: { 201: adminSubscriptionResponseSchema },
   }),
+  'GET /v1/admin/plans': admin('K. Every plan, active first, with subscription counts', {
+    responses: { 200: adminPlansResponseSchema },
+  }),
+  'POST /v1/admin/plans': admin('K. Add a plan (name, days, price, active)', {
+    body: createPlanRequestSchema,
+    responses: { 201: adminPlanResponseSchema },
+  }),
+  'PATCH /v1/admin/plans/:id': admin(
+    'K. Edit a plan; days are fixed once it has subscriptions, the last active plan stays on',
+    { body: updatePlanRequestSchema, responses: { 200: adminPlanResponseSchema } },
+  ),
   'GET /v1/admin/audit': admin('Audit log', {
     query: listAuditQuerySchema,
     responses: { 200: auditPageSchema },
