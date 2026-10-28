@@ -39,8 +39,10 @@ const member = {
 /** Text that must never appear in the app (ADR-0006). */
 const PAYMENT_WORDS =
   /төлбөр|төлөх|төлсөн|үнэ(?!н)|эрх\s+ав|багц|банк|данс|шилжүүл|захиалга|төгрөг|₮/i;
+/** ADR-0044: the one approved line (text only) is taken out first, as in test/no-payment-text. */
 async function expectNoPaymentText(page: Page) {
-  expect(await page.evaluate(() => document.body.innerText)).not.toMatch(PAYMENT_WORDS);
+  const text = await page.evaluate(() => document.body.innerText);
+  expect(text.split(mn.noAccess.activate).join('')).not.toMatch(PAYMENT_WORDS);
 }
 
 const errors: string[] = [];
@@ -169,12 +171,12 @@ test('the bookmark: save in Сан, find it in Хадгалсан, remove it the
 test('Player: details, then play without access shows the no-access sheet only', async () => {
   await tab(mn.tabs.library).click();
   await page.getByRole('button', { name: /Их Монгол улсын зам/ }).click();
-  await expect(page.getByText(mn.player.nowPlaying)).toBeVisible();
+  // The Player is open: its close button is there (no top label since ADR-0049).
+  await expect(page.getByRole('button', { name: mn.player.close }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Их Монгол улсын зам' })).toBeVisible();
   await expect(page.getByText('Түүх · 2026 · 38 мин')).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: mn.player.description, exact: true }),
-  ).toBeVisible();
+  // "Тайлбар" is a plain title over the text since ADR-0049 (no card, no button).
+  await expect(page.getByText(mn.player.description, { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: mn.episode.play }).last().click();
   await expect(page.getByText(mn.noAccess.title)).toBeVisible();
@@ -187,7 +189,7 @@ test('Player: details, then play without access shows the no-access sheet only',
   await page.locator('[aria-modal="true"]').getByRole('button', { name: mn.close }).last().click();
   await expect(page.getByText(mn.noAccess.title)).toHaveCount(0);
   await page.getByRole('button', { name: mn.player.close }).first().click();
-  await expect(page.getByText(mn.player.nowPlaying)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Их Монгол улсын зам' })).toHaveCount(0);
 });
 
 test('Профайл and Тохиргоо: inactive access, edit personal information, devices', async () => {

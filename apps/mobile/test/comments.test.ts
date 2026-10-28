@@ -60,3 +60,13 @@ test('every report reason has a Mongolian label', () => {
     assert.ok(mn.comments.reasons[reason].length > 0);
   }
 });
+
+test('an app-config answer without supportEmail (an older server) still parses, as null', async () => {
+  const { appConfigResponseSchema } = await import('@ongod/shared');
+  const parsed = appConfigResponseSchema.parse({
+    minVersion: { ios: '99.0.0', android: '99.0.0' },
+    socialLogin: false,
+  });
+  assert.equal(parsed.supportEmail, null);
+  assert.equal(parsed.minVersion.ios, '99.0.0');
+});
