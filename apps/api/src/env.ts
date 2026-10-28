@@ -57,6 +57,11 @@ export const envSchema = z
     ALERT_EMAILS: csv.pipe(z.array(z.email())),
     ALERT_THROTTLE_MINUTES: z.coerce.number().int().positive().default(60),
 
+    /** Published contact for the stores' user-content rules (SPEC L, ADR-0061). Empty = no contact line under the comments (set it before a store build, ADR-0062). */
+    SUPPORT_EMAIL: z.preprocess(emptyToUndefined, z.email().optional()),
+    /** Comma-separated words that make a comment be refused (ADR-0061). Empty = only the link filter. */
+    COMMENT_BANNED_WORDS: csv,
+
     DATABASE_URL: z.string().regex(/^mysql:\/\//, 'must be a mysql:// URL'),
 
     JOB_WORKER_ENABLED: bool.default(true),
@@ -83,6 +88,8 @@ export const envSchema = z
     AUTH_RATE_LIMIT_IP_MAX: z.coerce.number().int().positive().default(30),
     AUTH_RATE_LIMIT_IDENTIFIER_MAX: z.coerce.number().int().positive().default(10),
     AUTH_RATE_LIMIT_IDENTIFIER_CEILING: z.coerce.number().int().positive().default(100),
+    /** Token refreshes per device per window; no per-IP bucket (ADR-0054). */
+    AUTH_REFRESH_DEVICE_MAX: z.coerce.number().int().positive().default(60),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(900),
 
     // Bunny (ADR-0004/0005). Optional here; code that needs them calls requireBunny().

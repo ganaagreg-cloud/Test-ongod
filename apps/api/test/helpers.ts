@@ -58,6 +58,9 @@ export function testApp(deps: Partial<AppDeps> = {}) {
 export async function resetDb(db = testDb) {
   await db.$transaction([
     db.auditLog.deleteMany(),
+    db.commentReport.deleteMany(),
+    db.commentBlock.deleteMany(),
+    db.comment.deleteMany(),
     db.notification.deleteMany(),
     db.savedEpisode.deleteMany(),
     db.playbackProgress.deleteMany(),
@@ -69,6 +72,7 @@ export async function resetDb(db = testDb) {
     db.episode.deleteMany(),
     db.series.deleteMany(),
     db.category.deleteMany(),
+    db.gift.deleteMany(),
     db.payment.deleteMany(),
     db.subscription.deleteMany(),
     db.plan.deleteMany(),

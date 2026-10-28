@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mn } from '../src/i18n/mn';
+import { STUCK_UPLOAD_MS } from '@ongod/shared';
+import { ubMonthStart } from '../src/lib/dates';
 import { generateReferenceCode } from '../src/subscriptions/period';
 import { makeCategory, makeEpisode } from './catalog-helpers';
 import { testDb } from './helpers';
@@ -440,11 +442,124 @@ describe('users, dashboard, audit, export', () => {
 
     const res = await get('/v1/admin/dashboard');
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({
+    expect(res.json()).toMatchObject({
       activeUsers: 3, // far, soon, edge
       pendingPayment: 2,
       expiringIn30Days: 2, // soon, edge
       newUsersThisWeek: 1, // fresh (the admin is not a "user", the old ones are older)
+    });
+    // The 5 soonest endings, soonest first; deleted users and access beyond 30 days are not there.
+    expect(res.json().expiringSoon.map((u: { username: string }) => u.username)).toEqual([
+      'soon',
+      'edge',
+    ]);
+  });
+
+  it('dashboard money: this and last Ulaanbaatar month, only money that came in (ADR-0056)', async () => {
+    const plan = await makePlan();
+    const member = await makeMember(app);
+    const sub = await testDb.subscription.create({
+      data: {
+        userId: member.userId,
+        planId: plan.id,
+        status: 'ACTIVE',
+        referenceCode: 'ONG-MONEY2',
+        amountMnt: 100_000,
+      },
+    });
+    const pay = (
+      amountMnt: number,
+      createdAt: Date,
+      over: { method?: 'QPAY' | 'MANUAL_GRANT'; status?: 'COMPLETED' | 'REFUNDED' } = {},
+    ) =>
+      testDb.payment.create({
+        data: {
+          subscriptionId: sub.id,
+          amountMnt,
+          createdAt,
+          method: over.method ?? 'QPAY',
+          status: over.status ?? 'COMPLETED',
+        },
+      });
+    const monthStart = ubMonthStart(new Date());
+    const now = await pay(100_000, new Date());
+    const last = await pay(50_000, new Date(monthStart.getTime() - 60 * 60_000));
+    const older = await pay(30_000, ubMonthStart(new Date(), 2));
+    await pay(0, new Date(), { method: 'MANUAL_GRANT' });
+    await pay(70_000, new Date(), { status: 'REFUNDED' });
+
+    const body = (await get('/v1/admin/dashboard')).json();
+    expect(body.revenue).toEqual({
+      thisMonthMnt: 100_000,
+      lastMonthMnt: 50_000,
+      paymentsThisMonth: 1,
+    });
+    expect(body.recentPayments.map((p: { id: string }) => p.id)).toEqual([
+      now.id,
+      last.id,
+      older.id,
+    ]);
+    expect(body.recentPayments[0]).toMatchObject({
+      referenceCode: 'ONG-MONEY2',
+      amountMnt: 100_000,
+      method: 'QPAY',
+      subscriptionId: sub.id,
+      user: { id: member.userId },
+    });
+  });
+
+  it('dashboard content: next scheduled items and broken or stuck files (ADR-0056)', async () => {
+    const category = await makeCategory();
+    const at = (ms: number) => new Date(Date.now() + ms);
+    await makeEpisode(category.id, {
+      title: 'later',
+      status: 'SCHEDULED',
+      scheduledFor: at(2 * DAY),
+    });
+    await makeEpisode(category.id, { title: 'next', status: 'SCHEDULED', scheduledFor: at(DAY) });
+    await makeEpisode(category.id, { title: 'out' });
+
+    await makeEpisode(category.id, { title: 'failed', status: 'DRAFT', media: 'FAILED' });
+    const stuck = await makeEpisode(category.id, {
+      title: 'stuck',
+      status: 'DRAFT',
+      media: 'UPLOADING',
+    });
+    await testDb.mediaAsset.updateMany({
+      where: { episodeId: stuck.id },
+      data: { updatedAt: at(-(STUCK_UPLOAD_MS + 60_000)) },
+    });
+    await makeEpisode(category.id, { title: 'uploading', status: 'DRAFT', media: 'UPLOADING' });
+    await makeEpisode(category.id, { title: 'archived', status: 'ARCHIVED', media: 'FAILED' });
+    // An old failed file replaced by a newer, ready one is not a problem.
+    const fixed = await makeEpisode(category.id, {
+      title: 'fixed',
+      status: 'DRAFT',
+      media: 'FAILED',
+    });
+    await testDb.mediaAsset.create({
+      data: {
+        episodeId: fixed.id,
+        kind: 'AUDIO',
+        provider: 'BUNNY_STORAGE',
+        path: `audio/${fixed.id}/new.mp3`,
+        status: 'READY',
+      },
+    });
+
+    const body = (await get('/v1/admin/dashboard')).json();
+    expect(body.upcoming.map((e: { title: string }) => e.title)).toEqual(['next', 'later']);
+    expect(body.mediaProblems.failed).toBe(1);
+    expect(body.mediaProblems.stuck).toBe(1);
+    expect(body.mediaProblems.items.map((i: { title: string }) => i.title).sort()).toEqual([
+      'failed',
+      'stuck',
+    ]);
+    expect(
+      body.mediaProblems.items.find((i: { title: string }) => i.title === 'failed'),
+    ).toMatchObject({
+      status: 'FAILED',
+      failReason: 'test failure',
     });
   });
 

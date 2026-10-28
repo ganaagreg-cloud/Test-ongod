@@ -24,7 +24,11 @@ export interface EpisodeCardProps {
   width?: number;
 }
 
-/** Card for horizontal lists ("Шинэ"): the 16:9 picture is the hero, the title sits under it. */
+/**
+ * Card for horizontal lists ("Шинэ"): the 16:9 picture is the hero, the title sits under it.
+ * Without a picture the typographic cover already shows the title, so it is not repeated, unless
+ * the cover is blurred (a paid item without access) and its title cannot be read.
+ */
 export function EpisodeCard({
   title,
   durationLabel,
@@ -53,9 +57,11 @@ export function EpisodeCard({
         locked={locked}
         {...(family && { family })}
       />
-      <Text style={styles.title} numberOfLines={2}>
-        {title}
-      </Text>
+      {coverUri || locked ? (
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+      ) : null}
     </PressableScale>
   );
 }

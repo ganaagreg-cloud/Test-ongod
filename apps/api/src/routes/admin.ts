@@ -1,6 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  adminCommentsPageSchema,
+  listAdminCommentsQuerySchema,
+  muteUserResponseSchema,
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
+  listGiftsQuerySchema,
+  voidGiftRequestSchema,
   adminIdParamsSchema,
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
+  createPlanRequestSchema,
+  updatePlanRequestSchema,
   adminSubscriptionResponseSchema,
   adminSubscriptionsPageSchema,
   adminUserDetailResponseSchema,
@@ -18,6 +29,9 @@ import {
 import type { AdminQueries } from '../admin/queries';
 import type { DecisionService } from '../admin/decisions';
 import type { AdminGuards } from '../admin/guard';
+import type { PlanService } from '../admin/plans';
+import type { CommentService } from '../comments/service';
+import type { GiftService } from '../gifts/service';
 import { authOf } from '../auth/guard';
 
 /**
@@ -30,9 +44,12 @@ export async function adminRoutes(
     guards: AdminGuards;
     decisions: DecisionService;
     queries: AdminQueries;
+    plans: PlanService;
+    gifts: GiftService;
+    comments: CommentService;
   },
 ) {
-  const { guards, decisions, queries } = opts;
+  const { guards, decisions, queries, plans, gifts, comments } = opts;
   app.addHook('onSend', async (_req, reply) => {
     reply.header('cache-control', 'private, no-store');
   });
@@ -67,6 +84,67 @@ export async function adminRoutes(
       const body = revokeRequestSchema.parse(req.body);
       const subscription = await decisions.revoke(authOf(req).user, id, body);
       return adminSubscriptionResponseSchema.parse({ subscription });
+    });
+
+    // ---- comments (SPEC L, ADR-0061) ----
+    admin.get('/admin/comments', async (req) =>
+      adminCommentsPageSchema.parse(
+        await comments.adminList(listAdminCommentsQuerySchema.parse(req.query)),
+      ),
+    );
+
+    for (const action of ['hide', 'restore', 'dismiss', 'delete'] as const) {
+      admin.post(`/admin/comments/:id/${action}`, async (req, reply) => {
+        const { id } = adminIdParamsSchema.parse(req.params);
+        await comments.adminAct(authOf(req).user, id, action);
+        return reply.code(204).send();
+      });
+    }
+
+    admin.post('/admin/users/:id/comment-mute', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      return muteUserResponseSchema.parse({
+        muted: await comments.adminMute(authOf(req).user, id, true),
+      });
+    });
+
+    admin.delete('/admin/users/:id/comment-mute', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      return muteUserResponseSchema.parse({
+        muted: await comments.adminMute(authOf(req).user, id, false),
+      });
+    });
+
+    // ---- gifts (SPEC J, ADR-0060) ----
+    admin.get('/admin/gifts', async (req) =>
+      adminGiftsPageSchema.parse(await gifts.adminList(listGiftsQuerySchema.parse(req.query))),
+    );
+
+    admin.post('/admin/gifts/:id/void', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      const body = voidGiftRequestSchema.parse(req.body);
+      return adminGiftResponseSchema.parse({
+        gift: await gifts.adminVoid(authOf(req).user, id, body.reason),
+      });
+    });
+
+    // ---- plans (SPEC K, ADR-0059) ----
+    admin.get('/admin/plans', async () =>
+      adminPlansResponseSchema.parse({ plans: await plans.list() }),
+    );
+
+    admin.post('/admin/plans', async (req, reply) => {
+      const body = createPlanRequestSchema.parse(req.body);
+      const plan = await plans.create(authOf(req).user, body);
+      return reply.code(201).send(adminPlanResponseSchema.parse({ plan }));
+    });
+
+    admin.patch('/admin/plans/:id', async (req) => {
+      const { id } = adminIdParamsSchema.parse(req.params);
+      const body = updatePlanRequestSchema.parse(req.body);
+      return adminPlanResponseSchema.parse({
+        plan: await plans.update(authOf(req).user, id, body),
+      });
     });
 
     admin.get('/admin/users', async (req) =>

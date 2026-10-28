@@ -1,0 +1,243 @@
+<!doctype html>
+<!-- Portal redesign mockup A · Aurora (2026-10-28). Reference only, not app code.
+     Real tokens from packages/tokens; cover gradients are the DESIGN cover families. -->
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Онгод · A Aurora</title>
+<link rel="stylesheet" href="../../../packages/tokens/css/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@500;600&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-text-primary); font: 400 16px/24px Inter, system-ui, sans-serif; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  .serif { font-family: Lora, serif; font-weight: 600; }
+  .label { font-size: 12px; line-height: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-accent); font-weight: 600; }
+  .muted { color: var(--color-text-secondary); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; padding: 0 28px; border-radius: 999px; font-weight: 600; font-size: 16px; }
+  .btn-gold { background: var(--color-accent); color: var(--color-on-accent); position: relative; overflow: hidden; }
+  .btn-gold::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.45) 50%, transparent 60%); transform: translateX(-60%); }
+  .btn-ghost { border: 1px solid var(--color-hairline-strong); color: var(--color-text-primary); }
+  .sm { height: 40px; padding: 0 18px; font-size: 14px; }
+
+  /* header */
+  header.top { position: absolute; inset: 0 0 auto; z-index: 3; background: linear-gradient(180deg, rgba(2,21,18,.92), rgba(2,21,18,.6) 70%, transparent); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-family: Lora, serif; font-weight: 600; font-size: 22px; }
+  .brand svg { width: 64px; height: 22px; }
+  nav.links { display: flex; align-items: center; gap: 28px; font-size: 14px; color: var(--color-text-secondary); }
+  nav.links .btn { color: var(--color-on-accent); }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; min-height: 820px; display: flex; align-items: flex-end; padding-bottom: 72px;
+    background: radial-gradient(60% 50% at 20% 10%, rgba(47,168,138,.30), transparent 70%), radial-gradient(50% 40% at 85% 25%, rgba(11,74,63,.9), transparent 70%), linear-gradient(180deg, var(--color-brand), var(--color-bg) 78%); }
+  .covers { position: absolute; top: 120px; left: 50%; width: 1500px; transform: translateX(-50%) rotate(-8deg); display: grid; grid-template-columns: repeat(6, 1fr); gap: 22px; opacity: .55; }
+  .cover { aspect-ratio: 16/9; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
+  .cover b { font-family: Lora, serif; font-weight: 600; font-size: 17px; line-height: 22px; }
+  .cover i { font-style: normal; font-size: 12px; color: var(--color-accent); }
+  .f1 { background: linear-gradient(135deg, #0D5A4C, #053931 55%, #03231E); }
+  .f2 { background: linear-gradient(135deg, #155463, #0A3540 55%, #041A20); }
+  .f3 { background: linear-gradient(135deg, #4A3818, #2A1F0D 55%, #140E05); }
+  .f4 { background: linear-gradient(135deg, #3A5A2A, #1F3A17 55%, #0D1A09); }
+  .f5 { background: linear-gradient(135deg, #5A3A4A, #33202B 55%, #170D13); }
+  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 20%, rgba(2,21,18,.85) 62%, var(--color-bg)); }
+  .hero .wrap { position: relative; z-index: 2; text-align: center; }
+  .hero .motif { width: 220px; height: 60px; margin: 0 auto 18px; display: block; }
+  .hero h1 { margin: 0; font-family: Lora, serif; font-weight: 600; font-size: 64px; line-height: 70px; }
+  .hero p.lead { margin: 18px auto 32px; max-width: 560px; font-size: 19px; line-height: 30px; color: var(--color-text-secondary); }
+  .hero .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero .price { margin-top: 18px; font-size: 14px; color: var(--color-text-tertiary); }
+
+  /* facts */
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--color-hairline); }
+  .fact { padding: 28px 20px; text-align: center; border-inline-end: 1px solid var(--color-hairline); }
+  .fact:last-child { border: 0; }
+  .fact b { display: block; font-family: Lora, serif; font-weight: 600; font-size: 30px; line-height: 38px; color: var(--color-accent); }
+  .fact span { font-size: 14px; color: var(--color-text-secondary); }
+
+  section { padding: 96px 0; }
+  .head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+  .head h2 { margin: 6px 0 0; font-family: Lora, serif; font-weight: 600; font-size: 38px; line-height: 46px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .ep .cover { position: relative; justify-content: flex-start; gap: 8px; }
+  .ep .dur { position: absolute; right: 10px; bottom: 10px; background: rgba(1,10,8,.7); border-radius: 8px; padding: 2px 8px; font-size: 12px; }
+  .ep h3 { margin: 12px 0 2px; font-size: 16px; line-height: 22px; font-weight: 600; }
+  .ep p { margin: 0; font-size: 13px; color: var(--color-text-secondary); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  .chip { height: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--color-hairline-strong); display: inline-flex; align-items: center; font-size: 14px; color: var(--color-text-secondary); }
+  .chip.on { background: var(--color-heritage); border-color: var(--color-heritage); color: var(--color-on-heritage); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: s; }
+  .step { padding: 28px; border-radius: 18px; background: var(--color-surface); border: 1px solid var(--color-hairline); }
+  .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent); font-family: Lora, serif; font-weight: 600; font-size: 20px; margin-bottom: 18px; }
+  .step h3 { margin: 0 0 6px; font-size: 19px; }
+  .step p { margin: 0; color: var(--color-text-secondary); font-size: 15px; }
+
+  .plan { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--color-hairline); }
+  .plan .l { padding: 48px; background: linear-gradient(160deg, var(--color-heritage), var(--color-brand)); }
+  .plan .r { padding: 48px; background: var(--color-surface); }
+  .plan .amount { font-family: Lora, serif; font-weight: 600; font-size: 56px; line-height: 62px; margin: 14px 0 4px; }
+  .plan ul { list-style: none; margin: 0 0 28px; padding: 0; display: grid; gap: 14px; }
+  .plan li { display: flex; gap: 12px; align-items: flex-start; }
+  .plan li::before { content: '✓'; color: var(--color-accent); font-weight: 600; }
+  .note { font-size: 13px; color: var(--color-text-tertiary); margin-top: 14px; }
+
+  .apps { display: flex; gap: 12px; flex-wrap: wrap; }
+  .store { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 20px; border-radius: 14px; border: 1px solid var(--color-hairline-strong); background: var(--color-surface); }
+  .store small { display: block; font-size: 11px; color: var(--color-text-tertiary); line-height: 14px; }
+  .store b { font-size: 15px; }
+  .soon { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--color-accent-soft); color: var(--color-accent); }
+
+  .faq { max-width: 760px; margin: 0 auto; }
+  .faq details { border-bottom: 1px solid var(--color-hairline); padding: 20px 0; }
+  .faq summary { list-style: none; display: flex; justify-content: space-between; font-weight: 600; font-size: 17px; cursor: pointer; }
+  .faq summary::after { content: '+'; color: var(--color-accent); font-size: 22px; }
+  .faq p { margin: 10px 0 0; color: var(--color-text-secondary); }
+
+  footer { border-top: 1px solid var(--color-hairline); padding: 40px 0; font-size: 14px; color: var(--color-text-secondary); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  footer nav { display: flex; gap: 24px; flex-wrap: wrap; }
+
+  /* account screen */
+  .screen-tag { text-align: center; padding: 28px 0 0; }
+  .screen-tag span { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-text-tertiary); border: 1px dashed var(--color-hairline-strong); border-radius: 999px; padding: 6px 14px; }
+  .acct { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: start; }
+  .card { border-radius: 22px; background: var(--color-surface); border: 1px solid var(--color-hairline); padding: 28px; }
+  .access { display: flex; gap: 24px; align-items: center; background: linear-gradient(150deg, var(--color-brand), var(--color-surface)); }
+  .ring { width: 104px; height: 104px; flex: none; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--color-accent) 0 78%, rgba(243,239,230,.1) 0); }
+  .ring div { width: 88px; height: 88px; border-radius: 50%; background: var(--color-brand); display: grid; place-items: center; font-family: Lora, serif; font-weight: 600; font-size: 28px; }
+  .ok { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--color-success); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-tertiary); padding: 0 0 10px; }
+  td { padding: 12px 0; border-top: 1px solid var(--color-hairline); }
+  td.r, th.r { text-align: right; }
+  .rows a { display: flex; justify-content: space-between; padding: 14px 0; border-top: 1px solid var(--color-hairline); }
+  .danger { color: var(--color-danger); }
+
+  @media (max-width: 760px) {
+    nav.links a:not(.btn) { display: none; }
+    .hero { min-height: 640px; padding-bottom: 48px; }
+    .hero h1 { font-size: 44px; line-height: 50px; }
+    .hero p.lead { font-size: 17px; line-height: 26px; }
+    .covers { width: 900px; grid-template-columns: repeat(4, 1fr); top: 90px; opacity: .3; }
+    .hero::after { background: linear-gradient(180deg, transparent 5%, rgba(2,21,18,.9) 45%, var(--color-bg)); }
+    .fact b { font-size: 22px; line-height: 30px; }
+    .fact { padding: 20px 12px; }
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    .fact:nth-child(2) { border-inline-end: 0; }
+    .fact:nth-child(-n+2) { border-bottom: 1px solid var(--color-hairline); }
+    section { padding: 64px 0; }
+    .head h2 { font-size: 28px; line-height: 36px; }
+    .grid4 { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .ep .cover b { font-size: 14px; line-height: 18px; }
+    .ep .cover { padding: 10px; }
+    .steps, .plan, .acct { grid-template-columns: 1fr; }
+    .plan .l, .plan .r { padding: 28px; }
+    .plan .amount { font-size: 44px; line-height: 50px; }
+    .btn { width: 100%; }
+    .hero .ctas .btn { width: auto; flex: 1; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><symbol id="m" viewBox="0 0 160 40"><path d="M2 38 L32 16 L46 24 L76 2 L98 20 L114 10 L136 30 L158 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></symbol></svg>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#"><svg style="color: var(--color-accent)"><use href="#m"/></svg>Онгод</a>
+  <nav class="links"><a href="#lib">Сан</a><a href="#how">Хэрхэн</a><a href="#plan">Үнэ</a><a href="#faq">Асуулт</a><a href="#">Нэвтрэх</a><a class="btn btn-gold sm" href="#">Бүртгүүлэх</a></nav>
+</div></header>
+
+<div class="hero">
+  <div class="covers">
+    <div class="cover f1"><i>№ 014</i><b>Хөх тэнгэрийн домог</b></div><div class="cover f3"><i>№ 022</i><b>Говийн шөнийн дуу</b></div><div class="cover f2"><i>№ 031</i><b>Алтайн цээжин дэх зүрх</b></div><div class="cover f5"><i>№ 040</i><b>Хүннү гүрний үүсэл</b></div><div class="cover f4"><i>№ 008</i><b>Малчин өвөөгийн яриа</b></div><div class="cover f1"><i>№ 019</i><b>Цагаан сарын уламжлал</b></div>
+    <div class="cover f2"><i>№ 017</i><b>Их Монгол улсын зам</b></div><div class="cover f4"><i>№ 026</i><b>Гэрийн ёс</b></div><div class="cover f3"><i>№ 033</i><b>Нүүдлийн ухаан</b></div><div class="cover f1"><i>№ 036</i><b>Морин хуурын түүх</b></div><div class="cover f5"><i>№ 049</i><b>Өвөг дээдсийн үг</b></div><div class="cover f2"><i>№ 027</i><b>Хангайн ус</b></div>
+    <div class="cover f5"><i>№ 011</i><b>Тэнгэрийн шүтлэг</b></div><div class="cover f1"><i>№ 045</i><b>Эх орны дуу</b></div><div class="cover f4"><i>№ 029</i><b>Хаврын нүүдэл</b></div><div class="cover f3"><i>№ 052</i><b>Үлгэрийн цаг</b></div><div class="cover f2"><i>№ 003</i><b>Шинэ жилийн ёс</b></div><div class="cover f1"><i>№ 038</i><b>Талын салхи</b></div>
+  </div>
+  <div class="wrap">
+    <svg class="motif" style="color: var(--color-accent)"><use href="#m"/></svg>
+    <div class="label">Гишүүдэд зориулсан сан</div>
+    <h1 style="margin-top: 10px">Онгод</h1>
+    <p class="lead">Монгол түүх, ёс заншил, ярилцлагын аудио ба видео анги. Долоо хоног бүр шинэ анги нэмэгдэнэ. Утсан дээрээ хүссэн үедээ сонсоорой.</p>
+    <div class="ctas"><a class="btn btn-gold" href="#">Эрх авах</a><a class="btn btn-ghost" href="#lib">Сан үзэх</a></div>
+    <div class="price">Жилийн эрх 100,000₮ · QPay-ээр төлнө</div>
+  </div>
+</div>
+
+<div class="wrap"><div class="facts">
+  <div class="fact"><b>1–10</b><span>шинэ анги долоо хоногт</span></div>
+  <div class="fact"><b>40+ мин</b><span>нэг ангийн дундаж урт</span></div>
+  <div class="fact"><b>Аудио · Видео</b><span>нэг аппад</span></div>
+  <div class="fact"><b>2</b><span>төхөөрөмжөөс нэвтэрнэ</span></div>
+</div></div>
+
+<section id="lib"><div class="wrap">
+  <div class="head"><div><div class="label">Сангаас</div><h2>Шинээр нэмэгдсэн</h2></div><a class="muted" href="#">Бүгдийг харах →</a></div>
+  <div class="chips"><span class="chip on">Бүгд</span><span class="chip">Түүх</span><span class="chip">Ёс заншил</span><span class="chip">Ярилцлага</span></div>
+  <div class="grid4">
+    <a class="ep"><div class="cover f3"><i>№ 052</i><span class="dur">41:00</span></div><h3>Малчин өвөөгийн яриа</h3><p>Ярилцлага · Аудио</p></a>
+    <a class="ep"><div class="cover f2"><i>№ 051</i><span class="dur">24:00</span></div><h3>Цагаан сарын уламжлал</h3><p>Ёс заншил · Видео</p></a>
+    <a class="ep"><div class="cover f1"><i>№ 050</i><span class="dur">38:00</span></div><h3>Их Монгол улсын зам</h3><p>Түүх · Аудио</p></a>
+    <a class="ep"><div class="cover f5"><i>№ 049</i><span class="dur">32:00</span></div><h3>Хүннү гүрний үүсэл</h3><p>Түүх · Аудио</p></a>
+  </div>
+</div></section>
+
+<section id="how" style="background: var(--color-surface-sunken); border-block: 1px solid var(--color-hairline)"><div class="wrap">
+  <div class="head"><div><div class="label">Хэрхэн ажилладаг вэ</div><h2>Гурван алхам</h2></div></div>
+  <div class="steps">
+    <div class="step"><h3>Бүртгүүлэх</h3><p>Энд бүртгүүлж, имэйлээ 6 оронтой кодоор баталгаажуулна.</p></div>
+    <div class="step"><h3>QPay-ээр төлөх</h3><p>Банкны аппаараа QR уншуулж төлнө. Эрх тань тэр дороо идэвхжинэ.</p></div>
+    <div class="step"><h3>Аппаа татаж сонсох</h3><p>Онгод аппаар нэвтэрч, бүх ангийг утсан дээрээ сонсож, үзнэ.</p></div>
+  </div>
+</div></section>
+
+<section id="plan"><div class="wrap">
+  <div class="plan">
+    <div class="l"><div class="label">Эрхийн багц</div><div class="amount">100,000₮</div><div class="muted">Жилийн эрх · 365 хоног</div>
+      <p class="note" style="color: var(--color-text-secondary)">Сард ойролцоогоор 8,300₮.</p></div>
+    <div class="r"><ul><li>Сангийн бүх анги, аудио ба видео</li><li>Шинэ анги долоо хоног бүр</li><li>2 төхөөрөмжөөс нэвтэрнэ</li><li>Хаана ч, хүссэн үедээ</li></ul>
+      <a class="btn btn-gold" style="width:100%" href="#">Бүртгүүлж эрх авах</a>
+      <p class="note">Төлбөрийг зөвхөн энэ сайтаар хийнэ. Аппад төлбөр хийгдэхгүй.</p></div>
+  </div>
+</div></section>
+
+<section style="padding-top: 0"><div class="wrap">
+  <div class="head"><div><div class="label">Апп</div><h2>Утсан дээрээ сонсоорой</h2></div></div>
+  <div class="apps"><a class="store"><div><small>iPhone</small><b>App Store</b></div><span class="soon">Удахгүй</span></a><a class="store"><div><small>Android</small><b>Google Play</b></div><span class="soon">Удахгүй</span></a></div>
+</div></section>
+
+<section id="faq" style="background: var(--color-surface-sunken); border-top: 1px solid var(--color-hairline)"><div class="wrap">
+  <div class="head" style="justify-content: center; text-align: center"><div><div class="label">Асуулт</div><h2>Түгээмэл асуулт</h2></div></div>
+  <div class="faq">
+    <details open><summary>Яаж төлөх вэ?</summary><p>Багцаа сонгоод QPay-ээр төлнө. Төлбөр баталгаажмагц эрх тань автоматаар идэвхжинэ.</p></details>
+    <details><summary>Хэдэн төхөөрөмжөөс нэвтрэх вэ?</summary><p>Нэг бүртгэлээр 2 төхөөрөмжөөс. Шаардлагатай бол нэгийг нь хасаад шинээр нэвтэрнэ.</p></details>
+    <details><summary>Эрх дуусахаас өмнө сануулах уу?</summary><p>Дуусахаас 14 хоногийн өмнө имэйл болон мэдэгдэл илгээнэ.</p></details>
+    <details><summary>Бүртгэлээ яаж устгах вэ?</summary><p>Апп дотроос эсвэл энэ сайтын "Бүртгэл устгах" хуудаснаас.</p></details>
+  </div>
+</div></section>
+
+<footer><div class="wrap"><span>© Онгод</span><nav><a>Нууцлалын бодлого</a><a>Үйлчилгээний нөхцөл</a><a>Бүртгэл устгах</a><a>Холбоо барих</a></nav></div></footer>
+
+<!-- ============ Screen 2: Миний бүртгэл (signed in) ============ -->
+<div class="screen-tag"><span>Дэлгэц 2 · Миний бүртгэл</span></div>
+<section style="padding-top: 40px"><div class="wrap">
+  <div class="head"><div><div class="label">Сайн байна уу, Бат</div><h2>Миний бүртгэл</h2></div><a class="btn btn-ghost sm" href="#">Гарах</a></div>
+  <div class="acct">
+    <div style="display:grid; gap:20px">
+      <div class="card access"><div class="ring"><div>301</div></div><div><div class="label">Эрх</div><div class="serif" style="font-size: 24px; line-height: 32px; margin: 4px 0">Идэвхтэй · 2027.08.23 хүртэл</div><div class="muted">301 хоног үлдсэн · Жилийн эрх</div><a class="btn btn-gold sm" style="margin-top:16px" href="#">Эрх сунгах</a></div></div>
+      <div class="card"><div class="head" style="margin-bottom: 14px"><div class="serif" style="font-size: 20px">Төлбөрийн түүх</div></div>
+        <table><tr><th>Огноо</th><th>Лавлах код</th><th>Багц</th><th class="r">Дүн</th></tr>
+          <tr><td>2026.08.23</td><td>ONG-7K3QX</td><td>Жилийн эрх</td><td class="r">100,000₮</td></tr>
+          <tr><td>2025.08.20</td><td>ONG-H4P9R</td><td>Жилийн эрх</td><td class="r">100,000₮</td></tr></table></div>
+    </div>
+    <div style="display:grid; gap:20px">
+      <div class="card"><div class="serif" style="font-size: 20px; margin-bottom: 6px">Аппаа татах</div><p class="muted" style="margin: 0 0 16px">Энэ имэйл, нууц үгээрээ аппад нэвтэрнэ.</p><div class="apps"><a class="store"><div><small>iPhone</small><b>App Store</b></div></a><a class="store"><div><small>Android</small><b>Google Play</b></div></a></div></div>
+      <div class="card"><div class="serif" style="font-size: 20px; margin-bottom: 6px">Мэдээлэл</div>
+        <div class="rows"><a><span class="muted">Имэйл</span><span>bat@example.com <span class="ok">● Баталгаажсан</span></span></a><a><span class="muted">Утас</span><span>99000001</span></a><a><span>Нууц үг солих</span><span class="muted">›</span></a><a><span class="danger">Бүртгэл устгах</span><span class="muted">›</span></a></div></div>
+    </div>
+  </div>
+</div></section>
+</body>
+</html>

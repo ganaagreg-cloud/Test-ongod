@@ -1,7 +1,7 @@
-import type { AdminEpisodeDto } from '@ongod/shared';
+import { STUCK_UPLOAD_MS, type AdminEpisodeDto } from '@ongod/shared';
 
-/** An upload whose row has not been touched for this long is treated as stuck. */
-export const STUCK_UPLOAD_MS = 15 * 60_000;
+/** The threshold lives in packages/shared: the dashboard API uses the same one (ADR-0056). */
+export { STUCK_UPLOAD_MS };
 
 /**
  * True for a file that has been UPLOADING for more than 15 minutes without a change to its row.

@@ -4,6 +4,8 @@ export * from './app-config';
 export * from './auth';
 export * from './catalog';
 export * from './subscriptions';
+export * from './gifts';
+export * from './comments';
 export * from './admin';
 export * from './admin-content';
 export * from './format';

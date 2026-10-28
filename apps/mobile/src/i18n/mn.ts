@@ -54,7 +54,7 @@ export const mn = {
   },
 
   welcome: {
-    subtitle: 'Гишүүдэд зориулсан хаалттай аудио сан. Сонсож, өсөж, өөрийгөө нээ.',
+    subtitle: 'Гишүүдэд зориулсан хаалттай аудио, видео сан. Сонсож, өсөж, өөрийгөө нээ.',
     login: 'Нэвтрэх',
     register: 'Бүртгүүлэх',
   },
@@ -197,6 +197,7 @@ export const mn = {
   },
 
   player: {
+    nowPlaying: 'ОДОО ТОГЛУУЛЖ БАЙНА',
     close: 'Хаах',
     back15: '15 секунд ухраах',
     forward30: '30 секунд гүйлгэх',
@@ -264,6 +265,49 @@ export const mn = {
     hours: 'Сонссон цаг',
     settings: 'Тохиргоо',
     devices: 'Төхөөрөмжүүд',
+    blocked: 'Хаасан хэрэглэгчид',
+    notifications: 'Мэдэгдэл',
+  },
+
+  // Сэтгэгдэл (SPEC L, ADR-0061). No payment wording: the box simply is not there without access.
+  comments: {
+    title: 'Сэтгэгдэл',
+    empty: 'Сэтгэгдэл алга. Эхнийх нь та байж болно.',
+    loadError: 'Сэтгэгдлийг ачаалж чадсангүй.',
+    loadMore: 'Цааш үзэх',
+    write: 'Сэтгэгдэл бичих',
+    placeholder: 'Энэ ангийн талаар бичнэ үү',
+    send: 'Илгээх',
+    sent: 'Сэтгэгдэл нэмэгдлээ',
+    save: 'Хадгалах',
+    edited: 'засварласан',
+    more: 'Сэтгэгдлийн цэс',
+    edit: 'Засах',
+    delete: 'Устгах',
+    deleted: 'Сэтгэгдлийг устгалаа',
+    report: 'Гомдол гаргах',
+    reportTitle: 'Яагаад гомдол гаргах вэ?',
+    reasons: { SPAM: 'Спам', ABUSE: 'Доромжлол, хэрүүл', OTHER: 'Бусад' },
+    reported: 'Гомдол хүлээн авлаа. Баярлалаа',
+    block: 'Хэрэглэгчийг хаах',
+    blockTitle: 'Энэ хэрэглэгчийг хаах уу?',
+    blockText:
+      'Түүний сэтгэгдлүүд танд харагдахаа болино. Хаасан хэрэглэгчдийг Профайлаас харж, буцааж болно.',
+    blocked: 'Хэрэглэгчийг хаалаа',
+    cancel: 'Болих',
+    mine: 'Та',
+    contact: (email: string) => `Асуудал, гомдол: ${email}`,
+    rules: 'Бусдыг хүндэтгэнэ үү. Холбоос оруулах боломжгүй.',
+    blockedTitle: 'Хаасан хэрэглэгчид',
+    blockedText: 'Эдгээр хүмүүсийн сэтгэгдэл танд харагдахгүй.',
+    blockedEmpty: 'Та хэнийг ч хаагаагүй байна.',
+    unblock: 'Нээх',
+    unblocked: 'Хэрэглэгчийг нээлээ',
+  },
+
+  push: {
+    /** Android notification channel name (system settings). */
+    channel: 'Мэдэгдэл',
   },
 
   settings: {

@@ -11,6 +11,7 @@ import { accessState, listenedHours } from '../../../src/lib/episode';
 import { portalLink } from '../../../src/lib/portalLink';
 import { useBottomSpace } from '../../../src/screens/layout';
 import { AccessCard } from '../../../src/screens/profile/AccessCard';
+import { PushSwitch } from '../../../src/screens/profile/PushSwitch';
 import {
   AuroraBackground,
   Button,
@@ -40,8 +41,8 @@ export default function Profile() {
   if (!user) return null;
   const access = accessState(user.accessUntil, new Date());
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
-  const termsUrl = portalLink(env.portalUrl, '/terms');
-  const privacyUrl = portalLink(env.portalUrl, '/privacy');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms');
+  const privacyUrl = portalLink(env.portalUrl, '/app/privacy');
 
   return (
     <SurfaceProvider surface="dark">
@@ -86,6 +87,11 @@ export default function Profile() {
               icon="device"
               onPress={() => router.push('/settings/devices')}
             />
+            <ListItem
+              title={mn.profile.blocked}
+              icon="profile"
+              onPress={() => router.push('/settings/blocked')}
+            />
             {termsUrl ? (
               <ListItem
                 title={mn.legal.terms}
@@ -100,6 +106,7 @@ export default function Profile() {
                 onPress={() => void Linking.openURL(privacyUrl)}
               />
             ) : null}
+            <PushSwitch />
           </Enter>
 
           {/* DEV ONLY: Expo Go cannot type a route, so the device-gate benches are one tap away

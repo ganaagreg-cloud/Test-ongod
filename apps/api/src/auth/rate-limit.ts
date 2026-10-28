@@ -41,6 +41,8 @@ export interface AuthLimiterConfig {
   identifierMax: number;
   /** Per identifier alone, higher: caps guessing spread over many IPs (ADR-0045). */
   identifierCeiling: number;
+  /** Refreshes per device in one window. No IP bucket: see checkRefresh (ADR-0054). */
+  refreshDeviceMax: number;
   windowSeconds: number;
 }
 
@@ -52,12 +54,23 @@ export class AuthLimiter {
   private readonly byIp: WindowCounter;
   private readonly byIdentifierIp: WindowCounter;
   private readonly byIdentifier: WindowCounter;
+  private readonly byRefreshDevice: WindowCounter;
 
   constructor(cfg: AuthLimiterConfig, now?: () => number) {
     const windowMs = cfg.windowSeconds * 1000;
     this.byIp = new WindowCounter(cfg.ipMax, windowMs, now);
     this.byIdentifierIp = new WindowCounter(cfg.identifierMax, windowMs, now);
     this.byIdentifier = new WindowCounter(cfg.identifierCeiling, windowMs, now);
+    this.byRefreshDevice = new WindowCounter(cfg.refreshDeviceMax, windowMs, now);
+  }
+
+  /**
+   * Limits /auth/refresh per device only (ADR-0054). The token is unguessable, so there is
+   * nothing to brute-force; an IP bucket only made everyone behind one address (office Wi-Fi,
+   * carrier NAT) share 30 refreshes. Floods stay capped by the global per-IP limit.
+   */
+  checkRefresh(deviceId: string): void {
+    if (!this.byRefreshDevice.hit(`refresh:${deviceId}`)) throw new AppError(429, 'RATE_LIMITED');
   }
 
   /** Throws 429 RATE_LIMITED when any of the three buckets is over its limit. */

@@ -103,29 +103,34 @@ let refreshing: Promise<boolean> | undefined;
 /**
  * Gets a new access token with the refresh cookie. One refresh at a time: parallel callers share
  * the same promise (the API treats a second use of a rotated token as theft).
+ *
+ * Resolves false only when the API refuses the session (401/403): that ends it. A rate limit, a
+ * server error or no network throws an ApiError and keeps the session, so the admin is not
+ * signed out by a hiccup (the mobile client does the same).
  */
 export function refreshSession(): Promise<boolean> {
   refreshing ??= (async () => {
+    let res: Response;
     try {
-      const res = await fetch('/v1/auth/refresh', {
+      res = await fetch('/v1/auth/refresh', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ deviceId: deviceId(), platform: 'admin' }),
       });
-      if (!res.ok) {
-        session.clear();
-        return false;
-      }
-      session.start(tokenPairSchema.parse(await res.json()).accessToken);
-      return true;
     } catch {
-      // Offline: keep the hint, the next call may work.
       accessToken = null;
-      return false;
-    } finally {
-      refreshing = undefined;
+      throw new ApiError(0, 'NETWORK', mn.common.errorNetwork);
     }
-  })();
+    if (res.status === 401 || res.status === 403) {
+      session.clear();
+      return false;
+    }
+    if (!res.ok) throw await toApiError(res);
+    session.start(tokenPairSchema.parse(await res.json()).accessToken);
+    return true;
+  })().finally(() => {
+    refreshing = undefined;
+  });
   return refreshing;
 }
 

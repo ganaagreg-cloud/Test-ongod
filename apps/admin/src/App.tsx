@@ -14,6 +14,9 @@ import { PlaylistEditPage } from './pages/PlaylistEdit';
 import { PlaylistsPage } from './pages/Playlists';
 import { SeriesEditPage } from './pages/SeriesEdit';
 import { SeriesPage } from './pages/Series';
+import { CommentsPage } from './pages/Comments';
+import { GiftsPage } from './pages/Gifts';
+import { PlansPage } from './pages/Plans';
 import { TagsPage } from './pages/Tags';
 import { UserDetailPage } from './pages/UserDetail';
 import { UsersPage } from './pages/Users';
@@ -53,6 +56,8 @@ export function App() {
           <Route element={<Shell />}>
             <Route index element={<DashboardPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="plans" element={<PlansPage />} />
+            <Route path="gifts" element={<GiftsPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
             <Route path="episodes" element={<EpisodesPage />} />
@@ -65,6 +70,7 @@ export function App() {
             <Route path="playlists/:id" element={<PlaylistEditPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="tags" element={<TagsPage />} />
+            <Route path="comments" element={<CommentsPage />} />
             <Route path="audit" element={<AuditPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

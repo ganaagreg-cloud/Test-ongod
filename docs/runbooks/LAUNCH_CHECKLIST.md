@@ -19,6 +19,7 @@ From [[SPEC#Acceptance tests (must pass before launch)]]. Tick each item with th
 - [ ] Expired access stops playback
 - [ ] A backup was restored once on a clean server ([[DEPLOY]])
 - [ ] Store review: the demo account works, no payment UI in the apps ([[STORE]])
+- [ ] **Comments (SPEC L):** `SUPPORT_EMAIL` is set in production (comments are shown without it, so this is a manual gate before any store submission, [[ADR-0062-comments-without-contact-gate|ADR-0062]]), `COMMENT_BANNED_WORDS` is filled by the owner, the Google Play user-content rules are read and [[R-store-ugc-rules]] is VERIFIED, and the owner knows to check Сэтгэгдэл ▸ Гомдолтой every few days ([[ADR-0061-episode-comments|ADR-0061]])
 
 ## Before go-live
 

@@ -6,6 +6,7 @@ import {
   changePasswordRequestSchema,
   devicesResponseSchema,
   meResponseSchema,
+  pushTokenRequestSchema,
   removeDeviceRequestSchema,
   updateProfileRequestSchema,
 } from '@ongod/shared';
@@ -73,6 +74,14 @@ export async function meRoutes(
     const body = removeDeviceRequestSchema.parse(req.body);
     limiter.check(req, 'password', user.id);
     await auth.removeDevice(user, id, body.password);
+    return reply.code(204).send();
+  });
+
+  // The app's push token for this device, or null to stop push here (ADR-0055).
+  app.put('/me/push-token', async (req, reply) => {
+    const { user, session } = authOf(req);
+    const { token } = pushTokenRequestSchema.parse(req.body);
+    await auth.setPushToken(user.id, session.deviceId, token);
     return reply.code(204).send();
   });
 

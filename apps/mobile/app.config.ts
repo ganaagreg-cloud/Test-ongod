@@ -4,11 +4,17 @@
 //   GOOGLE_IOS_URL_SCHEME  reversed iOS client id, needed by the Google sign-in plugin
 //   SENTRY_ORG, SENTRY_PROJECT  turn on source-map upload during builds (needs SENTRY_AUTH_TOKEN
 //                               as an EAS secret); without them the Sentry plugin is left out
+//   EAS_PROJECT_ID          the EAS project; push tokens need it (ADR-0055). Without it the app
+//                           skips push registration
+//   GOOGLE_SERVICES_FILE    path to google-services.json (an EAS file variable): Android push
+//                           goes through Firebase Cloud Messaging (R-expo-notifications-sdk57)
 // Runtime settings are EXPO_PUBLIC_* (see .env.example); the app reads them in src/config/env.ts.
 
 const googleIosScheme = process.env.GOOGLE_IOS_URL_SCHEME;
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
+const easProjectId = process.env.EAS_PROJECT_ID;
+const googleServicesFile = process.env.GOOGLE_SERVICES_FILE;
 
 const plugins: NonNullable<ExpoConfig['plugins']> = [
   'expo-router',
@@ -26,6 +32,10 @@ const plugins: NonNullable<ExpoConfig['plugins']> = [
   // Portrait from the first frame on iOS; src/video/orientation.ts keeps it portrait at runtime
   // and turns a fullscreen video to landscape.
   ['expo-screen-orientation', { initialOrientation: 'PORTRAIT_UP' }],
+  // Push (ADR-0055): the Android channel the app creates before it asks. iOS gets the
+  // aps-environment entitlement in the plugin's default mode "development"; what a store build
+  // needs is TO-VERIFY (R-expo-notifications-sdk57).
+  ['expo-notifications', { defaultChannel: 'default' }],
 ];
 if (googleIosScheme) {
   plugins.push(['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosScheme }]);
@@ -64,7 +74,9 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'mn.ongod.app',
+    ...(googleServicesFile ? { googleServicesFile } : {}),
   },
+  ...(easProjectId ? { extra: { eas: { projectId: easProjectId } } } : {}),
   plugins,
   experiments: {
     typedRoutes: true,

@@ -56,6 +56,7 @@ describe('GET /v1/app-config', () => {
     expect(res.json()).toEqual({
       minVersion: { ios: '1.2.0', android: '1.1.0' },
       socialLogin: false,
+      supportEmail: null,
     });
   });
 
@@ -144,6 +145,25 @@ describe('static hosting', () => {
     expect((await app.inject({ url: '/plans/yearly', headers: html })).body).toContain('portal');
     expect((await app.inject({ url: '/admin/', headers: html })).body).toContain('admin');
     expect((await app.inject({ url: '/admin/users/42', headers: html })).body).toContain('admin');
+  });
+
+  it('counts only API requests toward the global rate limit (ADR-0057)', async () => {
+    const app = await buildApp({
+      env: testEnv({ SERVE_STATIC: 'true', RATE_LIMIT_MAX: '2' }),
+      db: testDb,
+      staticDirs: fakeBuilds(),
+    });
+    // A page load fetches many files: none of them count.
+    for (let i = 0; i < 5; i++) {
+      expect((await app.inject({ url: '/assets/app-abc123.js' })).statusCode).toBe(200);
+      expect((await app.inject({ url: '/admin/', headers: html })).statusCode).toBe(200);
+      expect((await app.inject({ url: '/account', headers: html })).statusCode).toBe(200);
+    }
+    // The API still has its full limit, then 429.
+    for (let i = 0; i < 2; i++) {
+      expect((await app.inject({ url: '/v1/app-config' })).statusCode).toBe(200);
+    }
+    expect((await app.inject({ url: '/v1/app-config' })).statusCode).toBe(429);
   });
 
   it('caches hashed assets forever and HTML never', async () => {

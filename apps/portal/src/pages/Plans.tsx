@@ -70,7 +70,7 @@ export default function Plans() {
 
       <div className="portal-plans" aria-busy={plans.loading}>
         {plans.loading && !plans.data ? (
-          <div className="portal-plan">
+          <div className="portal-card">
             <Skeleton width="50%" />
             <Skeleton width="35%" />
             <Skeleton shape="pill" width="100%" />
@@ -96,6 +96,11 @@ export default function Plans() {
         ))}
         {plans.data && plans.data.plans.length === 0 ? <p>{mn.plans.empty}</p> : null}
       </div>
+      {status === 'authenticated' ? (
+        <p>
+          <Link to="/gift">{mn.gift.giveLink}</Link>
+        </p>
+      ) : null}
     </div>
   );
 }

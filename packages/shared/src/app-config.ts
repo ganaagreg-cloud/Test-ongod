@@ -10,6 +10,8 @@ export const semverSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 export const appConfigResponseSchema = z.object({
   minVersion: z.object({ ios: semverSchema, android: semverSchema }),
   socialLogin: z.boolean(),
+  /** Published contact for the stores' user-content rules (SPEC L). Null = no contact line under the comments (a store build needs one, ADR-0062). */
+  supportEmail: z.string().nullable(),
 });
 
 export type AppConfigResponse = z.infer<typeof appConfigResponseSchema>;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { giftStatusSchema } from './gifts';
 import { subscriptionSchema, subscriptionStatusSchema } from './subscriptions';
 
 // /v1/admin/* (SPEC E). Roles ADMIN and OWNER, password login only (ADR-0040).
@@ -75,6 +76,41 @@ export const grantRequestSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
+// ---- Plans (SPEC K, ADR-0059) ----
+
+export const PLAN_PRICE_MIN_MNT = 100;
+export const PLAN_PRICE_MAX_MNT = 100_000_000;
+
+export const adminPlanSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  durationDays: z.number().int().positive(),
+  priceMnt: z.number().int().nonnegative(),
+  active: z.boolean(),
+  /** Every subscription on the plan, open or closed. The days are fixed once this is above 0. */
+  subscriptionCount: z.number().int().nonnegative(),
+});
+export type AdminPlanDto = z.infer<typeof adminPlanSchema>;
+export const adminPlansResponseSchema = z.object({ plans: z.array(adminPlanSchema) });
+export const adminPlanResponseSchema = z.object({ plan: adminPlanSchema });
+
+const planFields = {
+  name: z.string().trim().min(2).max(60),
+  durationDays: z.number().int().min(1).max(3660),
+  priceMnt: z.number().int().min(PLAN_PRICE_MIN_MNT).max(PLAN_PRICE_MAX_MNT),
+  active: z.boolean(),
+};
+export const createPlanRequestSchema = z.object({
+  ...planFields,
+  active: planFields.active.default(true),
+});
+export type CreatePlanRequest = z.input<typeof createPlanRequestSchema>;
+export const updatePlanRequestSchema = z
+  .object(planFields)
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to change' });
+export type UpdatePlanRequest = z.infer<typeof updatePlanRequestSchema>;
+
 // ---- Users ----
 
 export const listUsersQuerySchema = z.object({ q: searchQuery, ...pageQuery });
@@ -122,6 +158,14 @@ export const adminUserDetailResponseSchema = z.object({
 
 // ---- Dashboard, audit, export ----
 
+const dashboardMemberSchema = z.object({
+  id: idSchema,
+  username: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+});
+
+/** GET /v1/admin/dashboard (ADR-0056). Months are Ulaanbaatar calendar months. */
 export const dashboardResponseSchema = z.object({
   /** Users whose access has not ended. */
   activeUsers: z.number().int(),
@@ -130,7 +174,40 @@ export const dashboardResponseSchema = z.object({
   expiringIn30Days: z.number().int(),
   /** Registered in the last 7 days. */
   newUsersThisWeek: z.number().int(),
+  /** COMPLETED payments that carry money (no manual grants, no refunds). */
+  revenue: z.object({
+    thisMonthMnt: z.number().int(),
+    lastMonthMnt: z.number().int(),
+    paymentsThisMonth: z.number().int(),
+  }),
+  recentPayments: z.array(
+    z.object({
+      id: idSchema,
+      subscriptionId: idSchema,
+      referenceCode: z.string(),
+      amountMnt: z.number().int(),
+      method: z.enum(['QPAY', 'BANK_TRANSFER']),
+      createdAt: z.iso.datetime(),
+      user: dashboardMemberSchema,
+    }),
+  ),
+  upcoming: z.array(z.object({ id: idSchema, title: z.string(), scheduledFor: z.iso.datetime() })),
+  mediaProblems: z.object({
+    failed: z.number().int(),
+    stuck: z.number().int(),
+    items: z.array(
+      z.object({
+        episodeId: idSchema,
+        title: z.string(),
+        status: z.enum(['FAILED', 'UPLOADING']),
+        failReason: z.string().nullable(),
+        updatedAt: z.iso.datetime(),
+      }),
+    ),
+  }),
+  expiringSoon: z.array(dashboardMemberSchema.extend({ accessUntil: z.iso.datetime() })),
 });
+export type DashboardDto = z.infer<typeof dashboardResponseSchema>;
 
 export const listAuditQuerySchema = z.object({
   actorId: z.preprocess(emptyToUndefined, idSchema.optional()),
@@ -150,3 +227,42 @@ export const exportPaymentsQuerySchema = z.object({
   from: z.preprocess(emptyToUndefined, z.iso.date().optional()),
   to: z.preprocess(emptyToUndefined, z.iso.date().optional()),
 });
+
+// ---- Gifts (SPEC J, ADR-0060) ----
+
+export const adminGiftSchema = z.object({
+  id: z.string(),
+  status: giftStatusSchema,
+  plan: z.object({ id: z.string(), name: z.string() }),
+  amountMnt: z.number().int().nonnegative(),
+  durationDays: z.number().int().positive(),
+  code: z.string().nullable(),
+  buyer: adminUserSummarySchema,
+  redeemedBy: adminUserSummarySchema.nullable(),
+  paidAt: z.iso.datetime().nullable(),
+  expiresAt: z.iso.datetime().nullable(),
+  redeemedAt: z.iso.datetime().nullable(),
+  voidReason: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type AdminGiftDto = z.infer<typeof adminGiftSchema>;
+export const adminGiftResponseSchema = z.object({ gift: adminGiftSchema });
+
+export const listGiftsQuerySchema = z.object({
+  /** Default: PAID, the gifts waiting to be redeemed. */
+  status: giftStatusSchema.default('PAID'),
+  /** Code, buyer or recipient: username, email, phone or name. */
+  q: searchQuery,
+  ...pageQuery,
+});
+export type ListGiftsQuery = z.infer<typeof listGiftsQuerySchema>;
+export const adminGiftsPageSchema = z.object({
+  items: z.array(adminGiftSchema),
+  total: z.number().int(),
+  /** The money behind the PAID gifts that nobody has redeemed yet. */
+  unredeemedMnt: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+});
+
+export const voidGiftRequestSchema = z.object({ reason: reasonSchema });

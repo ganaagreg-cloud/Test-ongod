@@ -34,6 +34,11 @@
   font-size: var(--text-small-size);
 }
 
+/* A textarea needs room above the first line; the 0 vertical padding is for one-line controls. */
+.admin-shell .ui-field__input--multiline {
+  padding: var(--space-xs) var(--space-sm);
+}
+
 /* One badge look for the whole admin: a colored dot, bigger text, and a visible gray draft. */
 .admin-shell .ui-badge {
   gap: var(--space-xs);
@@ -245,11 +250,6 @@
   gap: var(--space-sm);
 }
 
-/* The base CSS resets the font of buttons and inputs only; a <select> would keep the browser's. */
-select.ui-field__input {
-  font: inherit;
-}
-
 .admin-code {
   white-space: nowrap;
   padding: 0 var(--space-xxs);
@@ -279,7 +279,8 @@ select.ui-field__input {
 
 .admin-counter {
   display: flex;
-  flex: 1 1 calc(var(--layout-overlay-max-width) / 3);
+  /* Five counters still fit in one row on a 1024 px screen (ADR-0056). */
+  flex: 1 1 calc(var(--layout-overlay-max-width) / 4);
   flex-direction: column;
   gap: var(--space-xxs);
   padding: var(--space-md) var(--space-lg);
@@ -304,7 +305,9 @@ select.ui-field__input {
 
 /* ---------- Table ---------- */
 .admin-table-wrap {
-  overflow-x: clip; /* not auto: a scroll container would stop the header from sticking */
+  /* auto, not clip: a clipped column hid data (Users at 1440 px). The header then sticks inside
+     the table only. */
+  overflow-x: auto;
   border: var(--layout-border-width) solid var(--color-hairline);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -321,6 +324,12 @@ select.ui-field__input {
   text-align: start;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
+}
+
+/* Dense rows (ADR-0050): cells in the small size, so dates are not bigger than titles. */
+.admin-table td {
+  font-size: var(--text-small-size);
+  line-height: var(--text-small-line);
 }
 
 .admin-table th {
@@ -395,7 +404,8 @@ select.ui-field__input {
 .admin-episode-cell__text {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  /* A title column narrower than this wraps word by word (1024 px screens). */
+  min-width: var(--admin-sidebar);
 }
 
 .admin-episode-cell__title {
@@ -1653,4 +1663,116 @@ select.ui-field__input {
   color: var(--color-text-tertiary);
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ---------- Dashboard (ADR-0056) ---------- */
+.admin-counter__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-counter:has(.admin-counter__link):hover {
+  background: var(--color-surface-sunken);
+}
+
+.admin-counter__note {
+  color: var(--color-text-tertiary);
+  font: var(--text-caption-weight) var(--text-caption-size) / var(--text-caption-line)
+    var(--text-caption-font);
+}
+
+.admin-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--layout-overlay-max-width) * 0.8), 1fr));
+  gap: var(--space-md);
+}
+
+.admin-dash-card {
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.admin-dash-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.admin-dash-card__all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  margin-inline-start: auto;
+  font: var(--text-small-weight) var(--text-small-size) / var(--text-small-line)
+    var(--text-small-font);
+}
+
+.admin-dash-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash-list li + li {
+  border-block-start: var(--layout-border-width) solid var(--color-hairline);
+}
+
+.admin-dash-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-inline: calc(var(--space-sm) * -1);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-small);
+  color: inherit;
+  font: var(--text-small-weight) var(--text-small-size) / var(--text-small-line)
+    var(--text-small-font);
+  text-decoration: none;
+}
+
+.admin-dash-row:hover {
+  background: var(--color-surface-sunken);
+}
+
+.admin-dash-row__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-dash-row__main > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dash-row__side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.admin-dash-row small {
+  color: var(--color-text-secondary);
+  font: var(--text-caption-weight) var(--text-caption-size) / var(--text-caption-line)
+    var(--text-caption-font);
+}
+
+/* The comment text in the moderation list: long comments stay readable but do not fill the screen. */
+.admin-comment-body {
+  display: -webkit-box;
+  max-width: calc(var(--layout-overlay-max-width) * 1.2);
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }

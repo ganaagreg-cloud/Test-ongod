@@ -28,6 +28,7 @@ describe('access rules: every /me route needs a signed-in user', () => {
     ['POST', '/v1/me/change-email/verify'],
     ['GET', '/v1/me/devices'],
     ['DELETE', '/v1/me/devices/abc'],
+    ['PUT', '/v1/me/push-token'],
     ['DELETE', '/v1/me'],
   ] as const)('%s %s without a token is 401 in the error shape', async (method, url) => {
     const app = await authApp();
@@ -413,6 +414,65 @@ describe('SPEC H: change email (re-verify)', () => {
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe('EMAIL_TAKEN');
     expect((await testDb.user.findUniqueOrThrow({ where: { id: s.userId } })).email).toBe(EMAIL);
+  });
+});
+
+describe('ADR-0055: PUT /v1/me/push-token', () => {
+  const TOKEN = 'ExponentPushToken[abc123-push]';
+  const tokenOf = async (userId: string, deviceId: string) =>
+    (await testDb.device.findUniqueOrThrow({ where: { userId_deviceId: { userId, deviceId } } }))
+      .pushToken;
+
+  it('stores the token on the calling device only, and null clears it', async () => {
+    const app = await authApp();
+    const a = await signedIn(app);
+    await loginOn(app, EMAIL, device(2));
+    const put = await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: TOKEN });
+    expect(put.statusCode).toBe(204);
+    expect(await tokenOf(a.userId, a.deviceId)).toBe(TOKEN);
+    expect(await tokenOf(a.userId, device(2).deviceId)).toBeNull();
+
+    const off = await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: null });
+    expect(off.statusCode).toBe(204);
+    expect(await tokenOf(a.userId, a.deviceId)).toBeNull();
+  });
+
+  it('refuses anything that is not an Expo push token', async () => {
+    const app = await authApp();
+    const a = await signedIn(app);
+    for (const body of [
+      {},
+      { token: 'not-a-token' },
+      { token: 'ExponentPushToken[' },
+      { token: 5 },
+    ]) {
+      const res = await send(app, 'PUT', '/v1/me/push-token', a.accessToken, body);
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('VALIDATION_ERROR');
+    }
+    expect(await tokenOf(a.userId, a.deviceId)).toBeNull();
+  });
+
+  it('moves the token when another account signs in on the same phone', async () => {
+    const app = await authApp();
+    const a = await signedIn(app);
+    await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: TOKEN });
+    // Same phone (same device id), another account; the first one never logged out.
+    const b = await signedIn(app, { email: 'other@example.com', device: device(1) });
+    await send(app, 'PUT', '/v1/me/push-token', b.accessToken, { token: TOKEN });
+    expect(await tokenOf(b.userId, b.deviceId)).toBe(TOKEN);
+    expect(await tokenOf(a.userId, a.deviceId)).toBeNull();
+    expect(await testDb.device.count({ where: { pushToken: TOKEN } })).toBe(1);
+  });
+
+  it('logout takes the token away with the device', async () => {
+    const app = await authApp();
+    const a = await signedIn(app);
+    await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: TOKEN });
+    expect((await post(app, '/v1/auth/logout', { refreshToken: a.refreshToken })).statusCode).toBe(
+      204,
+    );
+    expect(await testDb.device.count({ where: { pushToken: TOKEN } })).toBe(0);
   });
 });
 

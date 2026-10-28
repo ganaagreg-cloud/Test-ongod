@@ -3,16 +3,18 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { EpisodeItem } from '@ongod/shared';
-import { colors, layout, motion, nativeTextStyle, spacing } from '@ongod/tokens';
+import { colors, layout, motion, nativeFontFamily, nativeTextStyle, spacing } from '@ongod/tokens';
 import { player, usePlayerState } from '../../../src/audio/player';
 import { useAuth } from '../../../src/auth/AuthContext';
+import { useAppConfig } from '../../../src/config/useAppConfig';
 import { useEpisode, useToggleSaved } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
-import { clockLabel, episodeMeta, isLocked, resumeAt } from '../../../src/lib/episode';
+import { clockLabel, episodeMeta, isLocked, playerLabel, resumeAt } from '../../../src/lib/episode';
 import { failureOf, startEpisode, type StartFailure } from '../../../src/playback/nowPlaying';
 import { nextInQueue } from '../../../src/playback/queue';
 import { NoAccessSheet } from '../../../src/screens/NoAccessSheet';
 import { openLibrary } from '../../../src/screens/navigation';
+import { CommentsSection } from '../../../src/screens/player/CommentsSection';
 import { DescriptionText } from '../../../src/screens/player/DescriptionText';
 import { NextList } from '../../../src/screens/player/NextList';
 import { PlayerControls } from '../../../src/screens/player/PlayerControls';
@@ -46,6 +48,7 @@ export default function PlayerScreen() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { user } = useAuth();
+  const { supportEmail } = useAppConfig();
   const episode = useEpisode(id);
   const state = usePlayerState();
   const toggleSaved = useToggleSaved();
@@ -148,7 +151,7 @@ export default function PlayerScreen() {
     return (
       <SurfaceProvider surface="dark">
         <View style={[styles.root, { paddingTop: insets.top + spacing.md }]}>
-          <TopBar onClose={() => router.back()} />
+          <TopBar onClose={() => router.back()} label={playerLabel(false, undefined)} />
           {episode.isError ? (
             <EmptyState
               title={mn.episode.loadError}
@@ -181,6 +184,7 @@ export default function PlayerScreen() {
         <AuroraBackground variant="player" />
         <TopBar
           onClose={() => router.back()}
+          label={playerLabel(loaded, item.category.name)}
           saved={item.saved}
           onToggleSave={() => {
             toggleSaved.mutate({ id: item.id, saved: !item.saved });
@@ -262,17 +266,13 @@ export default function PlayerScreen() {
           ) : null}
         </View>
 
-        {item.description.trim() ? (
-          <ScrollView
-            style={styles.descriptionArea}
-            contentContainerStyle={[
-              styles.description,
-              { paddingBottom: insets.bottom + spacing.md },
-            ]}
-          >
-            <DescriptionText text={item.description} />
-          </ScrollView>
-        ) : null}
+        <ScrollView
+          style={styles.descriptionArea}
+          contentContainerStyle={[styles.description, { paddingBottom: insets.bottom + spacing.md }]}
+        >
+          {item.description.trim() ? <DescriptionText text={item.description} /> : null}
+          <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
+        </ScrollView>
 
         <SleepSheet
           visible={sleepOpen}
@@ -337,13 +337,15 @@ function AutoplayCountdown({
   );
 }
 
-/** Close (chevron down) and the bookmark. */
+/** Close (chevron down), the label (playerLabel), and the bookmark. */
 function TopBar({
   onClose,
+  label,
   saved,
   onToggleSave,
 }: {
   onClose: () => void;
+  label: string;
   saved?: boolean;
   onToggleSave?: () => void;
 }) {
@@ -358,6 +360,9 @@ function TopBar({
       >
         <Icon name="chevronDown" color={colors.textPrimary} />
       </PressableScale>
+      <Text style={styles.label} numberOfLines={1}>
+        {label}
+      </Text>
       {onToggleSave ? (
         <PressableScale
           accessibilityRole="button"
@@ -402,6 +407,14 @@ const styles = StyleSheet.create({
     height: layout.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  label: {
+    flexShrink: 1,
+    textAlign: 'center',
+    color: colors.textSecondary,
+    ...nativeTextStyle('caption'),
+    fontFamily: nativeFontFamily.ui[600],
+    letterSpacing: layout.heroTracking,
   },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   time: {

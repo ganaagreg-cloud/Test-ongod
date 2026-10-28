@@ -4,7 +4,10 @@ import { MountainLine } from '@ongod/ui-web';
 import { useAuth } from '../auth/AuthContext';
 import { mn } from '../i18n/mn';
 
-/** Header (with the mountain-line motif), main landmark and footer around every page. */
+/**
+ * Header (with the mountain-line motif), main landmark and footer around every page. On the
+ * landing page the header lies over the hero (portal design A, ADR-0058).
+ */
 export function Layout() {
   const { status, user, logout } = useAuth();
   const { pathname } = useLocation();
@@ -22,7 +25,7 @@ export function Layout() {
   }, [pathname]);
 
   return (
-    <div className="portal-shell">
+    <div className={pathname === '/' ? 'portal-shell portal-shell--hero' : 'portal-shell'}>
       <a className="ui-skip-link" href="#main">
         {mn.nav.skip}
       </a>

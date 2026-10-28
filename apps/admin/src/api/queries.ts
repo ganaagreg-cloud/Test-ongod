@@ -4,6 +4,11 @@ import {
   adminCategoryResponseSchema,
   adminEpisodeResponseSchema,
   adminEpisodesPageSchema,
+  adminCommentsPageSchema,
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
   adminPlaylistDetailResponseSchema,
   adminPlaylistListResponseSchema,
   adminSeriesDetailResponseSchema,
@@ -21,6 +26,10 @@ import {
   historyResponseSchema,
   plansResponseSchema,
   type BulkAction,
+  type AdminCommentFilter,
+  type GiftStatus,
+  type CreatePlanRequest,
+  type UpdatePlanRequest,
   type CreateEpisodeRequest,
   type CreatePlaylistRequest,
   type CreateSeriesRequest,
@@ -94,6 +103,80 @@ export const plansQuery = () =>
     queryFn: ({ signal }) => api('/plans', { schema: plansResponseSchema, auth: false, signal }),
     staleTime: 5 * 60_000,
   });
+
+// ---- Comments (SPEC L, ADR-0061) ----
+
+export const commentsQuery = (filter: { filter: AdminCommentFilter; q?: string; page: number }) =>
+  queryOptions({
+    queryKey: ['comments', filter],
+    queryFn: ({ signal }) =>
+      api(`/admin/comments${qs(filter)}`, { schema: adminCommentsPageSchema, signal }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useCommentActions() {
+  const invalidate = useInvalidate();
+  const done = () => invalidate('comments', 'audit');
+  const act = useMutation({
+    mutationFn: (v: { id: string; action: 'hide' | 'restore' | 'dismiss' | 'delete' }) =>
+      api(`/admin/comments/${v.id}/${v.action}`, { method: 'POST' }),
+    onSuccess: done,
+  });
+  const mute = useMutation({
+    mutationFn: (v: { userId: string; muted: boolean }) =>
+      api(`/admin/users/${v.userId}/comment-mute`, { method: v.muted ? 'POST' : 'DELETE' }),
+    onSuccess: done,
+  });
+  return { act, mute };
+}
+
+// ---- Gifts (SPEC J, ADR-0060) ----
+
+export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: number }) =>
+  queryOptions({
+    queryKey: ['gifts', filter],
+    queryFn: ({ signal }) =>
+      api(`/admin/gifts${qs(filter)}`, { schema: adminGiftsPageSchema, signal }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useVoidGift() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (v: { id: string; reason: string }) =>
+      api(`/admin/gifts/${v.id}/void`, {
+        method: 'POST',
+        body: { reason: v.reason },
+        schema: adminGiftResponseSchema,
+      }),
+    onSuccess: () => invalidate('gifts', 'audit'),
+  });
+}
+
+// ---- Plans (SPEC K, ADR-0059) ----
+
+export const adminPlansQuery = () =>
+  queryOptions({
+    queryKey: ['admin-plans'],
+    queryFn: ({ signal }) => api('/admin/plans', { schema: adminPlansResponseSchema, signal }),
+  });
+
+export function usePlanActions() {
+  const invalidate = useInvalidate();
+  // 'plans' is the public list the grant dialog uses.
+  const done = () => invalidate('admin-plans', 'plans');
+  const create = useMutation({
+    mutationFn: (v: CreatePlanRequest) =>
+      api('/admin/plans', { method: 'POST', body: v, schema: adminPlanResponseSchema }),
+    onSuccess: done,
+  });
+  const update = useMutation({
+    mutationFn: ({ id, ...body }: UpdatePlanRequest & { id: string }) =>
+      api(`/admin/plans/${id}`, { method: 'PATCH', body, schema: adminPlanResponseSchema }),
+    onSuccess: done,
+  });
+  return { create, update };
+}
 
 export const auditQuery = (filter: { action?: string; targetType?: string; page: number }) =>
   queryOptions({

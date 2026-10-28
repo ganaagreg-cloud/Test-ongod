@@ -10,6 +10,10 @@ import { createBulkService } from './admin/bulk';
 import { createContentService } from './admin/content';
 import { createPlaylistService } from './admin/playlists';
 import { createSeriesService } from './admin/series';
+import { createPlanService } from './admin/plans';
+import { createCommentService } from './comments/service';
+import { createGiftService } from './gifts/service';
+import { commentRoutes } from './routes/comments';
 import { createTagService } from './admin/tags';
 import { createAdminQueries } from './admin/queries';
 import { createAuthGuard } from './auth/guard';
@@ -23,6 +27,8 @@ import { createCatalogService } from './catalog/service';
 import {
   cleanupAbandonedUploads,
   cronTasks,
+  expireGifts,
+  syncWaitingGifts,
   syncWaitingPayments,
   type CronTask,
 } from './cron/tasks';
@@ -48,7 +54,7 @@ import { socialRoutes } from './routes/social';
 import { subscriptionRoutes } from './routes/subscriptions';
 import { webhookRoutes } from './routes/webhooks';
 import { appConfigRoutes, healthRoutes } from './routes/system';
-import { defaultStaticDirs, registerStatic } from './static';
+import { defaultStaticDirs, isApiPath, registerStatic } from './static';
 
 export interface AppDeps {
   env: Env;
@@ -120,6 +126,9 @@ export async function buildApp(deps: AppDeps) {
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
+    // Only the API counts (ADR-0057): the portal and admin files are cheap and cached, and one
+    // page load fetches several of them, which used up the limit and broke the session renewal.
+    allowList: (req) => !isApiPath(req.url),
   });
 
   app.setErrorHandler<FastifyError>((err, req, reply) =>
@@ -145,6 +154,7 @@ export async function buildApp(deps: AppDeps) {
         ipMax: env.AUTH_RATE_LIMIT_IP_MAX,
         identifierMax: env.AUTH_RATE_LIMIT_IDENTIFIER_MAX,
         identifierCeiling: env.AUTH_RATE_LIMIT_IDENTIFIER_CEILING,
+        refreshDeviceMax: env.AUTH_REFRESH_DEVICE_MAX,
         windowSeconds: env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
       });
       await v1.register(authRoutes, { auth, limiter, webSession: createWebSession(env) });
@@ -172,9 +182,16 @@ export async function buildApp(deps: AppDeps) {
         log: app.log,
         now: deps.now,
       });
+      const gifts = createGiftService({ db, payments, now: deps.now });
+      const comments = createCommentService({
+        db,
+        bannedWords: env.COMMENT_BANNED_WORDS,
+        now: deps.now,
+      });
       await v1.register(subscriptionRoutes, {
         subscriptions: createSubscriptionService({ db, payments, now: deps.now }),
         payments,
+        gifts,
         requireAuth,
       });
       await v1.register(webhookRoutes, { payments });
@@ -182,7 +199,11 @@ export async function buildApp(deps: AppDeps) {
         guards: createAdminGuards(requireAuth),
         decisions: createDecisionService({ db, now: deps.now }),
         queries: createAdminQueries({ db, now: deps.now }),
+        plans: createPlanService({ db }),
+        gifts,
+        comments,
       });
+      await v1.register(commentRoutes, { comments, requireAuth });
       const contentService = createContentService({
         db,
         media: mediaUrls,
@@ -214,14 +235,20 @@ export async function buildApp(deps: AppDeps) {
         }),
         tus,
       });
-      await v1.register(appConfigRoutes, { db, socialLogin: env.SOCIAL_LOGIN });
+      await v1.register(appConfigRoutes, {
+        db,
+        socialLogin: env.SOCIAL_LOGIN,
+        supportEmail: env.SUPPORT_EMAIL ?? null,
+      });
       await v1.register(cronRoutes, {
         db,
         secret: env.CRON_SECRET,
         tasks: deps.cronTasks ?? [
           // First, so a request about to expire is synced before expirePendingPayments runs.
           syncWaitingPayments(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
+          syncWaitingGifts(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
           ...cronTasks,
+          expireGifts,
           cleanupAbandonedUploads(() => tus.cleanUpExpired()),
         ],
         worker: deps.worker,

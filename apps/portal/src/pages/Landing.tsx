@@ -1,98 +1,182 @@
 import { Link } from 'react-router';
-import { Button, EpisodeCard, MountainLine, Notice, Skeleton } from '@ongod/ui-web';
+import { Button, MountainLine, Notice, Skeleton } from '@ongod/ui-web';
+import { formatDurationMn } from '@ongod/shared';
 import { getPlans } from '../api/endpoints';
 import { PlanCard } from '../components/PlanCard';
+import { StoreBadges } from '../components/StoreBadges';
+import { TypeCover } from '../components/TypeCover';
 import { useAuth } from '../auth/AuthContext';
 import { mn } from '../i18n/mn';
-import { sampleCover } from '../lib/sampleCover';
+import { formatMnt } from '../lib/format';
 import { useAsync } from '../lib/useAsync';
 import { usePage } from '../lib/usePage';
-import { formatDurationMn } from '@ongod/shared';
 
-const SAMPLE_MINUTES = [41, 26, 58];
+// Portal design A "Aurora" (ADR-0058): forest hero with tilted typographic covers, facts, a
+// sample of the library, three steps, the plans, the app badges and questions.
+
+/** Section heading: a small label over the serif title. */
+function Heading({ id, kicker, title }: { id: string; kicker: string; title: string }) {
+  return (
+    <header className="portal-head">
+      <p className="portal-kicker">{kicker}</p>
+      <h2 id={id} className="portal-head__title">
+        {title}
+      </h2>
+    </header>
+  );
+}
 
 export default function Landing() {
   usePage({ title: mn.landing.metaTitle, description: mn.landing.metaDescription });
   const { status } = useAuth();
   const plans = useAsync(() => getPlans());
-  const plan = plans.data?.plans[0];
+  const list = plans.data?.plans ?? [];
+  const cheapest = list.reduce<(typeof list)[number] | undefined>(
+    (min, p) => (!min || p.priceMnt < min.priceMnt ? p : min),
+    undefined,
+  );
+  const signedIn = status === 'authenticated';
+  const cta = signedIn ? '/plans' : '/register';
 
   return (
-    <div className="portal-page portal-landing">
+    <div className="portal-landing">
       <section className="portal-hero" aria-labelledby="hero-title">
-        <MountainLine className="portal-hero__motif" />
-        <h1 id="hero-title" className="portal-hero__title">
-          {mn.landing.title}
-        </h1>
-        <p className="portal-hero__lead">{mn.landing.lead}</p>
-        <div className="portal-hero__actions">
-          {status === 'authenticated' ? (
-            <Link to="/plans" className="portal-linkbutton">
-              {mn.nav.plans}
+        <div className="portal-hero__covers" aria-hidden="true">
+          {mn.landing.heroCovers.map((title, i) => (
+            <TypeCover key={title} index={i * 2 + Math.floor(i / 6)} className="portal-hero__cover">
+              <span className="portal-typecover__number">
+                {mn.landing.episodeNumber(((i * 17) % 52) + 1)}
+              </span>
+              <span className="portal-typecover__title">{title}</span>
+            </TypeCover>
+          ))}
+        </div>
+        <div className="portal-hero__inner">
+          <MountainLine className="portal-hero__motif" />
+          <p className="portal-kicker">{mn.landing.kicker}</p>
+          <h1 id="hero-title" className="portal-hero__title">
+            {mn.landing.title}
+          </h1>
+          <p className="portal-hero__lead">{mn.landing.lead}</p>
+          <div className="portal-hero__actions">
+            <Link to={cta} className="portal-linkbutton">
+              {signedIn ? mn.nav.plans : mn.landing.planCta}
             </Link>
-          ) : (
-            <>
-              <Link to="/register" className="portal-linkbutton">
-                {mn.landing.planCta}
-              </Link>
-              <Link to="/login" className="portal-linkbutton portal-linkbutton--secondary">
-                {mn.nav.login}
-              </Link>
-            </>
-          )}
-        </div>
-      </section>
-
-      <section aria-labelledby="samples-title" className="portal-section">
-        <h2 id="samples-title">{mn.landing.samplesTitle}</h2>
-        <div className="portal-samples">
-          {mn.landing.samples.map((title, index) => (
-            <EpisodeCard
-              key={title}
-              title={title}
-              durationLabel={formatDurationMn((SAMPLE_MINUTES[index] ?? 30) * 60)}
-              coverUrl={sampleCover(index * 12)}
-            />
-          ))}
-        </div>
-        <p className="portal-muted">{mn.landing.samplesNote}</p>
-      </section>
-
-      <section aria-labelledby="how-title" className="portal-section">
-        <h2 id="how-title">{mn.landing.howTitle}</h2>
-        <ol className="portal-steps">
-          {mn.landing.how.map((text) => (
-            <li key={text}>{text}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section aria-labelledby="plan-title" className="portal-section">
-        <h2 id="plan-title">{mn.landing.planTitle}</h2>
-        {plans.loading && !plan ? (
-          <div className="portal-plan" aria-busy="true" aria-label={mn.common.loading}>
-            <Skeleton width="50%" />
-            <Skeleton width="35%" />
-            <Skeleton shape="pill" width="100%" />
+            <a href="#library" className="portal-linkbutton portal-linkbutton--secondary">
+              {mn.landing.browse}
+            </a>
           </div>
-        ) : plan ? (
-          <PlanCard plan={plan}>
-            <Link
-              to={status === 'authenticated' ? '/plans' : '/register'}
-              className="portal-linkbutton portal-linkbutton--full"
-            >
-              {status === 'authenticated' ? mn.nav.plans : mn.landing.planCta}
-            </Link>
-          </PlanCard>
-        ) : (
-          <Notice tone="warning">
-            {mn.landing.plansUnavailable}{' '}
-            <Button variant="ghost" onClick={plans.reload}>
-              {mn.common.retry}
-            </Button>
-          </Notice>
-        )}
-        <p className="portal-muted">{mn.landing.payNote}</p>
+          {cheapest ? (
+            <p className="portal-hero__price">
+              {mn.landing.priceLine(cheapest.name, formatMnt(cheapest.priceMnt))}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <div className="portal-wrap">
+        <dl className="portal-facts-strip" aria-label={mn.landing.factsLabel}>
+          {mn.landing.facts.map((f) => (
+            <div key={f.value}>
+              <dt>{f.value}</dt>
+              <dd>{f.text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <section id="library" className="portal-band" aria-labelledby="samples-title">
+        <div className="portal-wrap">
+          <Heading
+            id="samples-title"
+            kicker={mn.landing.samplesKicker}
+            title={mn.landing.samplesTitle}
+          />
+          <ul className="portal-episodes">
+            {mn.landing.samples.map((s, i) => (
+              <li key={s.title} className="portal-episode">
+                <TypeCover index={[2, 1, 0, 4][i] ?? i}>
+                  <span className="portal-typecover__number">
+                    {mn.landing.episodeNumber(52 - i)}
+                  </span>
+                  <span className="portal-episode__duration">
+                    {formatDurationMn(s.minutes * 60)}
+                  </span>
+                </TypeCover>
+                <h3 className="portal-episode__title">{s.title}</h3>
+                <p className="portal-muted">{s.meta}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="portal-muted">{mn.landing.samplesNote}</p>
+        </div>
+      </section>
+
+      <section className="portal-band portal-band--sunken" aria-labelledby="how-title">
+        <div className="portal-wrap">
+          <Heading id="how-title" kicker={mn.landing.howKicker} title={mn.landing.howTitle} />
+          <ol className="portal-steps">
+            {mn.landing.how.map((step) => (
+              <li key={step.title}>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section id="plans" className="portal-band" aria-labelledby="plan-title">
+        <div className="portal-wrap">
+          <Heading id="plan-title" kicker={mn.landing.planKicker} title={mn.landing.planTitle} />
+          {plans.loading && !plans.data ? (
+            <div className="portal-card" aria-busy="true" aria-label={mn.common.loading}>
+              <Skeleton width="50%" />
+              <Skeleton width="35%" />
+              <Skeleton shape="pill" width="100%" />
+            </div>
+          ) : list.length > 0 ? (
+            <div className="portal-plans">
+              {list.map((plan) => (
+                <PlanCard key={plan.id} plan={plan}>
+                  <Link to={cta} className="portal-linkbutton portal-linkbutton--full">
+                    {signedIn ? mn.nav.plans : mn.landing.planCta}
+                  </Link>
+                </PlanCard>
+              ))}
+            </div>
+          ) : (
+            <Notice tone="warning">
+              {mn.landing.plansUnavailable}{' '}
+              <Button variant="ghost" onClick={plans.reload}>
+                {mn.common.retry}
+              </Button>
+            </Notice>
+          )}
+          <p className="portal-muted">{mn.landing.payNote}</p>
+          <p>
+            <Link to={signedIn ? '/gift' : '/register'}>{mn.gift.giveLink}</Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="portal-band portal-band--tight" aria-labelledby="apps-title">
+        <div className="portal-wrap">
+          <Heading id="apps-title" kicker={mn.landing.appsKicker} title={mn.landing.appsTitle} />
+          <StoreBadges />
+        </div>
+      </section>
+
+      <section className="portal-band portal-band--sunken" aria-labelledby="faq-title">
+        <div className="portal-wrap portal-faq">
+          <Heading id="faq-title" kicker={mn.landing.faqKicker} title={mn.landing.faqTitle} />
+          {mn.landing.faq.map((item, i) => (
+            <details key={item.q} open={i === 0}>
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
+        </div>
       </section>
     </div>
   );

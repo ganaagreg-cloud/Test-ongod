@@ -159,6 +159,8 @@ export const playlistItemParamsSchema = z.object({ id: idSchema, episodeId: idSc
 export const episodeStatusSchema = z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED', 'ARCHIVED']);
 export type EpisodeStatus = z.infer<typeof episodeStatusSchema>;
 export const mediaStatusSchema = z.enum(['UPLOADING', 'PROCESSING', 'READY', 'FAILED']);
+/** An upload whose row has not changed for this long is treated as stuck (admin list, dashboard). */
+export const STUCK_UPLOAD_MS = 15 * 60_000;
 
 /** One media file per episode, audio or video (ADR-0038). */
 export const mediaKindSchema = z.enum(['AUDIO', 'VIDEO']);

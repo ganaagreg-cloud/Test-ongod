@@ -2,6 +2,29 @@
 // packages/shared. The routes themselves validate with zod inside the handler, so nothing
 // here changes how the API behaves; a test fails when a route has no entry.
 import {
+  adminCommentsPageSchema,
+  blockedUsersResponseSchema,
+  commentResponseSchema,
+  commentsPageSchema,
+  createCommentRequestSchema,
+  listAdminCommentsQuerySchema,
+  listCommentsQuerySchema,
+  muteUserResponseSchema,
+  reportCommentRequestSchema,
+  updateCommentRequestSchema,
+  adminGiftResponseSchema,
+  adminGiftsPageSchema,
+  createGiftRequestSchema,
+  giftResponseSchema,
+  giftsResponseSchema,
+  listGiftsQuerySchema,
+  redeemGiftRequestSchema,
+  redeemGiftResponseSchema,
+  voidGiftRequestSchema,
+  adminPlanResponseSchema,
+  adminPlansResponseSchema,
+  createPlanRequestSchema,
+  updatePlanRequestSchema,
   adminCategoriesResponseSchema,
   adminCategoryResponseSchema,
   adminPlaylistDetailResponseSchema,
@@ -81,6 +104,7 @@ import {
   refreshRequestSchema,
   registerRequestSchema,
   registerResponseSchema,
+  pushTokenRequestSchema,
   removeDeviceRequestSchema,
   resendCodeRequestSchema,
   resetPasswordRequestSchema,
@@ -277,6 +301,10 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     body: removeDeviceRequestSchema,
     responses: { 204: noContent },
   }),
+  'PUT /v1/me/push-token': user('me', "This device's push token, or null to stop push (ADR-0055)", {
+    body: pushTokenRequestSchema,
+    responses: { 204: noContent },
+  }),
   'DELETE /v1/me': user('me', 'H. Delete the account (soft delete, anonymises personal data)', {
     responses: { 204: noContent },
   }),
@@ -370,6 +398,51 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
       responses: { 200: z.object({ subscription: subscriptionSchema }) },
     },
   ),
+  'GET /v1/episodes/:id/comments': user('app', 'L. Comments of an episode, newest first, cursor', {
+    query: listCommentsQuerySchema,
+    responses: { 200: commentsPageSchema },
+  }),
+  'POST /v1/episodes/:id/comments': user('app', 'L. Post a comment (access or a free episode)', {
+    body: createCommentRequestSchema,
+    responses: { 201: commentResponseSchema },
+  }),
+  'PATCH /v1/comments/:id': user('app', 'L. Edit your own comment', {
+    body: updateCommentRequestSchema,
+    responses: { 200: commentResponseSchema },
+  }),
+  'DELETE /v1/comments/:id': user('app', 'L. Delete your own comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/comments/:id/report': user('app', 'L. Report a comment (3 reports hide it)', {
+    body: reportCommentRequestSchema,
+    responses: { 204: noContent },
+  }),
+  'POST /v1/comments/:id/block': user('app', 'L. Block the author of a comment', {
+    responses: { 204: noContent },
+  }),
+  'GET /v1/me/blocks': user('app', 'L. Users I blocked', {
+    responses: { 200: blockedUsersResponseSchema },
+  }),
+  'DELETE /v1/me/blocks/:userId': user('app', 'L. Unblock a user', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/gifts': user('portal', 'J. Buy a gift: an unpaid gift with its QPay checkout', {
+    body: createGiftRequestSchema,
+    responses: { 201: giftResponseSchema },
+  }),
+  'GET /v1/gifts': user('portal', 'J. My gifts, newest first; the code shows while PAID', {
+    responses: { 200: giftsResponseSchema },
+  }),
+  'POST /v1/gifts/redeem': user(
+    'portal',
+    'J. Redeem a gift code: access starts at once; one code works once',
+    { body: redeemGiftRequestSchema, responses: { 200: redeemGiftResponseSchema } },
+  ),
+  'POST /v1/gifts/:id/mock': user(
+    'portal',
+    'J. Development only: the mock checkout for a gift; 404 in production',
+    { body: mockPaymentRequestSchema, responses: { 204: noContent } },
+  ),
   'POST /v1/webhooks/wire': {
     tag: 'portal',
     summary: 'Wire tells us a QPay payment changed (signed; no login)',
@@ -411,6 +484,53 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     body: grantRequestSchema,
     responses: { 201: adminSubscriptionResponseSchema },
   }),
+  'GET /v1/admin/comments': admin('L. Comments by filter (reported first), with search', {
+    query: listAdminCommentsQuerySchema,
+    responses: { 200: adminCommentsPageSchema },
+  }),
+  'POST /v1/admin/comments/:id/hide': admin('L. Hide a visible comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/comments/:id/restore': admin(
+    'L. Show a hidden comment again (clears its reports)',
+    {
+      responses: { 204: noContent },
+    },
+  ),
+  'POST /v1/admin/comments/:id/dismiss': admin('L. Dismiss the reports on a visible comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/comments/:id/delete': admin('L. Delete a comment', {
+    responses: { 204: noContent },
+  }),
+  'POST /v1/admin/users/:id/comment-mute': admin('L. Stop a user from posting comments', {
+    responses: { 200: muteUserResponseSchema },
+  }),
+  'DELETE /v1/admin/users/:id/comment-mute': admin('L. Let a muted user post comments again', {
+    responses: { 200: muteUserResponseSchema },
+  }),
+  'GET /v1/admin/gifts': admin('J. Gifts with status filter and the unredeemed amount', {
+    query: listGiftsQuerySchema,
+    responses: { 200: adminGiftsPageSchema },
+  }),
+  'POST /v1/admin/gifts/:id/void': admin(
+    'J. Void a paid, unredeemed gift (refund outside the app)',
+    {
+      body: voidGiftRequestSchema,
+      responses: { 200: adminGiftResponseSchema },
+    },
+  ),
+  'GET /v1/admin/plans': admin('K. Every plan, active first, with subscription counts', {
+    responses: { 200: adminPlansResponseSchema },
+  }),
+  'POST /v1/admin/plans': admin('K. Add a plan (name, days, price, active)', {
+    body: createPlanRequestSchema,
+    responses: { 201: adminPlanResponseSchema },
+  }),
+  'PATCH /v1/admin/plans/:id': admin(
+    'K. Edit a plan; days are fixed once it has subscriptions, the last active plan stays on',
+    { body: updatePlanRequestSchema, responses: { 200: adminPlanResponseSchema } },
+  ),
   'GET /v1/admin/audit': admin('Audit log', {
     query: listAuditQuerySchema,
     responses: { 200: auditPageSchema },

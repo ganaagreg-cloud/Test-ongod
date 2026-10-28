@@ -1,5 +1,9 @@
 import {
   appConfigResponseSchema,
+  blockedUsersResponseSchema,
+  commentResponseSchema,
+  commentsPageSchema,
+  type CommentReportReason,
   categoriesResponseSchema,
   completeProfileResponseSchema,
   devicesResponseSchema,
@@ -187,6 +191,46 @@ export function createEndpoints(client: ApiClient) {
 
     /** Soft delete (SPEC H): the server anonymises the account and ends every session. */
     deleteAccount: () => request('/me', { method: 'DELETE' }),
+
+    /** This phone's Expo push token, or null to stop push here (ADR-0055). */
+    setPushToken: (token: string | null) =>
+      request('/me/push-token', { method: 'PUT', body: { token } }),
+
+    // ---- Сэтгэгдэл (SPEC L, ADR-0061) ----
+
+    comments: (episodeId: string, cursor?: string) =>
+      request(`/episodes/${encodeURIComponent(episodeId)}/comments${queryString({ cursor })}`, {
+        schema: commentsPageSchema,
+      }),
+
+    postComment: (episodeId: string, body: string) =>
+      request(`/episodes/${encodeURIComponent(episodeId)}/comments`, {
+        method: 'POST',
+        body: { body },
+        schema: commentResponseSchema,
+      }),
+
+    editComment: (id: string, body: string) =>
+      request(`/comments/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: { body },
+        schema: commentResponseSchema,
+      }),
+
+    deleteComment: (id: string) =>
+      request(`/comments/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+    reportComment: (id: string, reason: CommentReportReason) =>
+      request(`/comments/${encodeURIComponent(id)}/report`, { method: 'POST', body: { reason } }),
+
+    /** Blocks the author of this comment: their comments vanish from this user's lists. */
+    blockCommentAuthor: (id: string) =>
+      request(`/comments/${encodeURIComponent(id)}/block`, { method: 'POST' }),
+
+    blockedUsers: () => request('/me/blocks', { schema: blockedUsersResponseSchema }),
+
+    unblockUser: (userId: string) =>
+      request(`/me/blocks/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
 
     logout: async () => {
       const refreshToken = await client.getRefreshToken();

@@ -1,9 +1,15 @@
-import type { AdminSubscriptionDto, AuditEntryDto, ListSubscriptionsQuery } from '@ongod/shared';
+import {
+  STUCK_UPLOAD_MS,
+  type AdminSubscriptionDto,
+  type AuditEntryDto,
+  type DashboardDto,
+  type ListSubscriptionsQuery,
+} from '@ongod/shared';
 import type { Db, Prisma } from '../db';
 import { AppError } from '../errors';
 import type { AuditLog, User } from '../generated/prisma/client';
 import { mn } from '../i18n/mn';
-import { DAY_MS, ubDate, ubDateTime, ubDayStart } from '../lib/dates';
+import { DAY_MS, ubDate, ubDateTime, ubDayStart, ubMonthStart } from '../lib/dates';
 import { escapeLike } from '../lib/like';
 import { toAdminSubscriptionDto, toSubscriptionDto } from '../subscriptions/dto';
 import { audit } from './audit';
@@ -15,9 +21,10 @@ const EXPORT_ROW_LIMIT = 50_000;
 const BOM = String.fromCharCode(0xfeff);
 
 /** Every word must match some field, so "бат 9911" finds a name plus a phone fragment. */
-const tokens = (q: string | undefined) => (q ? q.split(/\s+/).filter(Boolean).slice(0, 5) : []);
+export const tokens = (q: string | undefined) =>
+  q ? q.split(/\s+/).filter(Boolean).slice(0, 5) : [];
 
-const userMatches = (token: string): Prisma.UserWhereInput => {
+export const userMatches = (token: string): Prisma.UserWhereInput => {
   const c = { contains: escapeLike(token) };
   return {
     OR: [{ username: c }, { email: c }, { phone: c }, { firstName: c }, { lastName: c }],
@@ -144,18 +151,39 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
       };
     },
 
-    async dashboard() {
+    /** What the owner checks first (ADR-0056): counts, money, the next items, problems. */
+    async dashboard(): Promise<DashboardDto> {
       const at = now();
       const active = { accessUntil: { gt: at }, status: { not: 'DELETED' as const } };
-      const [activeUsers, pendingPayment, expiringIn30Days, newUsersThisWeek] = await Promise.all([
+      const ending = {
+        ...active,
+        accessUntil: { gt: at, lte: new Date(at.getTime() + 30 * DAY_MS) },
+      };
+      // Money that came in: no manual grants (0 ₮) and nothing refunded.
+      const paid = {
+        status: 'COMPLETED' as const,
+        method: { in: ['QPAY' as const, 'BANK_TRANSFER' as const] },
+      };
+      const thisMonth = ubMonthStart(at);
+      const lastMonth = ubMonthStart(at, 1);
+      const stuckBefore = new Date(at.getTime() - STUCK_UPLOAD_MS);
+      const member = { id: true, username: true, firstName: true, lastName: true } as const;
+
+      const [
+        activeUsers,
+        pendingPayment,
+        expiringIn30Days,
+        newUsersThisWeek,
+        monthSum,
+        lastMonthSum,
+        recent,
+        upcoming,
+        withProblems,
+        expiringSoon,
+      ] = await Promise.all([
         db.user.count({ where: active }),
         db.subscription.count({ where: { status: 'PENDING_PAYMENT' } }),
-        db.user.count({
-          where: {
-            ...active,
-            accessUntil: { gt: at, lte: new Date(at.getTime() + 30 * DAY_MS) },
-          },
-        }),
+        db.user.count({ where: ending }),
         db.user.count({
           where: {
             role: 'USER',
@@ -163,8 +191,112 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
             createdAt: { gte: new Date(at.getTime() - 7 * DAY_MS) },
           },
         }),
+        db.payment.aggregate({
+          where: { ...paid, createdAt: { gte: thisMonth } },
+          _sum: { amountMnt: true },
+          _count: true,
+        }),
+        db.payment.aggregate({
+          where: { ...paid, createdAt: { gte: lastMonth, lt: thisMonth } },
+          _sum: { amountMnt: true },
+        }),
+        db.payment.findMany({
+          where: paid,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 5,
+          include: { subscription: { select: { referenceCode: true, user: { select: member } } } },
+        }),
+        db.episode.findMany({
+          where: { status: 'SCHEDULED', scheduledFor: { not: null } },
+          orderBy: { scheduledFor: 'asc' },
+          take: 5,
+          select: { id: true, title: true, scheduledFor: true },
+        }),
+        // Candidates only: an episode counts when its current (newest) file is the problem.
+        db.episode.findMany({
+          where: {
+            status: { not: 'ARCHIVED' },
+            mediaAssets: {
+              some: {
+                OR: [{ status: 'FAILED' }, { status: 'UPLOADING', updatedAt: { lt: stuckBefore } }],
+              },
+            },
+          },
+          select: {
+            id: true,
+            title: true,
+            mediaAssets: {
+              orderBy: { id: 'desc' },
+              take: 1,
+              select: { status: true, failReason: true, updatedAt: true },
+            },
+          },
+        }),
+        db.user.findMany({
+          where: ending,
+          orderBy: { accessUntil: 'asc' },
+          take: 5,
+          select: { ...member, accessUntil: true },
+        }),
       ]);
-      return { activeUsers, pendingPayment, expiringIn30Days, newUsersThisWeek };
+
+      const problems = withProblems
+        .flatMap((e) => {
+          const m = e.mediaAssets[0];
+          if (!m) return [];
+          if (m.status !== 'FAILED' && !(m.status === 'UPLOADING' && m.updatedAt < stuckBefore)) {
+            return [];
+          }
+          return [
+            {
+              episodeId: e.id,
+              title: e.title,
+              status: m.status,
+              failReason: m.failReason,
+              updatedAt: m.updatedAt,
+            },
+          ];
+        })
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+      return {
+        activeUsers,
+        pendingPayment,
+        expiringIn30Days,
+        newUsersThisWeek,
+        revenue: {
+          thisMonthMnt: monthSum._sum.amountMnt ?? 0,
+          lastMonthMnt: lastMonthSum._sum.amountMnt ?? 0,
+          paymentsThisMonth: monthSum._count,
+        },
+        recentPayments: recent.map((p) => ({
+          id: p.id,
+          subscriptionId: p.subscriptionId,
+          referenceCode: p.subscription.referenceCode,
+          amountMnt: p.amountMnt,
+          method: p.method as 'QPAY' | 'BANK_TRANSFER',
+          createdAt: p.createdAt.toISOString(),
+          user: p.subscription.user,
+        })),
+        upcoming: upcoming.map((e) => ({
+          id: e.id,
+          title: e.title,
+          scheduledFor: e.scheduledFor!.toISOString(),
+        })),
+        mediaProblems: {
+          failed: problems.filter((p) => p.status === 'FAILED').length,
+          stuck: problems.filter((p) => p.status === 'UPLOADING').length,
+          items: problems.slice(0, 5).map((p) => ({
+            ...p,
+            status: p.status as 'FAILED' | 'UPLOADING',
+            updatedAt: p.updatedAt.toISOString(),
+          })),
+        },
+        expiringSoon: expiringSoon.map((u) => ({
+          ...u,
+          accessUntil: u.accessUntil!.toISOString(),
+        })),
+      };
     },
 
     async listAudit(

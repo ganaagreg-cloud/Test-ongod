@@ -10,7 +10,17 @@ export function audit(
   actorId: string,
   action: string,
   targetType:
-    'User' | 'Subscription' | 'Export' | 'Episode' | 'Category' | 'Tag' | 'Series' | 'Playlist',
+    | 'User'
+    | 'Subscription'
+    | 'Export'
+    | 'Episode'
+    | 'Category'
+    | 'Tag'
+    | 'Series'
+    | 'Playlist'
+    | 'Plan'
+    | 'Gift'
+    | 'Comment',
   targetId: string,
   data: Prisma.InputJsonObject,
 ) {

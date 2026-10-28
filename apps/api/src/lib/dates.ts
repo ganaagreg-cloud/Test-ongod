@@ -13,3 +13,10 @@ export const ubDateTime = (d: Date) =>
 /** Start of the given Ulaanbaatar calendar day (YYYY-MM-DD) as a UTC instant. */
 export const ubDayStart = (isoDate: string) =>
   new Date(Date.parse(`${isoDate}T00:00:00Z`) - UB_OFFSET_MS);
+
+/** Start of the Ulaanbaatar calendar month of `d`, `back` months earlier, as a UTC instant. */
+export function ubMonthStart(d: Date, back = 0): Date {
+  const local = new Date(d.getTime() + UB_OFFSET_MS);
+  const first = Date.UTC(local.getUTCFullYear(), local.getUTCMonth() - back, 1);
+  return new Date(first - UB_OFFSET_MS);
+}

@@ -59,19 +59,32 @@ test.afterAll(async () => {
 });
 
 const toast = (text: string) => page.getByRole('status').filter({ hasText: text });
+/** A sidebar link: the dashboard has links with the same words (ADR-0056). */
+const navLink = (name: string) =>
+  page.getByRole('navigation', { name: mn.nav.label }).getByRole('link', { name, exact: true });
 const dialog = (name: string) => page.getByRole('dialog', { name });
 
-test('dashboard shows the counters; there is no payments queue any more', async () => {
+test('dashboard shows the counters and the cards; there is no payments queue any more', async () => {
   await expect(page.getByRole('heading', { name: mn.dashboard.title })).toBeVisible();
   const counters = page.locator('.admin-counter');
-  await expect(counters).toHaveCount(4);
+  await expect(counters).toHaveCount(5);
+  await expect(counters.filter({ hasText: mn.dashboard.revenue })).toBeVisible();
   await expect(counters.filter({ hasText: mn.dashboard.pendingPayment })).toBeVisible();
+  // ADR-0056: the four cards.
+  for (const title of [
+    mn.dashboard.recentPayments,
+    mn.dashboard.upcoming,
+    mn.dashboard.mediaProblems,
+    mn.dashboard.expiringSoon,
+  ]) {
+    await expect(page.getByRole('region', { name: title })).toBeVisible();
+  }
   await expect(page.getByText('Шалгах төлбөр')).toHaveCount(0);
   await page.screenshot({ path: shot('admin-dashboard') });
 });
 
 test('payments: the list of every request, search, side panel and its history', async () => {
-  await page.getByRole('link', { name: mn.nav.payments }).click();
+  await navLink(mn.nav.payments).click();
   // The list starts on ACTIVE; the removed bank-transfer states are not offered.
   const filter = page.getByLabel(mn.payments.statusLabel);
   await expect(filter).toHaveValue('ACTIVE');
@@ -117,7 +130,7 @@ test('payments: the CSV export', async () => {
 });
 
 test('users: search, grant, remove a device and revoke, each behind a confirmation', async () => {
-  await page.getByRole('link', { name: mn.nav.users }).click();
+  await navLink(mn.nav.users).click();
   await page.getByLabel(mn.users.searchLabel).fill(paid.username);
   await page.getByRole('row', { name: new RegExp(paid.username) }).click();
   await expect(page.getByRole('heading', { name: paid.name })).toBeVisible();
@@ -161,7 +174,7 @@ test('users: search, grant, remove a device and revoke, each behind a confirmati
 test('categories: create, reorder, edit and delete', async () => {
   const stamp = Date.now();
   const name = `Тест ангилал ${stamp}`;
-  await page.getByRole('link', { name: mn.nav.categories }).click();
+  await navLink(mn.nav.categories).click();
   await page.getByRole('button', { name: mn.categories.new }).first().click();
   const form = dialog(mn.categories.formCreate);
   await form.getByLabel(mn.categories.name).fill(name);
@@ -200,7 +213,7 @@ test('categories: create, reorder, edit and delete', async () => {
 test('categories: upload a cover and see the preview', async () => {
   const stamp = Date.now();
   const name = `Зурагтай ангилал ${stamp}`;
-  await page.getByRole('link', { name: mn.nav.categories }).click();
+  await navLink(mn.nav.categories).click();
   await page.getByRole('button', { name: mn.categories.new }).first().click();
   const form = dialog(mn.categories.formCreate);
   await form.getByLabel(mn.categories.name).fill(name);
@@ -236,7 +249,7 @@ test('categories: upload a cover and see the preview', async () => {
 
 test('episodes: create, cover, and an audio upload that resumes after a page refresh', async () => {
   test.setTimeout(150_000);
-  await page.getByRole('link', { name: mn.nav.episodes }).click();
+  await navLink(mn.nav.episodes).click();
   await page.getByRole('button', { name: mn.episodes.new }).click();
   const title = `E2E анги ${Date.now()}`;
   await page.getByLabel(mn.episodes.form.title).fill(title);
@@ -489,6 +502,59 @@ test('tags: create and delete', async () => {
   await expect(row).toHaveCount(0);
 });
 
+test('plans: add a switched-off plan, change its price; the days lock once it is used', async () => {
+  // Plans cannot be deleted (ADR-0059): the test plan is created switched off, so the portal
+  // never offers it.
+  const name = `E2E багц ${Date.now()}`;
+  await navLink(mn.nav.plans).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.plans.title })).toBeVisible();
+  await page.getByRole('button', { name: mn.plans.new }).first().click();
+  const create = dialog(mn.plans.formCreate);
+  await create.getByLabel(mn.plans.name).fill(name);
+  await create.getByLabel(mn.plans.price).fill('15,000');
+  await create.getByLabel(mn.plans.durationDays).fill('30');
+  await create.getByLabel(mn.plans.activeLabel).uncheck();
+  await create.getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.plans.created)).toBeVisible();
+
+  const row = page.getByRole('row', { name: new RegExp(name) });
+  await expect(row).toContainText('15,000₮');
+  await expect(row).toContainText(mn.plans.inactive);
+  await row.getByRole('button', { name: mn.common.edit }).click();
+  const edit = dialog(mn.plans.formEdit);
+  await expect(edit.getByLabel(mn.plans.durationDays)).toBeEnabled();
+  await edit.getByLabel(mn.plans.price).fill('17000');
+  await edit.getByRole('button', { name: mn.common.save }).click();
+  await expect(toast(mn.common.saved)).toBeVisible();
+  await expect(row).toContainText('17,000₮');
+
+  // The seeded yearly plan has subscriptions: its days cannot change.
+  const yearly = page.getByRole('row').filter({ hasText: '365' }).first();
+  await yearly.getByRole('button', { name: mn.common.edit }).click();
+  await expect(dialog(mn.plans.formEdit).getByLabel(mn.plans.durationDays)).toBeDisabled();
+  await expect(dialog(mn.plans.formEdit)).toContainText(mn.plans.daysLocked);
+  await dialog(mn.plans.formEdit).getByRole('button', { name: mn.common.cancel }).click();
+});
+
+test('gifts: the page lists gifts by status and shows the unredeemed amount', async () => {
+  await navLink(mn.nav.gifts).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.gifts.title })).toBeVisible();
+  await expect(page.getByText(/Ашиглагдаагүй бэлгийн дүн: [\d,]+₮/)).toBeVisible();
+  await page.getByLabel(mn.gifts.statusLabel).selectOption('REDEEMED');
+  // Gifts redeemed by the portal e2e run, if any, show a code-less row with a recipient.
+  await expect(page.getByRole('table')).toBeVisible();
+  await page.getByLabel(mn.gifts.statusLabel).selectOption('PAID');
+  await expect(page.getByRole('table')).toBeVisible();
+});
+
+test('comments: the moderation page opens with the reported filter and can switch', async () => {
+  await navLink(mn.nav.comments).click();
+  await expect(page.getByRole('heading', { level: 1, name: mn.comments.title })).toBeVisible();
+  await expect(page.getByLabel(mn.comments.filterLabel)).toHaveValue('REPORTED');
+  await page.getByLabel(mn.comments.filterLabel).selectOption('VISIBLE');
+  await expect(page.getByRole('table')).toBeVisible();
+});
+
 // Deletes one e2e draft through its edit screen (found by its exact title in the list).
 async function deleteDraft(title: string) {
   await sidebar(mn.nav.episodes).click();
@@ -720,7 +786,7 @@ test('content: the calendar shows a scheduled item on its day and opens it', asy
 });
 
 test('audit log lists what was done, and can be filtered', async () => {
-  await page.getByRole('link', { name: mn.nav.audit }).click();
+  await navLink(mn.nav.audit).click();
   await expect(page.getByRole('heading', { name: mn.audit.title })).toBeVisible();
   await page.getByLabel(mn.audit.actionLabel).fill('subscription.revoke');
   const rows = page.getByRole('row').filter({ hasText: 'subscription.revoke' });
