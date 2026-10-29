@@ -19,7 +19,7 @@ From [[SPEC#Acceptance tests (must pass before launch)]]. Tick each item with th
 - [ ] Expired access stops playback
 - [ ] A backup was restored once on a clean server ([[DEPLOY]])
 - [ ] Store review: the demo account works, no payment UI in the apps ([[STORE]])
-- [ ] **Node on the host:** iTools' Node version is known ([[R-hosting-limits]]). The API is built for Node 20 and tested on Node 22 ([[ADR-0063-node-22-toolchain|ADR-0063]]); if the host is older than 20, or you want to use Node 22 features, decide before launch
+- [ ] **Node 22 on the host:** iTools runs Node 22.13 or newer ([[R-hosting-limits]], the process is started with it). The API is built for Node 22 ([[ADR-0064-api-on-node-22|ADR-0064]]); if the host cannot, decide before launch (another host, or back to `node20` with an ADR)
 - [ ] **Comments (SPEC L):** `SUPPORT_EMAIL` is set in production (comments are shown without it, so this is a manual gate before any store submission, [[ADR-0062-comments-without-contact-gate|ADR-0062]]), `COMMENT_BANNED_WORDS` is filled by the owner, the Google Play user-content rules are read and [[R-store-ugc-rules]] is VERIFIED, and the owner knows to check Сэтгэгдэл ▸ Гомдолтой every few days ([[ADR-0061-episode-comments|ADR-0061]])
 
 ## Before go-live

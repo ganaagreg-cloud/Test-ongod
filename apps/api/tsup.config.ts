@@ -3,8 +3,8 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/server.ts'],
   format: ['esm'],
-  // The host's Node version is unknown (R-hosting-limits), so the output stays Node 20 compatible (ADR-0063).
-  target: 'node20',
+  // The host must run Node 22 (ADR-0064, a launch gate until iTools confirms it).
+  target: 'node22',
   platform: 'node',
   clean: true,
   // Dev-only code (API docs) is behind `process.env.NODE_ENV === 'development'`; fixing the

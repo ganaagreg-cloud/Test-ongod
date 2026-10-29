@@ -16,6 +16,7 @@ To verify with iTools:
 - process and memory limits
 - request upload size and timeout (tus chunks; receipt uploads were removed by [[ADR-0046-remove-bank-transfer-path|ADR-0046]])
 - whether the Node process is put to sleep when idle
+- **the Node version the host can run: the API needs 22.13 or newer ([[ADR-0064-api-on-node-22|ADR-0064]])**
 
 ## How it was checked
 
