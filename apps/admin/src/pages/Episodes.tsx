@@ -463,6 +463,9 @@ export function EpisodesPage() {
             {mn.episodes.view.calendar}
           </button>
         </div>
+        <Button variant="secondary" onClick={() => void navigate('/episodes/upload')}>
+          {mn.episodes.bulkUpload.button}
+        </Button>
         <Button
           title={mn.episodes.shortcuts.newItem}
           onClick={() => void navigate('/episodes/new')}

@@ -6,21 +6,16 @@ import {
   type AdminEpisodeDto,
 } from '@ongod/shared';
 import { Button, Icon, Notice, useToast } from '@ongod/ui-web';
-import { DetailedError, Upload } from 'tus-js-client';
+import type { Upload } from 'tus-js-client';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { ApiError, refreshSession, session } from '../api/client';
+import { refreshSession, session } from '../api/client';
 import { useEpisodeActions, useInvalidate } from '../api/queries';
 import { MediaBadge } from '../components/bits';
+import { createEpisodeUpload, describeUploadError } from './tusUpload';
 import { DropZone } from '../components/DropZone';
 import { ConfirmDialog } from '../components/Modal';
 import { formatBytes, formatDuration } from '../lib/format';
 import { mn } from '../i18n/mn';
-
-/** Where the API's tus endpoint lives (an absolute URL keeps the resume fingerprint stable). */
-const endpoint = () => `${window.location.origin}/v1/admin/uploads/`;
-/** Each chunk is its own request, so a dropped connection loses at most one chunk. */
-const CHUNK_BYTES = 5 * 1024 * 1024;
-const RETRY_DELAYS_MS = [0, 1000, 3000, 5000, 10_000, 20_000];
 
 type Phase = 'idle' | 'uploading' | 'paused' | 'error';
 
@@ -73,15 +68,6 @@ async function serverOffset(uploadUrl: string): Promise<number | undefined> {
 const ACCEPT = [...ALLOWED_AUDIO_EXTENSIONS, ...ALLOWED_VIDEO_EXTENSIONS]
   .map((ext) => `.${ext}`)
   .join(',');
-
-function describe(err: Error): string {
-  if (err instanceof DetailedError) {
-    // The tus server answers rejections with a plain Mongolian text body.
-    const body = err.originalResponse?.getBody().trim();
-    if (body && body.length < 200 && !body.startsWith('<')) return body;
-  }
-  return err instanceof ApiError ? err.message : mn.episodes.audio.uploadFailed;
-}
 
 /** One media file per episode: audio (Bunny Storage) or video (Bunny Stream), ADR-0038. */
 export function MediaUploader({
@@ -149,29 +135,7 @@ export function MediaUploader({
       return;
     }
 
-    const next = new Upload(file, {
-      endpoint: endpoint(),
-      chunkSize: CHUNK_BYTES,
-      retryDelays: RETRY_DELAYS_MS,
-      metadata: { episodeId: episode.id, filename: file.name, filetype: file.type },
-      // The token changes every ~15 minutes, so it is read again for every request.
-      onBeforeRequest: (req) => {
-        const token = session.token();
-        if (token) req.setHeader('Authorization', `Bearer ${token}`);
-      },
-      onAfterResponse: async (_req, res) => {
-        // A failed refresh (offline, rate limit) is left to the retry below.
-        if (res.getStatus() === 401) await refreshSession().catch(() => false);
-      },
-      onShouldRetry: (err, attempt) => {
-        const status = err.originalResponse?.getStatus() ?? 0;
-        if (status === 401) return attempt < RETRY_DELAYS_MS.length;
-        // Other 4xx answers are real rejections (type, size, state); network and 5xx are retried.
-        return (
-          (status === 0 || status >= 500 || status === 409 || status === 423) &&
-          attempt < RETRY_DELAYS_MS.length
-        );
-      },
+    const next = createEpisodeUpload(file, episode.id, {
       onProgress: (sent, total) => setProgress({ sent, total }),
       onSuccess: () => {
         hint.clear(episode.id);
@@ -183,7 +147,7 @@ export function MediaUploader({
       },
       onError: (err) => {
         setPhase('error');
-        setMessage({ tone: 'danger', text: describe(err) });
+        setMessage({ tone: 'danger', text: describeUploadError(err) });
       },
     });
     upload.current = next;

@@ -41,3 +41,22 @@ export function startingCategory(ids: readonly string[], last: string | null): s
   if (last && ids.includes(last)) return last;
   return ids.length === 1 ? ids[0]! : '';
 }
+
+/** The category the last new item was made in, on this browser (a convenience only). */
+const LAST_CATEGORY_KEY = 'ongod:admin-last-category';
+export const lastCategory = {
+  read(): string | null {
+    try {
+      return localStorage.getItem(LAST_CATEGORY_KEY);
+    } catch {
+      return null;
+    }
+  },
+  write(id: string) {
+    try {
+      localStorage.setItem(LAST_CATEGORY_KEY, id);
+    } catch {
+      // Blocked storage: the admin picks the category each time.
+    }
+  },
+};
