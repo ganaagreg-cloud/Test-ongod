@@ -291,11 +291,9 @@ export function CommentsSection({
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     card: {
-      padding: spacing.md,
-      borderRadius: radius.cardLarge,
-      borderWidth: layout.borderWidth,
-      borderColor: c.hairline,
-      backgroundColor: c.surfaceRaised,
+      paddingTop: spacing.md,
+      borderTopWidth: layout.borderWidth,
+      borderTopColor: c.hairline,
       gap: spacing.md,
     },
     title: {
@@ -306,12 +304,9 @@ const makeStyles = (c: ThemeColors) =>
     compose: { gap: spacing.xs },
     input: {
       minHeight: layout.inputHeight,
-      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderRadius: radius.cardLarge,
-      borderWidth: layout.borderWidth,
-      borderColor: c.hairlineStrong,
-      backgroundColor: c.surface,
+      borderBottomWidth: layout.borderWidth,
+      borderBottomColor: c.hairlineStrong,
       color: c.textPrimary,
       ...nativeTextStyle('body'),
       textAlignVertical: 'top',

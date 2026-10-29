@@ -1,7 +1,7 @@
 ---
 id: ADR-0049
 title: 'Player: "Next" row from the opening list, and autoplay-next for audio and video'
-status: accepted
+status: 'accepted (item 1 and 2, where "Дараагийн" sits, superseded by [[ADR-0065-player-next-at-the-bottom|ADR-0065]]; the rest stands)'
 date: 2026-10-25
 tags: [adr, area/mobile, area/design]
 ---
