@@ -221,7 +221,7 @@ describe('video upload over tus, processed by Bunny Stream', () => {
     });
   });
 
-  it('gives up after six hours of processing, and when Bunny no longer has the video', async () => {
+  it('gives up after 48 hours of processing, and when Bunny no longer has the video', async () => {
     await upload(videoBytes());
     const [asset] = await assets();
     const jobs = createMediaJobs({
@@ -236,7 +236,14 @@ describe('video upload over tus, processed by Bunny Stream', () => {
     await upload1.handle({ assetId: asset!.id }, ctx);
     stream.state.pollsUntilDone = 1000;
 
-    const longAgo = new Date(Date.now() - 7 * HOUR).toISOString();
+    // Bunny's free queue can be slow: seven hours of waiting is still fine.
+    await status.handle(
+      { assetId: asset!.id, startedAt: new Date(Date.now() - 7 * HOUR).toISOString() },
+      ctx,
+    );
+    expect((await assets())[0]).toMatchObject({ status: 'PROCESSING' });
+
+    const longAgo = new Date(Date.now() - 49 * HOUR).toISOString();
     await status.handle({ assetId: asset!.id, startedAt: longAgo }, ctx);
     expect((await assets())[0]).toMatchObject({
       status: 'FAILED',

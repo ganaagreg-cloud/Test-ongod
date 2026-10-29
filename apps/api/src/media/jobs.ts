@@ -91,7 +91,7 @@ export const streamDeleteSpec = {
 
 /** How often processing is checked, and when it is given up. */
 export const VIDEO_POLL_MS = 30_000;
-export const VIDEO_PROCESSING_LIMIT_MS = 6 * 60 * 60_000;
+export const VIDEO_PROCESSING_LIMIT_MS = 48 * 60 * 60_000;
 /** A Stream video object not created yet (the job creates it and stores its id here). */
 export const PENDING_PATH = 'pending';
 
@@ -419,7 +419,7 @@ export function createMediaJobs(deps: {
 
   /**
    * Video: ask Bunny how processing goes. READY: length saved, older media of the episode
-   * removed, local file deleted. Bunny's error, a deleted video or six hours without a result:
+   * removed, local file deleted. Bunny's error, a deleted video or 48 hours without a result (Bunny's free queue can take hours to days, ADR-0073):
    * FAILED with a reason (Retry sends the kept file again). Otherwise: check again later.
    */
   const videoStatus = defineJob({
