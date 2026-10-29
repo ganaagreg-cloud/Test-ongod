@@ -74,6 +74,11 @@ export const grantRequestSchema = z.object({
   /** Overrides the plan's duration (gift, demo account). */
   days: z.number().int().min(1).max(3660).optional(),
   note: z.string().trim().max(500).optional(),
+  /**
+   * One key per grant the admin means to make: a retried request with the same key returns the
+   * first grant instead of adding another period (audit F02).
+   */
+  requestId: z.uuid().optional(),
 });
 
 // ---- Plans (SPEC K, ADR-0059) ----

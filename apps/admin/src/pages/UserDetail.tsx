@@ -114,6 +114,8 @@ function GrantCard({ userId, name }: { userId: string; name: string }) {
   const [days, setDays] = useState('');
   const [note, setNote] = useState('');
   const [confirming, setConfirming] = useState(false);
+  // One key per intended grant: retrying after a lost answer cannot grant twice (audit F02).
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
 
   const selectedPlan = plans.data?.plans.find(
     (plan) => plan.id === (planId || plans.data?.plans[0]?.id),
@@ -184,7 +186,9 @@ function GrantCard({ userId, name }: { userId: string; name: string }) {
             planId: selectedPlan.id,
             ...(days !== '' ? { days: Number(days) } : {}),
             ...(note.trim() ? { note: note.trim() } : {}),
+            requestId,
           });
+          setRequestId(crypto.randomUUID());
           toast.show(t.granted, { tone: 'success' });
           setDays('');
           setNote('');

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Badge, Button, Skeleton } from '@ongod/ui-web';
 import type { GiftDto } from '@ongod/shared';
@@ -40,17 +40,31 @@ export default function MyGifts() {
   const data = gifts.data;
   const list = useMemo(() => data?.gifts ?? [], [data]);
   const waiting = list.some((g) => g.status === 'PENDING_PAYMENT');
-  const tries = useRef(0);
+  const [tries, setTries] = useState(0);
   const reload = gifts.reload;
+  // After POLL_TRIES the page stops asking by itself; "Төлөв шалгах" or coming back to the tab
+  // starts it again (audit F07).
+  const gaveUp = waiting && tries >= POLL_TRIES;
 
   useEffect(() => {
-    if (!waiting || tries.current >= POLL_TRIES) return;
+    if (!waiting || tries >= POLL_TRIES) return;
     const timer = setTimeout(() => {
-      tries.current += 1;
+      setTries((n) => n + 1);
       reload();
     }, POLL_MS);
     return () => clearTimeout(timer);
-  }, [waiting, list, reload]);
+  }, [waiting, list, reload, tries]);
+
+  useEffect(() => {
+    if (!waiting) return;
+    const again = () => {
+      if (document.visibilityState !== 'visible') return;
+      setTries(0);
+      reload();
+    };
+    document.addEventListener('visibilitychange', again);
+    return () => document.removeEventListener('visibilitychange', again);
+  }, [waiting, reload]);
 
   return (
     <div className="portal-page portal-narrow">
@@ -94,8 +108,19 @@ export default function MyGifts() {
             {gift.status === 'PENDING_PAYMENT' ? (
               <>
                 <p className="portal-muted" role="status">
-                  {mn.gift.waiting}
+                  {gaveUp ? mn.gift.stillWaiting : mn.gift.waiting}
                 </p>
+                {gaveUp ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setTries(0);
+                      reload();
+                    }}
+                  >
+                    {mn.gift.check}
+                  </Button>
+                ) : null}
                 {gift.checkoutUrl ? (
                   <a href={gift.checkoutUrl} className="portal-linkbutton">
                     {mn.gift.pay}

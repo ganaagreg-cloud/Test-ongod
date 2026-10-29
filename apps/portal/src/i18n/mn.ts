@@ -199,6 +199,9 @@ export const mn = {
     codeHint: (date: string) => `Хүлээн авагч ${date}-ний дотор ашиглана.`,
     pay: 'Төлөх',
     waiting: 'Төлбөрийг хүлээж байна. Төлсний дараа код энд гарна.',
+    /** The page stopped asking by itself: the payment may still arrive. */
+    stillWaiting: 'Төлбөр баталгаажих нь удаж байна. Төлсөн бол доорх товчоор дахин шалгана уу.',
+    check: 'Төлөв шалгах',
     paidOn: (date: string) => `Төлсөн: ${date}`,
     redeemedOn: (date: string) => `Ашигласан: ${date}`,
     statuses: {
@@ -335,6 +338,12 @@ export const mn = {
     activeTitle: 'Эрх идэвхжлээ',
     activeNote: 'Одоо Онгод аппаар нэвтэрч сонсоорой.',
     expired: 'Энэ хүсэлтийн хугацаа дууссан.',
+    /** The request was cancelled (at the checkout, or it failed): nothing was paid. */
+    cancelled: 'Энэ хүсэлт цуцлагдсан. Төлбөр хийгдээгүй.',
+    /** The access ran its course. */
+    ended: 'Таны эрхийн хугацаа дууссан.',
+    /** An admin took the access back (refund, misuse). */
+    revoked: 'Энэ эрхийг цуцалсан. Асуух зүйл байвал бидэнтэй холбогдоно уу.',
     nothing: 'Хүлээгдэж буй төлбөрийн хүсэлт алга.',
     choosePlan: 'Багц сонгох',
   },

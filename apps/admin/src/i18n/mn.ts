@@ -616,6 +616,7 @@ export const mn = {
     reasons: { SPAM: 'Спам', ABUSE: 'Доромжлол', OTHER: 'Бусад' },
     muted: 'Хориглосон',
     hide: 'Нуух',
+    keepHidden: 'Нуусан хэвээр үлдээх',
     restore: 'Буцааж харуулах',
     dismiss: 'Гомдлыг хаах',
     delete: 'Устгах',

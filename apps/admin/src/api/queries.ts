@@ -270,7 +270,7 @@ export function useUserActions(userId: string) {
   const invalidate = useInvalidate();
   const done = () => invalidate('user', 'users', 'dashboard', 'audit');
   const grant = useMutation({
-    mutationFn: (v: { planId: string; days?: number; note?: string }) =>
+    mutationFn: (v: { planId: string; days?: number; note?: string; requestId: string }) =>
       api(`/admin/users/${userId}/grants`, {
         method: 'POST',
         body: v,

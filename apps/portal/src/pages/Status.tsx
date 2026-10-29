@@ -60,9 +60,9 @@ export default function Status() {
           </Notice>
         </>
       ) : (
-        // Expired, cancelled or revoked: start again with a plan.
+        // Expired, cancelled or revoked, each in its own words (audit F10): start again with a plan.
         <>
-          <Notice tone="warning">{mn.status.expired}</Notice>
+          <Notice tone="warning">{endedText(subscription)}</Notice>
           <Link to="/plans" className="portal-linkbutton">
             {mn.status.choosePlan}
           </Link>
@@ -82,4 +82,13 @@ function activeSteps(endsAt: string | null): TimelineStep[] {
       ...(endsAt ? { text: mn.status.activeText(formatDate(endsAt)) } : {}),
     },
   ];
+}
+
+/** Why this request or access is over. EXPIRED is either a request never paid or used-up access. */
+function endedText(subscription: { status: string; endsAt: string | null }): string {
+  if (subscription.status === 'REVOKED') return mn.status.revoked;
+  if (subscription.status === 'CANCELLED' || subscription.status === 'REJECTED') {
+    return mn.status.cancelled;
+  }
+  return subscription.endsAt ? mn.status.ended : mn.status.expired;
 }

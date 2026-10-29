@@ -300,6 +300,14 @@ export const cleanupAbandonedUploads = (cleanUp: () => Promise<number>): CronTas
   },
 });
 
+/** Finished uploads whose handoff to processing was interrupted (audit F04). */
+export const recoverFinishedUploads = (recover: (now: Date) => Promise<number>): CronTask => ({
+  name: 'recoverFinishedUploads',
+  async run({ now }) {
+    return { affected: await recover(now) };
+  },
+});
+
 /** Keeps the Job table small. FAILED jobs are kept for inspection. */
 export const purgeDoneJobs: CronTask = {
   name: 'purgeDoneJobs',

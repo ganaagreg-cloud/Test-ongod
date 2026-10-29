@@ -1,10 +1,11 @@
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import pino from 'pino';
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_AUDIO_BYTES } from '@ongod/shared';
 import { createMediaJobs } from '../src/media/jobs';
+import { createTusServer } from '../src/media/tus';
 import type { MediaRuntime } from '../src/media/storage';
 import { makeAdmin, makeMember, multipart } from './admin-helpers';
 import { call } from './admin-helpers';
@@ -260,6 +261,45 @@ describe('failed audio: the reason, and Retry', () => {
       status: 'FAILED',
       failReason: expect.stringContaining('Эх файл олдсонгүй'),
     });
+  });
+
+  it('a finished file whose handoff was cut off (crash after the move) is picked up by cron (audit F04)', async () => {
+    const old = new Date(Date.now() - 10 * 60_000);
+    const asset = await testDb.mediaAsset.create({
+      data: {
+        episodeId,
+        kind: 'AUDIO',
+        provider: 'BUNNY_STORAGE',
+        path: `audio/${episodeId}/recovered.wav`,
+        status: 'UPLOADING',
+        updatedAt: old,
+      },
+    });
+    // The file reached its folder, the row did not change.
+    mkdirSync(runtime.dirs.audio, { recursive: true });
+    writeFileSync(join(runtime.dirs.audio, asset.id), wavFile());
+    // A row still UPLOADING without a file (a real upload in progress) is left alone.
+    const inProgress = await testDb.mediaAsset.create({
+      data: {
+        episodeId,
+        kind: 'AUDIO',
+        provider: 'BUNNY_STORAGE',
+        path: `audio/${episodeId}/other.wav`,
+        status: 'UPLOADING',
+        updatedAt: old,
+      },
+    });
+
+    const tus = createTusServer({ db: testDb, dirs: runtime.dirs, env: { TRUST_PROXY: false } });
+    expect(await tus.recoverFinished(new Date())).toBe(1);
+    expect(await tus.recoverFinished(new Date())).toBe(0); // once only
+    expect(
+      (await testDb.mediaAsset.findUniqueOrThrow({ where: { id: inProgress.id } })).status,
+    ).toBe('UPLOADING');
+    await runMediaJobs(runtime);
+    expect((await testDb.mediaAsset.findUniqueOrThrow({ where: { id: asset.id } })).status).toBe(
+      'READY',
+    );
   });
 
   it('running the job twice (a crash after the work) is harmless', async () => {

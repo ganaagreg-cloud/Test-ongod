@@ -1,3 +1,4 @@
+import { lockUser } from '../auth/service';
 import {
   COMMENT_AUTO_HIDE_REPORTS,
   type AdminCommentDto,
@@ -103,18 +104,25 @@ export function createCommentService(deps: {
       const episode = await publishedEpisode(episodeId, at);
       if (!canPost(user, episode, at)) throw new AppError(403, 'COMMENT_FORBIDDEN');
       checkBody(body);
-      const [lastMinute, lastDay] = await Promise.all([
-        db.comment.count({
-          where: { authorId: user.id, createdAt: { gt: new Date(at.getTime() - MINUTE_MS) } },
-        }),
-        db.comment.count({
-          where: { authorId: user.id, createdAt: { gt: new Date(at.getTime() - DAY_MS) } },
-        }),
-      ]);
-      if (lastMinute >= PER_MINUTE || lastDay >= PER_DAY) throw new AppError(429, 'RATE_LIMITED');
-      const created = await db.comment.create({
-        data: { episodeId, authorId: user.id, body, createdAt: at },
-        include: { author: true },
+      // Count and insert under the user's row lock, so parallel posts cannot slip past the limits
+      // together (audit F05).
+      const created = await db.$transaction(async (tx) => {
+        await lockUser(tx, user.id);
+        const [lastMinute, lastDay] = await Promise.all([
+          tx.comment.count({
+            where: { authorId: user.id, createdAt: { gt: new Date(at.getTime() - MINUTE_MS) } },
+          }),
+          tx.comment.count({
+            where: { authorId: user.id, createdAt: { gt: new Date(at.getTime() - DAY_MS) } },
+          }),
+        ]);
+        if (lastMinute >= PER_MINUTE || lastDay >= PER_DAY) {
+          throw new AppError(429, 'RATE_LIMITED');
+        }
+        return tx.comment.create({
+          data: { episodeId, authorId: user.id, body, createdAt: at },
+          include: { author: true },
+        });
       });
       return toDto(created, user.id);
     },
@@ -204,7 +212,12 @@ export function createCommentService(deps: {
     async adminList(query: ListAdminCommentsQuery) {
       const byFilter: Prisma.CommentWhereInput =
         query.filter === 'REPORTED'
-          ? { status: 'VISIBLE', reports: { some: {} } }
+          ? // Reported and still visible, or hidden by the reports themselves (it needs a look:
+            // restore or keep hidden). Hidden by an admin is done (audit F06).
+            {
+              reports: { some: {} },
+              OR: [{ status: 'VISIBLE' }, { status: 'HIDDEN', hiddenBy: 'reports' }],
+            }
           : { status: query.filter };
       const where: Prisma.CommentWhereInput = {
         ...byFilter,
@@ -253,7 +266,7 @@ export function createCommentService(deps: {
     },
 
     /**
-     * hide: VISIBLE -> HIDDEN. restore: HIDDEN -> VISIBLE (its reports are cleared, so the next
+     * hide: VISIBLE (or HIDDEN by reports, "keep hidden") -> HIDDEN by the admin. restore: HIDDEN -> VISIBLE (its reports are cleared, so the next
      * report counts from zero). dismiss: reports on a VISIBLE comment are cleared. delete: VISIBLE
      * or HIDDEN -> DELETED. Each is one transaction with a status precondition and an audit row.
      */
@@ -267,12 +280,17 @@ export function createCommentService(deps: {
         if (!found) throw new AppError(404, 'NOT_FOUND');
         let changed: number;
         if (action === 'hide') {
-          changed = (
-            await tx.comment.updateMany({
-              where: { id, status: 'VISIBLE' },
-              data: { status: 'HIDDEN', hiddenBy: 'admin' },
-            })
-          ).count;
+          changed =
+            // Also "keep hidden" for a comment the reports hid: it then leaves the reported queue.
+            (
+              await tx.comment.updateMany({
+                where: {
+                  id,
+                  OR: [{ status: 'VISIBLE' }, { status: 'HIDDEN', hiddenBy: 'reports' }],
+                },
+                data: { status: 'HIDDEN', hiddenBy: 'admin' },
+              })
+            ).count;
         } else if (action === 'restore') {
           changed = (
             await tx.comment.updateMany({

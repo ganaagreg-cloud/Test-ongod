@@ -148,6 +148,16 @@ describe('posting: filter and limits', () => {
     expect(sixth.json().error.code).toBe('RATE_LIMITED');
   });
 
+  it('posts sent at the same moment cannot pass the limit together (audit F05)', async () => {
+    const { episode, member } = await setup();
+    for (let i = 0; i < 4; i++) await post(episode.id, member.accessToken, `Өмнөх ${i}`);
+    const burst = await Promise.all(
+      [1, 2, 3, 4].map((i) => post(episode.id, member.accessToken, `Зэрэг ${i}`)),
+    );
+    expect(burst.filter((r) => r.statusCode === 201)).toHaveLength(1);
+    expect(await testDb.comment.count({ where: { authorId: member.userId } })).toBe(5);
+  });
+
   it('a muted user cannot post or edit, and is told so', async () => {
     const { episode, member } = await setup();
     const created = (await post(episode.id, member.accessToken, 'Өмнө бичсэн')).json().comment;
@@ -268,6 +278,19 @@ describe('reports (Apple 1.2: report and timely action)', () => {
       (await call(app, 'POST', `/v1/comments/${c.id}/report`, d.accessToken, { reason: 'SPAM' }))
         .statusCode,
     ).toBe(404);
+    // It stays in the admin's reported queue until someone looks at it (audit F06) ...
+    const admin = await makeAdmin(app);
+    const queue = () =>
+      call(app, 'GET', '/v1/admin/comments', admin.accessToken).then((r) => r.json());
+    expect((await queue()).items.map((x: { id: string }) => x.id)).toEqual([c.id]);
+    // ... and "keep hidden" takes it out, still hidden.
+    const keep = await call(app, 'POST', `/v1/admin/comments/${c.id}/hide`, admin.accessToken);
+    expect(keep.statusCode).toBeLessThan(300);
+    expect(await testDb.comment.findUniqueOrThrow({ where: { id: c.id } })).toMatchObject({
+      status: 'HIDDEN',
+      hiddenBy: 'admin',
+    });
+    expect((await queue()).total).toBe(0);
   });
 });
 
