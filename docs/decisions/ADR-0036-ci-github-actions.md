@@ -1,7 +1,7 @@
 ---
 id: ADR-0036
 title: CI on GitHub Actions for every push and pull request
-status: accepted
+status: 'accepted (the Node version in .nvmrc moved to 22 by [[ADR-0063-node-22-toolchain|ADR-0063]]; the rest stands)'
 date: 2026-10-17
 tags: [adr, tooling, area/process]
 ---

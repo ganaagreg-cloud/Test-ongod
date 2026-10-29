@@ -17,7 +17,7 @@ test('portal.css has no raw colors, pixel sizes or font names', () => {
 });
 
 test('every var(--...) in portal.css exists in the tokens, the component CSS or portal.css', () => {
-  // Array.from, not .matchAll(...).map: iterator helpers only exist from Node 22 (.nvmrc is 20).
+  // Array.from, not .matchAll(...).map: kept simple and portable.
   const defined = new Set(
     Array.from(
       [
