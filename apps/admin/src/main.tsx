@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider, useToast } from '@ongod/ui-web';
 import '@ongod/tokens/fonts.css';
@@ -51,14 +51,26 @@ function Data({ children }: { children: ReactNode }) {
   );
 }
 
+// A data router, so a page can hold the member on it while an upload runs or edits are unsaved
+// (useBlocker, ADR-0068). One catch-all route: App keeps its own <Routes>.
+const router = createBrowserRouter(
+  [
+    {
+      path: '*',
+      element: (
+        <ToastProvider closeLabel={mn.common.close} placement="end">
+          <Data>
+            <App />
+          </Data>
+        </ToastProvider>
+      ),
+    },
+  ],
+  { basename: '/admin' },
+);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename="/admin">
-      <ToastProvider closeLabel={mn.common.close} placement="end">
-        <Data>
-          <App />
-        </Data>
-      </ToastProvider>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </StrictMode>,
 );

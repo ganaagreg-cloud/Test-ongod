@@ -1398,6 +1398,15 @@
   outline: var(--layout-focus-ring-width) solid var(--color-focus-ring);
 }
 
+.admin-drop--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  aspect-ratio: auto;
+  min-height: var(--layout-touch-target);
+  padding: var(--space-sm) var(--space-md);
+}
+
 .admin-drop.is-disabled {
   opacity: 0.5;
 }

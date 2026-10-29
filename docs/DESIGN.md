@@ -92,7 +92,7 @@ Admin shell and density ([[ADR-0050-admin-dense-forest-sidebar|ADR-0050]]): fore
 
 Контент list ([[ADR-0051-admin-content-list-redesign|ADR-0051]]): status tabs with counts, search + Ангилал always visible and the rest in a collapsible Шүүлтүүр panel with removable chips, state in the URL; 48 px thumbnail with a brand-green fallback tile; dot badges (Ноорог has a gray border); row tools on hover; the bulk bar is fixed to the bottom of the viewport; admin toasts bottom right with an Undo button.
 
-Episode editor ([[ADR-0052-episode-one-page-editor|ADR-0052]]): one page for new and existing items. Cover (16:9) and the audio or video drop zone first, then the details; a sticky right panel for publishing with a checklist, Одоо or Товлох, and a day-chip and time-grid schedule picker.
+Episode editor ([[ADR-0052-episode-one-page-editor|ADR-0052]], [[ADR-0068-admin-upload-flow-like-creator-platforms|ADR-0068]]): one page for new and existing items. Cover (16:9) and the audio or video drop zone first, then the details; a sticky right panel for publishing with a checklist, the push switch and text (saved with "Хадгалах"), Одоо or Товлох, and a day-chip and time-grid schedule picker. A picked file fills an empty title from its name and starts uploading once there is a category (the last used one is remembered); once a file is in, the drop zone shrinks to a one-line "Файл солих" target. Leaving while uploading or with unsaved edits asks first.
 
 Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme="light">`). It has the same token keys as the dark theme, so components work in both. The app's cream surface (`themes.cream`) is a separate set.
 

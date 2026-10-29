@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AdminEpisodeDto } from '@ongod/shared';
-import { isStuckUpload, STUCK_UPLOAD_MS } from '../src/lib/media';
+import {
+  isStuckUpload,
+  startingCategory,
+  STUCK_UPLOAD_MS,
+  titleFromFileName,
+} from '../src/lib/media';
 
 const media = (status: 'UPLOADING' | 'PROCESSING' | 'READY' | 'FAILED', updatedAt: string) =>
   ({
@@ -28,4 +33,23 @@ test('only UPLOADING can be stuck, and no media is never stuck', () => {
     assert.equal(isStuckUpload(media(status, ago(60 * 60_000)), now), false, status);
   }
   assert.equal(isStuckUpload(null, now), false);
+});
+
+test('a title comes from the file name without the extension', () => {
+  assert.equal(
+    titleFromFileName('Малчин өвөөгийн яриа 3-р анги.mp3'),
+    'Малчин өвөөгийн яриа 3-р анги',
+  );
+  assert.equal(titleFromFileName('ep_04__final  cut.MP4'), 'ep 04 final cut');
+  assert.equal(titleFromFileName('.mp3'), '.mp3');
+  assert.equal(titleFromFileName('no-extension'), 'no-extension');
+  assert.equal(titleFromFileName(`${'а'.repeat(250)}.mp3`).length, 200);
+});
+
+test('a new item starts with the last category, or the only one', () => {
+  assert.equal(startingCategory(['a', 'b'], 'b'), 'b');
+  assert.equal(startingCategory(['a', 'b'], 'gone'), '');
+  assert.equal(startingCategory(['a', 'b'], null), '');
+  assert.equal(startingCategory(['a'], null), 'a');
+  assert.equal(startingCategory([], 'a'), '');
 });

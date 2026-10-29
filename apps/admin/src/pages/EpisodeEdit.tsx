@@ -7,7 +7,6 @@ import {
   mediaKindOfFile,
   type AdminEpisodeDto,
   type CreateEpisodeRequest,
-  type UpdateEpisodeRequest,
 } from '@ongod/shared';
 import { Button, Icon, Input, Notice, Skeleton, Textarea, useToast } from '@ongod/ui-web';
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from 'react';
@@ -16,6 +15,7 @@ import { ApiError } from '../api/client';
 import { categoriesQuery, episodeQuery, seriesListQuery, useEpisodeActions } from '../api/queries';
 import { EpisodeBadge, LoadError, PageHeader, SelectField, useNow } from '../components/bits';
 import { DropZone } from '../components/DropZone';
+import { LeaveGuard } from '../components/LeaveGuard';
 import { MediaPreview } from '../components/MediaPreview';
 import { ConfirmDialog, errorText } from '../components/Modal';
 import { SchedulePicker } from '../components/SchedulePicker';
@@ -27,6 +27,7 @@ import {
   toUlaanbaatarIso,
   ulaanbaatarInputToDate,
 } from '../lib/format';
+import { startingCategory, titleFromFileName } from '../lib/media';
 import { mn } from '../i18n/mn';
 import { MediaUploader } from '../upload/MediaUploader';
 
@@ -96,6 +97,9 @@ interface Values {
   part: string;
   tagIds: string[];
   isFree: boolean;
+  /** Push to the members when it goes out, and its text (saved with the rest, ADR-0068). */
+  notify: boolean;
+  pushText: string;
 }
 
 const valuesOf = (e?: AdminEpisodeDto): Values => ({
@@ -106,7 +110,30 @@ const valuesOf = (e?: AdminEpisodeDto): Values => ({
   part: e?.seriesPart != null ? String(e.seriesPart) : '',
   tagIds: e?.tags.map((tag) => tag.id) ?? [],
   isFree: e?.isFree ?? false,
+  notify: e?.notifyOnPublish ?? true,
+  pushText: e?.pushText ?? '',
 });
+
+const validOf = (v: Values) => v.title.trim() !== '' && v.categoryId !== '';
+
+/** The category the last new item was made in, on this browser (a convenience only). */
+const LAST_CATEGORY_KEY = 'ongod:admin-last-category';
+const lastCategory = {
+  read(): string | null {
+    try {
+      return localStorage.getItem(LAST_CATEGORY_KEY);
+    } catch {
+      return null;
+    }
+  },
+  write(id: string) {
+    try {
+      localStorage.setItem(LAST_CATEGORY_KEY, id);
+    } catch {
+      // Blocked storage: the admin picks the category each time.
+    }
+  },
+};
 
 const sameValues = (a: Values, b: Values) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -125,6 +152,8 @@ function requestOf(values: Values, initial?: AdminEpisodeDto): CreateEpisodeRequ
       : {}),
     tagIds: values.tagIds,
     isFree: values.isFree,
+    notifyOnPublish: values.notify,
+    pushText: values.pushText.trim() || null,
   };
 }
 
@@ -157,7 +186,19 @@ function Workspace({
       setValues(valuesOf(episode));
     }
   }, [episode]);
-  const valid = values.title.trim() !== '' && values.categoryId !== '';
+  // Fresh data from the server (a refetch, a bulk change made elsewhere) replaces the form only
+  // while the admin has not edited it; edits in progress are kept.
+  const synced = useRef(valuesOf(episode));
+  useEffect(() => {
+    if (!episode) return;
+    const fresh = valuesOf(episode);
+    const before = synced.current;
+    setValues((current) => (sameValues(current, before) ? fresh : current));
+    synced.current = fresh;
+  }, [episode]);
+  const valid = validOf(values);
+  const categories = useQuery(categoriesQuery());
+  const [uploading, setUploading] = useState(false);
   const dirty = episode ? !sameValues(values, valuesOf(episode)) : true;
 
   // Files picked before the draft exists wait here; they go up as soon as it does.
@@ -204,10 +245,11 @@ function Workspace({
     }
   }, [episode, stagedCover]);
 
-  async function createDraft() {
+  async function createDraft(from: Values = values) {
     setError(undefined);
     try {
-      const response = await create.mutateAsync(requestOf(values));
+      const response = await create.mutateAsync(requestOf(from));
+      lastCategory.write(from.categoryId);
       toast.show(w.saved, { tone: 'success' });
       onCreated(response);
     } catch (err) {
@@ -226,12 +268,34 @@ function Workspace({
       await createDraft();
       return;
     }
+    if (await saveIfDirty()) toast.show(mn.common.saved, { tone: 'success' });
+  }
+
+  /** Saves pending edits; publishing and scheduling call it first. False: not saved. */
+  async function saveIfDirty(): Promise<boolean> {
+    if (!episode) return false;
+    if (!dirty) return true;
+    if (!valid) {
+      setError(w.needDetails);
+      return false;
+    }
     setError(undefined);
     try {
       await update.mutateAsync(requestOf(values, episode));
-      toast.show(mn.common.saved, { tone: 'success' });
+      return true;
     } catch (err) {
       setError(errorText(err));
+      return false;
+    }
+  }
+
+  /**
+   * A file is waiting and the details are now enough: make the draft so the upload starts
+   * (ADR-0068). Called when a category is picked and when the title field is left.
+   */
+  function commit(next: Values) {
+    if (!episode && (stagedMedia || stagedCover) && validOf(next) && !create.isPending) {
+      void createDraft(next);
     }
   }
 
@@ -247,7 +311,7 @@ function Workspace({
     }
     // Kept for the preview and not revoked: one small URL per picked picture.
     setStagedCover({ file, url: URL.createObjectURL(file) });
-    if (valid) void createDraft();
+    if (valid && !create.isPending) void createDraft();
   }
 
   function pickMedia(file: File) {
@@ -262,8 +326,29 @@ function Workspace({
       return;
     }
     setStagedMedia(file);
-    if (valid) void createDraft();
+    // Like YouTube: the file name is the starting title, and the last category is kept, so the
+    // upload can start at once (ADR-0068).
+    const next: Values = {
+      ...values,
+      title: values.title.trim() === '' ? titleFromFileName(file.name) : values.title,
+      categoryId:
+        values.categoryId ||
+        startingCategory(
+          (categories.data?.categories ?? []).map((c) => c.id),
+          lastCategory.read(),
+        ),
+    };
+    setValues(next);
+    if (validOf(next) && !create.isPending) void createDraft(next);
   }
+
+  // A new page with something typed or picked counts as unsaved until the draft exists.
+  const unsaved = episode
+    ? dirty
+    : values.title.trim() !== '' ||
+      values.description.trim() !== '' ||
+      stagedMedia !== undefined ||
+      stagedCover !== undefined;
 
   const coverSrc = episode?.coverUrl ?? stagedCover?.url ?? null;
 
@@ -339,6 +424,7 @@ function Workspace({
                   <>
                     <MediaUploader
                       episode={episode}
+                      onBusyChange={setUploading}
                       initialFile={stagedMedia}
                       onInitialStarted={() => setStagedMedia(undefined)}
                     />
@@ -358,7 +444,8 @@ function Workspace({
                     <span className="admin-staged__text">
                       <strong>{stagedMedia.name}</strong>
                       <span className="admin-hint">
-                        {formatBytes(stagedMedia.size)} · {w.stagedNote}
+                        {formatBytes(stagedMedia.size)} ·{' '}
+                        {values.title.trim() !== '' ? w.stagedNeedsCategory : w.stagedNote}
                       </span>
                     </span>
                     <Button variant="ghost" onClick={() => setStagedMedia(undefined)}>
@@ -393,7 +480,7 @@ function Workspace({
               onSubmit={(e) => void submit(e)}
               noValidate
             >
-              <Fields values={values} set={set} autoFocus={!episode} />
+              <Fields values={values} set={set} autoFocus={!episode} onCommit={commit} />
               {error ? <Notice tone="danger">{error}</Notice> : null}
             </form>
           </section>
@@ -402,9 +489,10 @@ function Workspace({
         </div>
 
         <aside className="admin-workspace__side" aria-label={t.publish.title}>
-          <PublishPanel episode={episode} />
+          <PublishPanel episode={episode} values={values} set={set} saveIfDirty={saveIfDirty} />
         </aside>
       </div>
+      <LeaveGuard uploading={uploading} unsaved={unsaved} />
     </>
   );
 }
@@ -420,10 +508,13 @@ function Fields({
   values,
   set,
   autoFocus,
+  onCommit,
 }: {
   values: Values;
   set: (patch: Partial<Values>) => void;
   autoFocus: boolean;
+  /** The details may now be enough to make the draft (a new page with a file waiting). */
+  onCommit: (next: Values) => void;
 }) {
   const categories = useQuery(categoriesQuery());
   const series = useQuery(seriesListQuery());
@@ -436,6 +527,7 @@ function Fields({
         value={values.title}
         maxLength={200}
         onChange={(event) => set({ title: event.target.value })}
+        onBlur={() => onCommit(values)}
         required
         autoFocus={autoFocus}
       />
@@ -455,7 +547,10 @@ function Fields({
           <SelectField
             label={t.form.category}
             value={values.categoryId}
-            onChange={(categoryId) => set({ categoryId })}
+            onChange={(categoryId) => {
+              set({ categoryId });
+              onCommit({ ...values, categoryId });
+            }}
             options={[
               ...(values.categoryId === '' ? [{ value: '', label: t.form.pickCategory }] : []),
               ...list.map((c) => ({ value: c.id, label: c.name })),
@@ -507,8 +602,21 @@ function Fields({
 
 type Confirm = 'publish' | 'unschedule' | 'archive' | null;
 
-/** The side panel: what is still missing, now or later, and the button that publishes. */
-function PublishPanel({ episode }: { episode: AdminEpisodeDto | undefined }) {
+/**
+ * The side panel: what is still missing, whether members get a push, now or later, and the button
+ * that publishes. Pending edits on the page are saved first (one save, ADR-0068).
+ */
+function PublishPanel({
+  episode,
+  values,
+  set,
+  saveIfDirty,
+}: {
+  episode: AdminEpisodeDto | undefined;
+  values: Values;
+  set: (patch: Partial<Values>) => void;
+  saveIfDirty: () => Promise<boolean>;
+}) {
   const toast = useToast();
   const { transition, schedule } = useEpisodeActions(episode?.id);
   const p = t.publish;
@@ -566,7 +674,7 @@ function PublishPanel({ episode }: { episode: AdminEpisodeDto | undefined }) {
             ))}
           </ul>
 
-          {episode ? <NotifyForm episode={episode} /> : null}
+          {episode ? <NotifyFields values={values} set={set} /> : null}
 
           <div role="group" aria-label={p.title} className="admin-segmented admin-segmented--full">
             <button type="button" aria-pressed={mode === 'now'} onClick={() => setMode('now')}>
@@ -593,8 +701,11 @@ function PublishPanel({ episode }: { episode: AdminEpisodeDto | undefined }) {
                 disabled={!canPublish || !inFuture}
                 onClick={() => {
                   if (!picked) return;
-                  schedule.mutate(toUlaanbaatarIso(picked), {
-                    onSuccess: () => toast.show(p.scheduled, { tone: 'success' }),
+                  void saveIfDirty().then((saved) => {
+                    if (!saved) return;
+                    schedule.mutate(toUlaanbaatarIso(picked), {
+                      onSuccess: () => toast.show(p.scheduled, { tone: 'success' }),
+                    });
                   });
                 }}
               >
@@ -634,10 +745,16 @@ function PublishPanel({ episode }: { episode: AdminEpisodeDto | undefined }) {
       <ConfirmDialog
         open={confirm === 'publish'}
         title={p.nowConfirmTitle}
-        text={p.nowConfirmText}
+        text={
+          values.notify
+            ? p.nowConfirmNotify(values.pushText.trim() || values.title.trim())
+            : p.nowConfirmQuiet
+        }
         confirmLabel={p.now}
         onClose={() => setConfirm(null)}
-        onConfirm={() => run('publish', p.published)}
+        onConfirm={async () => {
+          if (await saveIfDirty()) await run('publish', p.published);
+        }}
       />
       <ConfirmDialog
         open={confirm === 'unschedule'}
@@ -661,55 +778,28 @@ function PublishPanel({ episode }: { episode: AdminEpisodeDto | undefined }) {
   );
 }
 
-/** Whether to tell the members when this goes out, and with which words. */
-function NotifyForm({ episode }: { episode: AdminEpisodeDto }) {
-  const toast = useToast();
-  const { update } = useEpisodeActions(episode.id);
-  const [notify, setNotify] = useState(episode.notifyOnPublish);
-  const [text, setText] = useState(episode.pushText ?? '');
-  const [error, setError] = useState<string>();
-  const dirty = notify !== episode.notifyOnPublish || text.trim() !== (episode.pushText ?? '');
-
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    setError(undefined);
-    const values: UpdateEpisodeRequest = { notifyOnPublish: notify, pushText: text.trim() || null };
-    try {
-      await update.mutateAsync(values);
-      toast.show(mn.common.saved, { tone: 'success' });
-    } catch (err) {
-      setError(errorText(err));
-    }
-  }
-
+/** Whether to tell the members when this goes out, and with which words (saved with the page). */
+function NotifyFields({ values, set }: { values: Values; set: (patch: Partial<Values>) => void }) {
   return (
-    <form className="admin-form" onSubmit={(event) => void save(event)} noValidate>
+    <div className="admin-form">
       <label className="admin-check">
         <input
           type="checkbox"
-          checked={notify}
-          onChange={(event) => setNotify(event.target.checked)}
+          checked={values.notify}
+          onChange={(event) => set({ notify: event.target.checked })}
         />
         <span>{t.notify.switch}</span>
       </label>
-      {notify ? (
+      {values.notify ? (
         <Input
           label={t.notify.text}
-          value={text}
+          value={values.pushText}
           maxLength={180}
           hint={t.notify.textHint}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => set({ pushText: event.target.value })}
         />
       ) : null}
-      {error ? <Notice tone="danger">{error}</Notice> : null}
-      {dirty ? (
-        <div>
-          <Button type="submit" variant="secondary" loading={update.isPending}>
-            {t.notify.save}
-          </Button>
-        </div>
-      ) : null}
-    </form>
+    </div>
   );
 }
 
