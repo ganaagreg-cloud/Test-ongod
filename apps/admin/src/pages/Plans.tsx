@@ -158,7 +158,7 @@ function PlanFields({ editing, onClose }: { editing: AdminPlanDto | 'new'; onClo
         inputMode="numeric"
         onChange={(event) => setDays(event.target.value)}
         disabled={daysLocked}
-        {...(daysLocked ? { hint: t.daysLocked } : {})}
+        hint={daysLocked ? t.daysLocked : t.daysHint}
         required
       />
       <div>

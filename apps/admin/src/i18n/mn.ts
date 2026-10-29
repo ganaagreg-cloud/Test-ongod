@@ -1,3 +1,4 @@
+import { planLength } from '@ongod/shared';
 // All admin text, in Mongolian (CLAUDE.md). Server errors arrive already translated in
 // error.message; the texts here cover the screens themselves.
 
@@ -645,7 +646,15 @@ export const mn = {
       status: 'Төлөв',
       actions: 'Үйлдэл',
     },
-    days: (n: number) => `${n} хоног`,
+    /** "1 сар", "1 жил", "2 жил"; other lengths in days. */
+    days: (n: number) => {
+      const { unit, count } = planLength(n);
+      return unit === 'year'
+        ? `${count} жил`
+        : unit === 'month'
+          ? `${count} сар`
+          : `${count} хоног`;
+    },
     active: 'Идэвхтэй',
     inactive: 'Идэвхгүй',
     formCreate: 'Багц нэмэх',
@@ -655,6 +664,7 @@ export const mn = {
     price: 'Үнэ (₮)',
     priceHint: (min: string) => `Бүхэл тоо, хамгийн багадаа ${min}.`,
     durationDays: 'Хугацаа (хоног)',
+    daysHint: '30 = 1 сар, 365 = 1 жил, 730 = 2 жил.',
     daysLocked:
       'Энэ багцаар эрх авсан хүн байгаа тул хоногийг өөрчлөхгүй. Шинэ багц нэмээд энийг идэвхгүй болгоно уу.',
     activeLabel: 'Порталд санал болгох (идэвхтэй)',

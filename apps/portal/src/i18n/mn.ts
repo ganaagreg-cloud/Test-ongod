@@ -1,3 +1,4 @@
+import { planLength } from '@ongod/shared';
 // All portal text, in Mongolian (CLAUDE.md). Texts marked TODO(owner) are placeholders the owner
 // must replace or approve before launch (see docs/log and docs/runbooks/LAUNCH_CHECKLIST).
 
@@ -147,7 +148,15 @@ export const mn = {
     metaDescription: 'Онгодын эрхийн багц ба үнэ. QPay-ээр төлнө.',
     title: 'Эрх авах',
     lead: 'Багцаа сонгоно уу.',
-    duration: (days: number) => `${days} хоног`,
+    /** "1 сар", "1 жил", "2 жил"; other lengths in days. */
+    duration: (days: number) => {
+      const { unit, count } = planLength(days);
+      return unit === 'year'
+        ? `${count} жил`
+        : unit === 'month'
+          ? `${count} сар`
+          : `${count} хоног`;
+    },
     perMonth: (price: string) => `Сард ойролцоогоор ${price}`,
     // TODO(owner): approve what a plan includes.
     includes: [
