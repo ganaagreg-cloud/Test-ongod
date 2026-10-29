@@ -72,8 +72,26 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
     async grant(
       actor: User,
       userId: string,
-      input: { planId: string; days?: number | undefined; note?: string | undefined },
+      input: {
+        planId: string;
+        days?: number | undefined;
+        note?: string | undefined;
+        requestId?: string | undefined;
+      },
     ): Promise<AdminSubscriptionDto> {
+      // The same request again (a lost response, a double submit): the first grant, unchanged.
+      const earlier = async () => {
+        if (!input.requestId) return null;
+        const found = await db.subscription.findUnique({
+          where: { grantKey: input.requestId },
+          select: { id: true, userId: true },
+        });
+        if (found && found.userId !== userId) throw new AppError(400, 'BAD_REQUEST');
+        return found;
+      };
+      const seen = await earlier();
+      if (seen) return view(seen.id);
+
       const target = await db.user.findUnique({ where: { id: userId }, select: { status: true } });
       if (!target || target.status === 'DELETED') throw new AppError(404, 'NOT_FOUND');
       const plan = await db.plan.findUnique({ where: { id: input.planId } });
@@ -98,6 +116,7 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
                 decidedById: actor.id,
                 decidedAt: at,
                 createdAt: at,
+                grantKey: input.requestId ?? null,
               },
             });
             await tx.payment.create({
@@ -116,7 +135,12 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
           });
           return view(id);
         } catch (err) {
-          if (isUniqueViolation(err) && attempt < CODE_RETRIES) continue;
+          if (isUniqueViolation(err)) {
+            // The same request handled in parallel won the race: answer with its grant.
+            const raced = await earlier();
+            if (raced) return view(raced.id);
+            if (attempt < CODE_RETRIES) continue; // a reference code clash
+          }
           throw err;
         }
       }

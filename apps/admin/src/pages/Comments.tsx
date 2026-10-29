@@ -120,6 +120,11 @@ export function CommentsPage() {
                 {t.dismiss}
               </Button>
             ) : null}
+            {c.status === 'HIDDEN' && c.hiddenBy === 'reports' ? (
+              <Button variant="secondary" onClick={() => go('hide')}>
+                {t.keepHidden}
+              </Button>
+            ) : null}
             {c.status === 'HIDDEN' ? (
               <Button variant="secondary" onClick={() => go('restore')}>
                 {t.restore}

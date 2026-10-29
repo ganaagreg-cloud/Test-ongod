@@ -355,26 +355,34 @@ export function createPaymentService(deps: {
 
     /** POST /v1/webhooks/wire. `rawBody` must be the untouched request body. */
     async handleWebhook(rawBody: string, signature: string): Promise<WebhookReply> {
+      // The shared error shape {error: {code, message}} (the global handler writes it).
       const secret = env.WIRE_WEBHOOK_SECRET;
-      if (!secret) return { status: 503, body: { error: 'not configured' } };
+      if (!secret) throw new AppError(503, 'SERVICE_UNAVAILABLE');
 
       let event;
       try {
         event = verifyWebhook(rawBody, signature, secret);
       } catch {
-        return { status: 400, body: { error: 'bad signature' } };
+        throw new AppError(400, 'BAD_REQUEST');
       }
 
-      // Wire retries; the same event id is handled once.
-      try {
-        await db.webhookEvent.create({ data: { id: event.eventId, type: event.type } });
-      } catch (err) {
-        if (isUniqueViolation(err)) return { status: 200, body: { ok: true, duplicate: true } };
-        throw err;
-      }
+      // Wire retries; the same event id is handled once. The event is recorded only AFTER it
+      // has been applied: a crash in between makes Wire's retry run it again (granting is
+      // idempotent, one transaction with a status precondition), never skip it as a duplicate.
+      const seen = await db.webhookEvent.findUnique({ where: { id: event.eventId } });
+      if (seen) return { status: 200, body: { ok: true, duplicate: true } };
+      const done = async (body: Record<string, unknown>): Promise<WebhookReply> => {
+        try {
+          await db.webhookEvent.create({ data: { id: event.eventId, type: event.type } });
+        } catch (err) {
+          // The same event handled in parallel: already recorded, nothing else to do.
+          if (!isUniqueViolation(err)) throw err;
+        }
+        return { status: 200, body };
+      };
 
       if (!event.type.startsWith('payment_intent.') || !event.intentId) {
-        return { status: 200, body: { ok: true, ignored: true } };
+        return done({ ok: true, ignored: true });
       }
       const sub = await db.subscription.findUnique({
         where: { wirePaymentIntentId: event.intentId },
@@ -388,26 +396,21 @@ export function createPaymentService(deps: {
         : gift
           ? { kind: 'gift', id: gift.id, amountMnt: gift.amountMnt }
           : null;
-      if (!target) return { status: 200, body: { ok: true, unknown: true } };
+      if (!target) return done({ ok: true, unknown: true });
 
-      try {
-        if (event.type === 'payment_intent.succeeded') {
-          if (!gateway) throw new Error('webhook received but WIRE_API_KEY is not set');
-          // Never trust the payload alone: read the intent again from Wire.
-          await applyIntent(target, await gateway.retrieveIntent(event.intentId));
-        } else if (
-          event.type === 'payment_intent.canceled' ||
-          event.type === 'payment_intent.payment_failed'
-        ) {
-          if (target.kind === 'gift') await markGiftDead(target.id);
-          else await markDead(target.id);
-        }
-      } catch (err) {
-        // Forget the event so Wire's retry is handled instead of skipped as a duplicate.
-        await db.webhookEvent.delete({ where: { id: event.eventId } }).catch(() => undefined);
-        throw err;
+      // An error here answers 500 and leaves the event unrecorded, so Wire sends it again.
+      if (event.type === 'payment_intent.succeeded') {
+        if (!gateway) throw new Error('webhook received but WIRE_API_KEY is not set');
+        // Never trust the payload alone: read the intent again from Wire.
+        await applyIntent(target, await gateway.retrieveIntent(event.intentId));
+      } else if (
+        event.type === 'payment_intent.canceled' ||
+        event.type === 'payment_intent.payment_failed'
+      ) {
+        if (target.kind === 'gift') await markGiftDead(target.id);
+        else await markDead(target.id);
       }
-      return { status: 200, body: { ok: true } };
+      return done({ ok: true });
     },
 
     /** Development only: the mock checkout's "Simulate success" and "Cancel". */

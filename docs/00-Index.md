@@ -92,6 +92,7 @@ tags: [index]
 | ADR-0068 | [[ADR-0068-admin-upload-flow-like-creator-platforms]]     | accepted                                                  |
 | ADR-0069 | [[ADR-0069-cover-from-video-picture]]                     | accepted                                                  |
 | ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
+| ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 
 ## Research
 

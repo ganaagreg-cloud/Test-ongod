@@ -26,6 +26,7 @@ import { createMediaUrls, type MediaUrls } from './catalog/media';
 import { createCatalogService } from './catalog/service';
 import {
   cleanupAbandonedUploads,
+  recoverFinishedUploads,
   cronTasks,
   expireGifts,
   syncWaitingGifts,
@@ -249,6 +250,7 @@ export async function buildApp(deps: AppDeps) {
           syncWaitingGifts(payments, { budgetMs: env.WIRE_SYNC_BUDGET_MS }),
           ...cronTasks,
           expireGifts,
+          recoverFinishedUploads((now) => tus.recoverFinished(now)),
           cleanupAbandonedUploads(() => tus.cleanUpExpired()),
         ],
         worker: deps.worker,

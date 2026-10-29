@@ -1,4 +1,4 @@
-import { mkdir, rename, rm } from 'node:fs/promises';
+import { access, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MAX_VIDEO_BYTES, maxBytesOf, mediaKindOfFile } from '@ongod/shared';
 import { FileStore } from '@tus/file-store';
@@ -28,6 +28,9 @@ const reject = (body: string, status_code = 400) => ({ status_code, body });
  *                and its job is queued: media.audio-upload (read length, send to storage) or
  *                media.video-upload (send to Bunny Stream, then follow processing)
  */
+/** An UPLOADING row this old with a finished file is taken as an interrupted handoff. */
+const RECOVER_AFTER_MS = 5 * 60_000;
+
 export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env, 'TRUST_PROXY'> }) {
   const { db, dirs } = deps;
   const store = new FileStore({ directory: dirs.tus, expirationPeriodInMilliseconds: EXPIRY_MS });
@@ -112,13 +115,15 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
       const folder = asset.kind === 'VIDEO' ? dirs.video : dirs.audio;
       await mkdir(folder, { recursive: true });
       await rename(join(dirs.tus, upload.id), join(folder, asset.id));
-      await store.configstore.delete(upload.id);
 
+      // The file is complete in its folder before the row changes. A crash right here leaves an
+      // UPLOADING row with a finished file: recoverFinished() hands it over later (audit F04).
       await db.$transaction(async (tx) => {
-        await tx.mediaAsset.update({
-          where: { id: asset.id },
+        const { count } = await tx.mediaAsset.updateMany({
+          where: { id: asset.id, status: 'UPLOADING' },
           data: { status: 'PROCESSING', failReason: null, sizeBytes: BigInt(upload.size ?? 0) },
         });
+        if (count === 0) return; // already handed over (recovered meanwhile)
         await enqueueMediaUpload(tx, asset.kind, asset.id);
         const actor = req.headers.get(ADMIN_HEADER);
         if (actor) {
@@ -130,11 +135,51 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
           });
         }
       });
+      // Only after the handoff: until then the upload's record is kept.
+      await store.configstore.delete(upload.id);
       return {};
     },
   });
 
-  return { server, store, cleanUpExpired: () => server.cleanUpExpiredUploads() };
+  /**
+   * Uploads whose file reached its folder but whose row is still UPLOADING (the process stopped
+   * between the move and the database handoff): mark them PROCESSING and queue the work. The move
+   * is a rename, so a file in the folder is always complete. Run by cron.
+   */
+  async function recoverFinished(now = new Date()): Promise<number> {
+    const stale = await db.mediaAsset.findMany({
+      where: { status: 'UPLOADING', updatedAt: { lt: new Date(now.getTime() - RECOVER_AFTER_MS) } },
+      select: { id: true, kind: true },
+      take: 50,
+    });
+    let recovered = 0;
+    for (const asset of stale) {
+      const file = join(asset.kind === 'VIDEO' ? dirs.video : dirs.audio, asset.id);
+      const size = await access(file).then(
+        () => stat(file).then((s) => s.size),
+        () => null,
+      );
+      if (size === null) continue; // still being uploaded, or abandoned: tus cleanup handles it
+      await db.$transaction(async (tx) => {
+        const { count } = await tx.mediaAsset.updateMany({
+          where: { id: asset.id, status: 'UPLOADING' },
+          data: { status: 'PROCESSING', failReason: null, sizeBytes: BigInt(size) },
+        });
+        if (count === 1) {
+          await enqueueMediaUpload(tx, asset.kind, asset.id);
+          recovered++;
+        }
+      });
+    }
+    return recovered;
+  }
+
+  return {
+    server,
+    store,
+    cleanUpExpired: () => server.cleanUpExpiredUploads(),
+    recoverFinished,
+  };
 }
 
 export type TusUploads = ReturnType<typeof createTusServer>;

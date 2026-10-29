@@ -228,6 +228,8 @@ model Subscription {
   /// Wire payment intent id (QPay checkout); one subscription per intent.
   wirePaymentIntentId String?            @unique
   checkoutUrl         String?            @db.Text
+  /// Manual grant: the admin's request key, so a retried request grants once (audit F02).
+  grantKey            String?            @unique
   createdAt           DateTime           @default(now())
 
   user      User      @relation("SubscriptionUser", fields: [userId], references: [id])

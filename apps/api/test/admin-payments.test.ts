@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mn } from '../src/i18n/mn';
@@ -183,6 +184,28 @@ describe('manual grant (SPEC E)', () => {
     const b = (await grant(member.userId, { planId: plan.id, days: 7 })).json().subscription;
     expect(b.startsAt).toBe(a.endsAt);
     expect((await userRow(member.userId)).accessUntil?.toISOString()).toBe(b.endsAt);
+  });
+
+  it('the same grant request twice (lost answer, parallel retry) grants once (audit F02)', async () => {
+    const plan = await makePlan({ durationDays: 30 });
+    const member = await makeMember(app);
+    const requestId = randomUUID();
+    const first = await grant(member.userId, { planId: plan.id, requestId });
+    const again = await grant(member.userId, { planId: plan.id, requestId });
+    const [x, y] = await Promise.all([
+      grant(member.userId, { planId: plan.id, requestId }),
+      grant(member.userId, { planId: plan.id, requestId }),
+    ]);
+    for (const res of [again, x, y]) {
+      expect(res.json().subscription.id).toBe(first.json().subscription.id);
+    }
+    expect(await testDb.subscription.count({ where: { userId: member.userId } })).toBe(1);
+    // A new key is a new grant; a key used for one member cannot grant another.
+    expect(
+      (await grant(member.userId, { planId: plan.id, requestId: randomUUID() })).statusCode,
+    ).toBe(201);
+    const other = await makeMember(app, 'other-grant@example.com');
+    expect((await grant(other.userId, { planId: plan.id, requestId })).statusCode).toBe(400);
   });
 
   it('works for an inactive plan, but not an unknown plan, unknown user, deleted user or bad days', async () => {

@@ -228,7 +228,10 @@ describe('Wire webhook', () => {
     const { wire, subscription, intentId } = await pay();
     wire!.intents.get(intentId)!.status = 'succeeded';
     const body = eventBody('evt_x', 'payment_intent.succeeded', intentId);
-    expect((await webhook(body, undefined)).statusCode).toBe(400);
+    const missing = await webhook(body, undefined);
+    expect(missing.statusCode).toBe(400);
+    // The shared error shape (audit F08).
+    expect(missing.json()).toMatchObject({ error: { code: 'BAD_REQUEST' } });
     expect((await webhook(body, sign(body, 'whsec_other'))).statusCode).toBe(400);
     expect((await webhook(body + ' ', sign(body))).statusCode).toBe(400);
     const old = sign(body, SECRET, Math.floor(Date.now() / 1000) - 3600);
@@ -240,7 +243,24 @@ describe('Wire webhook', () => {
   it('answers 503 when WIRE_WEBHOOK_SECRET is not set', async () => {
     await setup({ WIRE_WEBHOOK_SECRET: '' });
     const body = eventBody('evt_1', 'payment_intent.succeeded', 'pi_x');
-    expect((await webhook(body, sign(body))).statusCode).toBe(503);
+    const res = await webhook(body, sign(body));
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toMatchObject({ error: { code: 'SERVICE_UNAVAILABLE' } });
+  });
+
+  it('records an event only after it was applied, so a retry after a crash still grants (audit F01)', async () => {
+    const { wire, subscription, intentId } = await pay();
+    wire!.intents.get(intentId)!.status = 'succeeded';
+    const body = eventBody('evt_crash', 'payment_intent.succeeded', intentId);
+    // A crash between receiving and applying: under the old order the event was already stored.
+    // Now nothing is stored until the grant is done, so the retry is not a duplicate.
+    vi.mocked(wire!.gateway.retrieveIntent).mockRejectedValueOnce(new Error('process died'));
+    expect((await webhook(body, sign(body))).statusCode).toBe(500);
+    expect(await testDb.webhookEvent.count()).toBe(0);
+    const retry = await webhook(body, sign(body));
+    expect(retry.json()).toEqual({ ok: true });
+    expect((await row(subscription.id)).status).toBe('ACTIVE');
+    expect(await testDb.webhookEvent.count()).toBe(1);
   });
 
   it('does not trust the payload: Wire still says unpaid, so nothing is granted', async () => {
