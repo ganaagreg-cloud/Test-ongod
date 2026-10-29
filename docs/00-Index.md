@@ -88,6 +88,7 @@ tags: [index]
 | ADR-0064 | [[ADR-0064-api-on-node-22]]                               | accepted                                                  |
 | ADR-0065 | [[ADR-0065-player-next-at-the-bottom]]                    | accepted                                                  |
 | ADR-0066 | [[ADR-0066-comments-flat-in-player]]                      | accepted                                                  |
+| ADR-0067 | [[ADR-0067-player-scrolls-with-mini-bar]]                 | accepted                                                  |
 
 ## Research
 

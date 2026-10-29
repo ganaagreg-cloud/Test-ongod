@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ScrollViewInstance,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { EpisodeItem } from '@ongod/shared';
@@ -11,12 +19,13 @@ import { useEpisode, useToggleSaved } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
 import { clockLabel, episodeMeta, isLocked, resumeAt } from '../../../src/lib/episode';
 import { failureOf, startEpisode, type StartFailure } from '../../../src/playback/nowPlaying';
-import { nextInQueue } from '../../../src/playback/queue';
+import { nextInQueue, nextRows } from '../../../src/playback/queue';
 import { NoAccessSheet } from '../../../src/screens/NoAccessSheet';
 import { openLibrary } from '../../../src/screens/navigation';
 import { CommentsSection } from '../../../src/screens/player/CommentsSection';
 import { DescriptionText } from '../../../src/screens/player/DescriptionText';
 import { NextList } from '../../../src/screens/player/NextList';
+import { MiniBar } from '../../../src/screens/player/MiniBar';
 import { PlayerControls } from '../../../src/screens/player/PlayerControls';
 import { PlayerPicture } from '../../../src/screens/player/PlayerPicture';
 import { SleepSheet } from '../../../src/screens/player/SleepSheet';
@@ -36,6 +45,8 @@ import {
 
 /** Seconds the autoplay countdown shows before the next episode starts (ADR-0049). */
 const AUTOPLAY_SECONDS = 3;
+/** Rows under "Дараагийн" (ADR-0067). */
+const NEXT_ROWS = 4;
 
 /**
  * Player (dark, a sheet over the tabs; DESIGN "Player", Player.dc.html). Also the episode page:
@@ -57,6 +68,14 @@ export default function PlayerScreen() {
   /** The refusal the member already closed the sheet for. */
   const [dismissed, setDismissed] = useState<typeof state.error>(null);
   const autoStarted = useRef(false);
+  /** Scroll offset at which the big controls are half out of view, and whether we are past it. */
+  const controlsGone = useRef(Infinity);
+  const [compact, setCompact] = useState(false);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const past = e.nativeEvent.contentOffset.y >= controlsGone.current;
+    setCompact((was) => (was === past ? was : past));
+  };
   /** The member pressed "Болих" on the countdown of the episode that just ended. */
   const [autoplayCancelled, setAutoplayCancelled] = useState(false);
 
@@ -77,6 +96,8 @@ export default function PlayerScreen() {
       ? queued
       : (item.nextInSeries ?? item.next[0] ?? null)
     : null;
+  // The rows under "Дараагийн" (ADR-0067): the next item first, then the API's next of the category.
+  const upNextRows = nextRows(upNext, item?.id ?? '', item?.next ?? [], NEXT_ROWS);
   // Autoplay (ADR-0049): an episode that ended, no sleep timer, an item the member can play.
   // Starting it still goes through the play endpoint, which decides access.
   const autoplayNext =
@@ -88,6 +109,11 @@ export default function PlayerScreen() {
     !lockedOf(upNext)
       ? upNext
       : null;
+  // The countdown sits under the big controls: bring them back into view when it starts.
+  const countdownShown = autoplayNext !== null;
+  useEffect(() => {
+    if (countdownShown) scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [countdownShown]);
   const playNext = useCallback(
     (next: EpisodeItem) =>
       router.replace({ pathname: '/player/[id]', params: { id: next.id, autoplay: '1' } }),
@@ -190,90 +216,113 @@ export default function PlayerScreen() {
             toast.show(item.saved ? mn.episode.unsaved : mn.episode.saved, { tone: 'success' });
           }}
         />
-        {/* Everything down to "Дараагийн" is fixed; only the description scrolls (ADR-0049). */}
-        <View style={styles.fixed}>
-          <Enter index={0}>
-            <PlayerPicture
-              uri={item.coverUrl}
-              title={item.title}
-              family={coverFamilyFor(item.id)}
-              playing={playing || busy}
-              video={loaded && state.kind === 'VIDEO'}
-              locked={lockedOf(item)}
-              onPlay={toggle}
-            />
-          </Enter>
+        {/* The whole page scrolls; the slim bar over it takes over from the controls (ADR-0067). */}
+        <View style={styles.body}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.descriptionArea}
+            contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
+            scrollEventThrottle={32}
+            onScroll={onScroll}
+          >
+            <View style={styles.fixed}>
+              <Enter index={0}>
+                <PlayerPicture
+                  uri={item.coverUrl}
+                  title={item.title}
+                  family={coverFamilyFor(item.id)}
+                  playing={playing || busy}
+                  video={loaded && state.kind === 'VIDEO'}
+                  locked={lockedOf(item)}
+                  onPlay={toggle}
+                />
+              </Enter>
 
-          <Enter index={1} style={styles.block}>
-            <Text style={styles.title} numberOfLines={2} accessibilityRole="header">
-              {item.title}
-            </Text>
-            <Text style={styles.meta}>{episodeMeta(item, true)}</Text>
-          </Enter>
+              <Enter index={1} style={styles.block}>
+                <Text style={styles.title} numberOfLines={2} accessibilityRole="header">
+                  {item.title}
+                </Text>
+                <Text style={styles.meta}>{episodeMeta(item, true)}</Text>
+              </Enter>
 
-          <Enter index={2} style={styles.block}>
-            <Scrubber
-              positionSec={positionSec}
-              durationSec={durationSec}
-              disabled={!loaded}
-              onSeek={(sec) => {
-                setAutoplayCancelled(false);
-                void player.seekTo(sec).catch(onPlaybackError);
-              }}
-              label={mn.player.position}
-              valueText={clockLabel(positionSec)}
-            />
-            <View style={styles.times}>
-              <Text style={styles.time}>{clockLabel(positionSec)}</Text>
-              <Text style={styles.time}>-{clockLabel(Math.max(0, durationSec - positionSec))}</Text>
+              <Enter index={2} style={styles.block}>
+                <Scrubber
+                  positionSec={positionSec}
+                  durationSec={durationSec}
+                  disabled={!loaded}
+                  onSeek={(sec) => {
+                    setAutoplayCancelled(false);
+                    void player.seekTo(sec).catch(onPlaybackError);
+                  }}
+                  label={mn.player.position}
+                  valueText={clockLabel(positionSec)}
+                />
+                <View style={styles.times}>
+                  <Text style={styles.time}>{clockLabel(positionSec)}</Text>
+                  <Text style={styles.time}>
+                    -{clockLabel(Math.max(0, durationSec - positionSec))}
+                  </Text>
+                </View>
+              </Enter>
+
+              <View
+                onLayout={(e) => {
+                  const { y, height } = e.nativeEvent.layout;
+                  controlsGone.current = y + height / 2;
+                }}
+              >
+                <Enter index={3}>
+                  <PlayerControls
+                    playing={playing}
+                    rate={state.rate}
+                    sleepOn={loaded && state.sleep.mode !== null}
+                    canSeek={loaded}
+                    onToggle={toggle}
+                    onBack={() => void player.skipBack().catch(onPlaybackError)}
+                    onForward={() => void player.skipForward().catch(onPlaybackError)}
+                    onRate={() => player.cycleRate()}
+                    onSleep={() => setSleepOpen(true)}
+                  />
+                </Enter>
+              </View>
+
+              {autoplayNext ? (
+                <AutoplayCountdown
+                  next={autoplayNext}
+                  onDone={playNext}
+                  onCancel={() => setAutoplayCancelled(true)}
+                />
+              ) : null}
             </View>
-          </Enter>
 
-          <Enter index={3}>
-            <PlayerControls
-              playing={playing}
-              rate={state.rate}
-              sleepOn={loaded && state.sleep.mode !== null}
-              canSeek={loaded}
-              onToggle={toggle}
-              onBack={() => void player.skipBack().catch(onPlaybackError)}
-              onForward={() => void player.skipForward().catch(onPlaybackError)}
-              onRate={() => player.cycleRate()}
-              onSleep={() => setSleepOpen(true)}
-            />
-          </Enter>
-
-          {autoplayNext ? (
-            <AutoplayCountdown
-              next={autoplayNext}
-              onDone={playNext}
-              onCancel={() => setAutoplayCancelled(true)}
-            />
+            <View style={styles.description}>
+              {item.description.trim() ? <DescriptionText text={item.description} /> : null}
+              <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
+              {upNext ? (
+                <NextList
+                  items={upNextRows}
+                  ofSeries={upNext.id === item.nextInSeries?.id}
+                  lockedOf={lockedOf}
+                  onOpen={playNext}
+                  onAll={() => {
+                    router.back();
+                    openLibrary(router, item.category.slug);
+                  }}
+                />
+              ) : null}
+            </View>
+          </ScrollView>
+          {compact ? (
+            <View style={styles.miniBar}>
+              <MiniBar
+                title={item.title}
+                playing={playing}
+                fraction={durationSec > 0 ? positionSec / durationSec : 0}
+                onToggle={toggle}
+              />
+            </View>
           ) : null}
         </View>
-
-        <ScrollView
-          style={styles.descriptionArea}
-          contentContainerStyle={[
-            styles.description,
-            { paddingBottom: insets.bottom + spacing.md },
-          ]}
-        >
-          {item.description.trim() ? <DescriptionText text={item.description} /> : null}
-          <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
-          {upNext ? (
-            <NextList
-              item={upNext}
-              ofSeries={upNext.id === item.nextInSeries?.id}
-              locked={lockedOf(upNext)}
-              onOpen={playNext}
-              onAll={() => {
-                router.back();
-                openLibrary(router, item.category.slug);
-              }}
-            />
-          ) : null}
-        </ScrollView>
 
         <SleepSheet
           visible={sleepOpen}
@@ -385,6 +434,8 @@ const styles = StyleSheet.create({
   padded: { paddingHorizontal: layout.screenPadding, gap: spacing.md },
   // Tight gaps: 6.1" iPhone and 360x640 dp Android must fit everything above the description.
   fixed: { paddingHorizontal: layout.screenPadding, gap: spacing.sm },
+  body: { flex: 1 },
+  miniBar: { position: 'absolute', top: 0, left: 0, right: 0 },
   descriptionArea: { flex: 1 },
   description: { paddingHorizontal: layout.screenPadding, paddingTop: spacing.xs },
   block: { gap: spacing.xxs },

@@ -18,3 +18,18 @@ export function nextInQueue(id: string): EpisodeItem | null | undefined {
   if (index < 0) return undefined;
   return queue[index + 1] ?? null;
 }
+
+/**
+ * The rows under "Дараагийн" (ADR-0067): the next item first, then the API's next of the category,
+ * without the next item again and without the open episode, at most `max` rows.
+ */
+export function nextRows(
+  upNext: EpisodeItem | null,
+  currentId: string,
+  following: readonly EpisodeItem[],
+  max: number,
+): EpisodeItem[] {
+  if (!upNext) return [];
+  const rest = following.filter((e) => e.id !== upNext.id && e.id !== currentId);
+  return [upNext, ...rest].slice(0, max);
+}
