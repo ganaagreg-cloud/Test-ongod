@@ -718,7 +718,8 @@
   gap: var(--space-xs);
 }
 
-.admin-uploader__progress progress {
+.admin-uploader__progress progress,
+.admin-bulk-list progress {
   width: 100%;
   height: calc(var(--layout-progress-bar-height) * 3);
   accent-color: var(--color-primary);
@@ -1499,6 +1500,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admin-bulk-list {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* ---------- Publish side panel ---------- */

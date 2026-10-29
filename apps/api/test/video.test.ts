@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import pino from 'pino';
+import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_VIDEO_BYTES } from '@ongod/shared';
 import { mn } from '../src/i18n/mn';
@@ -102,6 +103,51 @@ describe('video upload over tus, processed by Bunny Stream', () => {
     const episode = await adminEpisode();
     expect(episode.media).toMatchObject({ kind: 'VIDEO', status: 'READY', durationSec: 2411 });
     expect(episode.missing).toEqual(['cover']);
+  });
+
+  it("a video without a cover gets Bunny's picture from the video as its cover (ADR-0069)", async () => {
+    stream.state.thumbnail = await sharp({
+      create: { width: 1920, height: 1080, channels: 3, background: '#335544' },
+    })
+      .jpeg()
+      .toBuffer();
+    await upload(videoBytes());
+    await runMediaJobs(runtime);
+
+    const row = await testDb.episode.findUniqueOrThrow({ where: { id: episodeId } });
+    expect(row.coverPath).toMatch(new RegExp(`^covers/${episodeId}/[0-9a-f-]+\\.webp$`));
+    expect(existsSync(join(runtime.dirs.published, row.coverPath))).toBe(true);
+    const episode = await adminEpisode();
+    expect(episode.missing).toEqual([]);
+  });
+
+  it('an episode that already has a cover keeps it; no picture from Bunny leaves it empty', async () => {
+    stream.state.thumbnail = await sharp({
+      create: { width: 640, height: 360, channels: 3, background: '#112233' },
+    })
+      .jpeg()
+      .toBuffer();
+    await testDb.episode.update({
+      where: { id: episodeId },
+      data: { coverPath: 'covers/own.webp' },
+    });
+    await upload(videoBytes());
+    await runMediaJobs(runtime);
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: episodeId } })).coverPath).toBe(
+      'covers/own.webp',
+    );
+    expect(await testDb.job.count({ where: { type: 'media.video-cover' } })).toBe(0);
+
+    // No picture at Bunny: the video is READY, the cover stays empty.
+    await testDb.episode.update({ where: { id: episodeId }, data: { coverPath: '' } });
+    stream.state.thumbnail = null;
+    await upload(videoBytes(), 'ep2.mp4');
+    await runMediaJobs(runtime);
+    const [ready] = await assets();
+    expect(ready).toMatchObject({ status: 'READY' });
+    expect((await testDb.episode.findUniqueOrThrow({ where: { id: episodeId } })).coverPath).toBe(
+      '',
+    );
   });
 
   it('refuses a file that is neither audio nor video (Mongolian reason) and a video over the limit', async () => {

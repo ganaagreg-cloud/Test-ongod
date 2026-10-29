@@ -6,6 +6,7 @@ import { LoginPage } from './auth/LoginPage';
 import { Shell } from './layout/Shell';
 import { CategoriesPage } from './pages/Categories';
 import { DashboardPage } from './pages/Dashboard';
+import { BulkUploadPage } from './pages/BulkUpload';
 import { EpisodeEditPage } from './pages/EpisodeEdit';
 import { EpisodesPage } from './pages/Episodes';
 import { AuditPage } from './pages/Audit';
@@ -61,6 +62,7 @@ export function App() {
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:id" element={<UserDetailPage />} />
             <Route path="episodes" element={<EpisodesPage />} />
+            <Route path="episodes/upload" element={<BulkUploadPage />} />
             <Route path="episodes/:id" element={<EpisodeEditPage />} />
             <Route path="series" element={<SeriesPage />} />
             <Route path="series/new" element={<SeriesEditPage />} />

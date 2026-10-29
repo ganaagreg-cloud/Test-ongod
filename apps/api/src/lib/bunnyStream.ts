@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
+import { createBunnySigner } from './bunnyToken';
 
 /**
  * Bunny Stream HTTP API (video episodes, ADR-0038). Facts: docs/research/R-bunny-stream.md.
@@ -11,11 +12,18 @@ import { Readable } from 'node:stream';
  *   DELETE https://video.bunnycdn.com/library/<libraryId>/videos/<guid>
  *
  * Header AccessKey = the library's API key (BUNNY_STREAM_API_KEY), not the storage password.
+ *
+ * The picture Bunny takes from a video is on the library's CDN, `https://<cdn host>/<guid>/thumbnail.jpg`
+ * (R-bunny-stream, TO-VERIFY on the first live upload), behind the same token authentication as
+ * the playlist, so it is fetched with a short signed URL.
  */
 
 export interface BunnyStreamConfig {
   libraryId: string;
   apiKey: string;
+  /** The library's CDN host and token key: needed for the video's picture (ADR-0069). */
+  cdnHost?: string;
+  tokenKey?: string;
   /** Only tests change this. */
   baseUrl?: string;
 }
@@ -38,6 +46,8 @@ export interface StreamClient {
   getVideo(guid: string): Promise<StreamVideo | null>;
   /** A video that is already gone is not an error. */
   deleteVideo(guid: string): Promise<void>;
+  /** The picture Bunny took from the video; null when there is none (yet) or no CDN settings. */
+  getThumbnail(guid: string): Promise<Buffer | null>;
 }
 
 export class BunnyStreamError extends Error {
@@ -72,6 +82,10 @@ export function createBunnyStreamClient(cfg: BunnyStreamConfig): StreamClient {
     return `${base}/${guid}`;
   };
   const headers = { AccessKey: cfg.apiKey, Accept: 'application/json' };
+  const cdnSigner =
+    cfg.cdnHost && cfg.tokenKey
+      ? createBunnySigner({ host: cfg.cdnHost, tokenKey: cfg.tokenKey })
+      : undefined;
 
   return {
     async createVideo(title) {
@@ -128,6 +142,19 @@ export function createBunnyStreamClient(cfg: BunnyStreamConfig): StreamClient {
         signal: AbortSignal.timeout(30_000),
       });
       if (!res.ok && res.status !== 404) throw new BunnyStreamError(res.status, 'delete');
+    },
+
+    async getThumbnail(guid) {
+      if (!cdnSigner) return null;
+      videoUrl(guid); // validates the id
+      const url = cdnSigner.signUrl({
+        path: `/${guid}/thumbnail.jpg`,
+        expiresAt: new Date(Date.now() + 5 * 60_000),
+      });
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new BunnyStreamError(res.status, 'thumbnail');
+      return Buffer.from(await res.arrayBuffer());
     },
   };
 }

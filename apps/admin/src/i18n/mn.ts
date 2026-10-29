@@ -1,3 +1,4 @@
+import { planLength } from '@ongod/shared';
 // All admin text, in Mongolian (CLAUDE.md). Server errors arrive already translated in
 // error.message; the texts here cover the screens themselves.
 
@@ -309,6 +310,8 @@ export const mn = {
       detailsTitle: 'Мэдээлэл',
       coverEmpty: 'Ковер оруулах',
       coverHint: '16:9 · 1280×720 · JPG, PNG, WebP',
+      coverFromVideo:
+        'Видеонд ковер оруулаагүй бол видео бэлэн болоход түүнээс зураг авч ковер болгоно.',
       coverChange: 'Солих',
       fileEmpty: 'Аудио эсвэл видео файлаа энд чирнэ үү',
       fileOr: 'эсвэл',
@@ -363,6 +366,32 @@ export const mn = {
       text: 'Эхний бичлэгээ нэмээд эхэлнэ үү.',
     },
     shortcuts: { search: 'Хайх (/)', newItem: 'Шинэ бичлэг (n)' },
+    bulkUpload: {
+      button: 'Олон файл',
+      title: 'Олон файл оруулах',
+      subtitle: 'Файл бүрээр нэг ноорог үүснэ. Гарчиг нь файлын нэрээс авна, дараа нь засаж болно.',
+      category: 'Бүгдийн ангилал',
+      choose: 'Аудио эсвэл видео файлууд сонгох',
+      drop: 'Файлуудаа энд чирнэ үү эсвэл сонгоно уу',
+      listLabel: 'Оруулах файлууд',
+      status: {
+        waiting: 'Хүлээж байна',
+        creating: 'Ноорог үүсгэж байна…',
+        uploading: '',
+        done: 'Орлоо. Боловсруулж байна.',
+        failed: 'Алдаа гарлаа',
+        invalid: '',
+      },
+      progress: (percent: number) => `${percent}% орлоо`,
+      open: 'Нээх',
+      remove: 'Хасах',
+      start: (n: number) => (n > 0 ? `${n} файл оруулах` : 'Оруулах'),
+      running: 'Оруулж байна…',
+      needCategory: 'Эхлээд ангилал сонгоно уу.',
+      finished: (n: number) => `${n} файл орлоо. Ковер, тайлбараа нэмээд нийтэлнэ үү.`,
+      toDrafts: 'Ноорог руу очих',
+      hint: 'Олон файл зэрэг оруулах',
+    },
     undo: 'Буцаах',
     undone: 'Буцаалаа.',
     archivedMany: (n: number) => `${n} бичлэгийг архивлалаа.`,
@@ -645,7 +674,15 @@ export const mn = {
       status: 'Төлөв',
       actions: 'Үйлдэл',
     },
-    days: (n: number) => `${n} хоног`,
+    /** "1 сар", "1 жил", "2 жил"; other lengths in days. */
+    days: (n: number) => {
+      const { unit, count } = planLength(n);
+      return unit === 'year'
+        ? `${count} жил`
+        : unit === 'month'
+          ? `${count} сар`
+          : `${count} хоног`;
+    },
     active: 'Идэвхтэй',
     inactive: 'Идэвхгүй',
     formCreate: 'Багц нэмэх',
@@ -655,6 +692,7 @@ export const mn = {
     price: 'Үнэ (₮)',
     priceHint: (min: string) => `Бүхэл тоо, хамгийн багадаа ${min}.`,
     durationDays: 'Хугацаа (хоног)',
+    daysHint: '30 = 1 сар, 365 = 1 жил, 730 = 2 жил.',
     daysLocked:
       'Энэ багцаар эрх авсан хүн байгаа тул хоногийг өөрчлөхгүй. Шинэ багц нэмээд энийг идэвхгүй болгоно уу.',
     activeLabel: 'Порталд санал болгох (идэвхтэй)',

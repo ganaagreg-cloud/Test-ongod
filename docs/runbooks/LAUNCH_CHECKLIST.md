@@ -20,11 +20,14 @@ From [[SPEC#Acceptance tests (must pass before launch)]]. Tick each item with th
 - [ ] A backup was restored once on a clean server ([[DEPLOY]])
 - [ ] Store review: the demo account works, no payment UI in the apps ([[STORE]])
 - [ ] **Node 22 on the host:** iTools runs Node 22.13 or newer ([[R-hosting-limits]], the process is started with it). The API is built for Node 22 ([[ADR-0064-api-on-node-22|ADR-0064]]); if the host cannot, decide before launch (another host, or back to `node20` with an ADR)
+- [ ] **Plans (SPEC K):** the owner creates the three plans in Багц with the real prices: 1 сар (30 days), 1 жил (365) and 2 жил (730); the seeded yearly plan is edited or switched off ([[open-questions]] #30)
+- [ ] **Support contact:** the owner gives it before launch ([[open-questions]] #26); set `SUPPORT_EMAIL` and the portal contact texts
 - [ ] **Comments (SPEC L):** `SUPPORT_EMAIL` is set in production (comments are shown without it, so this is a manual gate before any store submission, [[ADR-0062-comments-without-contact-gate|ADR-0062]]), `COMMENT_BANNED_WORDS` is filled by the owner, the Google Play user-content rules are read and [[R-store-ugc-rules]] is VERIFIED, and the owner knows to check Сэтгэгдэл ▸ Гомдолтой every few days ([[ADR-0061-episode-comments|ADR-0061]])
 
 ## Before go-live
 
 - [ ] Bunny switched to the owner's account ([[BUNNY_SWITCH]])
+- [ ] First live video without a cover: Bunny's picture appears as the cover within a minute of READY ([[ADR-0069-cover-from-video-picture|ADR-0069]]; the thumbnail URL is TO-VERIFY in [[R-bunny-stream]])
 - [ ] `ALERT_EMAILS`, `LOG_FILE` and an uptime monitor configured ([[ADR-0016-monitoring-logs-alert-emails|ADR-0016]])
 - [ ] Google Play closed test finished ([[R-google-play-closed-test]])
 - [ ] All TO-VERIFY research notes resolved (`/recheck`)

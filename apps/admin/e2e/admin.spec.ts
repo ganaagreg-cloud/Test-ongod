@@ -441,6 +441,35 @@ test('an item with a ready file shows a small "Файл солих" instead of t
   await expect(page.getByText(mn.episodes.workspace.fileEmpty)).toHaveCount(0);
 });
 
+test('Олон файл: several files make one draft each; a wrong file is shown and not sent', async () => {
+  // ADR-0070. The category is the one remembered from the drafts made above.
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.bulkUpload.button }).click();
+  await expect(
+    page.getByRole('heading', { name: mn.episodes.bulkUpload.title, level: 1 }),
+  ).toBeVisible();
+  const stamp = Date.now();
+  const names = [`E2E анги ${stamp} A`, `E2E анги ${stamp} B`];
+  await page.getByLabel(mn.episodes.bulkUpload.choose).setInputFiles([
+    ...names.map((name) => ({
+      name: `${name}.mp3`,
+      mimeType: 'audio/mpeg',
+      buffer: Buffer.alloc(64 * 1024, 2),
+    })),
+    { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not media') },
+  ]);
+  const list = page.getByRole('list', { name: mn.episodes.bulkUpload.listLabel });
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+  await expect(list.getByText(mn.episodes.audio.invalidType)).toBeVisible();
+
+  await page.getByRole('button', { name: mn.episodes.bulkUpload.start(2) }).click();
+  await expect(page.getByText(mn.episodes.bulkUpload.finished(2))).toBeVisible({ timeout: 30_000 });
+  await expect(list.getByRole('link', { name: mn.episodes.bulkUpload.open })).toHaveCount(2);
+
+  await sidebar(mn.nav.episodes).click();
+  for (const name of names) await expect(page.getByText(name, { exact: true })).toBeVisible();
+});
+
 test('series: create, add two existing items, move the second up, order survives a reload', async () => {
   const stamp = Date.now();
   const first = await createDraft('A', stamp);
@@ -564,6 +593,7 @@ test('plans: add a switched-off plan, change its price; the days lock once it is
 
   const row = page.getByRole('row', { name: new RegExp(name) });
   await expect(row).toContainText('15,000₮');
+  await expect(row).toContainText(mn.plans.days(30));
   await expect(row).toContainText(mn.plans.inactive);
   await row.getByRole('button', { name: mn.common.edit }).click();
   const edit = dialog(mn.plans.formEdit);
@@ -574,7 +604,11 @@ test('plans: add a switched-off plan, change its price; the days lock once it is
   await expect(row).toContainText('17,000₮');
 
   // The seeded yearly plan has subscriptions: its days cannot change.
-  const yearly = page.getByRole('row').filter({ hasText: '365' }).first();
+  // 365 days read as "1 жил" (planLength).
+  const yearly = page
+    .getByRole('row')
+    .filter({ hasText: mn.plans.days(365) })
+    .first();
   await yearly.getByRole('button', { name: mn.common.edit }).click();
   await expect(dialog(mn.plans.formEdit).getByLabel(mn.plans.durationDays)).toBeDisabled();
   await expect(dialog(mn.plans.formEdit)).toContainText(mn.plans.daysLocked);

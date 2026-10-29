@@ -90,6 +90,8 @@ tags: [index]
 | ADR-0066 | [[ADR-0066-comments-flat-in-player]]                      | accepted                                                  |
 | ADR-0067 | [[ADR-0067-player-scrolls-with-mini-bar]]                 | accepted                                                  |
 | ADR-0068 | [[ADR-0068-admin-upload-flow-like-creator-platforms]]     | accepted                                                  |
+| ADR-0069 | [[ADR-0069-cover-from-video-picture]]                     | accepted                                                  |
+| ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
 
 ## Research
 

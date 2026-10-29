@@ -5,7 +5,10 @@ interface DropZoneProps {
   label: string;
   accept: string;
   disabled?: boolean;
-  onFile: (file: File) => void;
+  /** One file (the first, when several are dropped). */
+  onFile?: (file: File) => void;
+  /** Several files at once ("Олон файл", ADR-0070); turns on the input's `multiple`. */
+  onFiles?: (files: File[]) => void;
   className?: string;
   children: ReactNode;
 }
@@ -15,7 +18,15 @@ interface DropZoneProps {
  * the browser does the picking and the dropping, and the keyboard and screen readers get a normal
  * file field.
  */
-export function DropZone({ label, accept, disabled, onFile, className, children }: DropZoneProps) {
+export function DropZone({
+  label,
+  accept,
+  disabled,
+  onFile,
+  onFiles,
+  className,
+  children,
+}: DropZoneProps) {
   const [over, setOver] = useState(false);
   // Counted: dragenter/leave also fire for every child, and a plain boolean would flicker.
   const [depth, setDepth] = useState(0);
@@ -47,14 +58,17 @@ export function DropZone({ label, accept, disabled, onFile, className, children 
         className="admin-drop__input"
         aria-label={label}
         accept={accept}
+        multiple={onFiles !== undefined}
         disabled={disabled}
         // `depth` only exists to keep `over` honest while dragging
         data-depth={depth}
         onChange={(event) => {
-          const file = event.target.files?.[0];
+          const files = Array.from(event.target.files ?? []);
           // The same file chosen twice must fire again.
           event.target.value = '';
-          if (file) onFile(file);
+          if (files.length === 0) return;
+          onFiles?.(files);
+          onFile?.(files[0]!);
         }}
       />
     </div>

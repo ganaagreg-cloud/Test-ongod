@@ -27,7 +27,7 @@ import {
   toUlaanbaatarIso,
   ulaanbaatarInputToDate,
 } from '../lib/format';
-import { startingCategory, titleFromFileName } from '../lib/media';
+import { lastCategory, startingCategory, titleFromFileName } from '../lib/media';
 import { mn } from '../i18n/mn';
 import { MediaUploader } from '../upload/MediaUploader';
 
@@ -115,25 +115,6 @@ const valuesOf = (e?: AdminEpisodeDto): Values => ({
 });
 
 const validOf = (v: Values) => v.title.trim() !== '' && v.categoryId !== '';
-
-/** The category the last new item was made in, on this browser (a convenience only). */
-const LAST_CATEGORY_KEY = 'ongod:admin-last-category';
-const lastCategory = {
-  read(): string | null {
-    try {
-      return localStorage.getItem(LAST_CATEGORY_KEY);
-    } catch {
-      return null;
-    }
-  },
-  write(id: string) {
-    try {
-      localStorage.setItem(LAST_CATEGORY_KEY, id);
-    } catch {
-      // Blocked storage: the admin picks the category each time.
-    }
-  },
-};
 
 const sameValues = (a: Values, b: Values) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -414,6 +395,11 @@ function Workspace({
                     </>
                   )}
                 </DropZone>
+                {!coverSrc &&
+                (episode?.media?.kind === 'VIDEO' ||
+                  (stagedMedia && mediaKindOfFile(stagedMedia.name) === 'VIDEO')) ? (
+                  <p className="admin-hint">{w.coverFromVideo}</p>
+                ) : null}
                 {waiting ? <Notice tone="info">{t.cover.processing}</Notice> : null}
                 {uploadCover.isPending ? <p aria-live="polite">{t.cover.uploading}</p> : null}
                 {coverError ? <Notice tone="danger">{coverError}</Notice> : null}
@@ -466,6 +452,11 @@ function Workspace({
                   </DropZone>
                 )}
                 {mediaError ? <Notice tone="danger">{mediaError}</Notice> : null}
+                {!episode && !stagedMedia ? (
+                  <Link className="admin-hint" to="/episodes/upload">
+                    {mn.episodes.bulkUpload.hint}
+                  </Link>
+                ) : null}
               </div>
             </div>
           </section>
