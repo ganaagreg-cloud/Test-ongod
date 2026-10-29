@@ -458,7 +458,7 @@ describe('mock checkout (development, no Wire keys)', () => {
     expect((await row(subscription.id)).status).toBe('PENDING_PAYMENT');
   });
 
-  it('is refused in production unless ALLOW_MOCK_PAYMENTS is set on purpose', async () => {
+  it('is refused in production, and ALLOW_MOCK_PAYMENTS cannot switch it on (ADR-0072)', async () => {
     const prod = { NODE_ENV: 'production', PUBLIC_BASE_URL: 'https://example.mn' } as const;
     // A mock request that exists in the database cannot be paid by the mock in production.
     const { plan, member } = await setup(prod, null);
@@ -474,12 +474,23 @@ describe('mock checkout (development, no Wire keys)', () => {
     });
     expect((await mock(sub.id, member.accessToken, 'success')).statusCode).toBe(404);
     expect((await row(sub.id)).status).toBe('PENDING_PAYMENT');
+    // Payments are off: the plans are listed, not sold, and a new request is refused.
+    const plans = await app.inject({ method: 'GET', url: '/v1/plans' });
+    expect(plans.json().paymentsOpen).toBe(false);
+    expect(plans.json().plans.length).toBeGreaterThan(0);
+    expect((await apply(plan.id, member.accessToken)).statusCode).toBe(503);
     await app.close();
 
-    // Switched on deliberately (a demo site), the mock works again.
-    app = await authApp({ ...prod, ALLOW_MOCK_PAYMENTS: '1' }, { wire: null });
-    const res = await mock(sub.id, member.accessToken, 'success');
-    expect(res.statusCode).toBe(200);
+    // The old switch now stops the server from starting at all.
+    await expect(async () =>
+      authApp({ ...prod, ALLOW_MOCK_PAYMENTS: '1' }, { wire: null }),
+    ).rejects.toThrow(/ALLOW_MOCK_PAYMENTS/);
+    app = await authApp(prod, { wire: null });
+  });
+
+  it('says payments are open in development (mock) and with Wire set up', async () => {
+    await setup();
+    expect((await app.inject({ method: 'GET', url: '/v1/plans' })).json().paymentsOpen).toBe(true);
   });
 });
 

@@ -17,6 +17,8 @@ export default function GiftBuy() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const plans = useAsync(() => getPlans());
+  // Off before launch (ADR-0072): nothing can be bought, so no gift either.
+  const paymentsOpen = plans.data?.paymentsOpen ?? true;
   const [choosing, setChoosing] = useState<string>();
   const [error, setError] = useState<unknown>();
   const verified = user?.emailVerified ?? false;
@@ -50,6 +52,7 @@ export default function GiftBuy() {
         </Notice>
       ) : null}
       <ErrorNotice error={error ?? plans.error} />
+      {paymentsOpen ? null : <Notice tone="info">{mn.landing.paymentsClosed}</Notice>}
 
       <div className="portal-plans" aria-busy={plans.loading}>
         {plans.loading && !plans.data ? (
@@ -60,14 +63,16 @@ export default function GiftBuy() {
         ) : null}
         {plans.data?.plans.map((plan) => (
           <PlanCard key={plan.id} plan={plan} heading="h2">
-            <Button
-              fullWidth
-              loading={choosing === plan.id}
-              disabled={!verified || choosing !== undefined}
-              onClick={() => void choose(plan.id)}
-            >
-              {mn.gift.choose}
-            </Button>
+            {paymentsOpen ? (
+              <Button
+                fullWidth
+                loading={choosing === plan.id}
+                disabled={!verified || choosing !== undefined}
+                onClick={() => void choose(plan.id)}
+              >
+                {mn.gift.choose}
+              </Button>
+            ) : null}
           </PlanCard>
         ))}
         {plans.data && plans.data.plans.length === 0 ? <p>{mn.plans.empty}</p> : null}

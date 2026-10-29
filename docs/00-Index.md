@@ -93,6 +93,7 @@ tags: [index]
 | ADR-0069 | [[ADR-0069-cover-from-video-picture]]                     | accepted                                                  |
 | ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
+| ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
 
 ## Research
 

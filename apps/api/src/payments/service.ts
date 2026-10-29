@@ -69,7 +69,8 @@ export function createPaymentService(deps: {
   const now = deps.now ?? (() => new Date());
   const report = (obj: object, msg: string) => deps.log?.error(obj, msg);
 
-  const mockAllowed = () => env.NODE_ENV !== 'production' || env.ALLOW_MOCK_PAYMENTS;
+  // The mock checkout is development only (ADR-0072): production without Wire has payments off.
+  const mockAllowed = () => env.NODE_ENV !== 'production';
   const view = async (id: string): Promise<SubscriptionDto> =>
     toSubscriptionDto(
       await db.subscription.findUniqueOrThrow({ where: { id }, include: { plan: true } }),
@@ -238,6 +239,9 @@ export function createPaymentService(deps: {
   }
 
   return {
+    /** Whether paying works at all: Wire is set up, or this is development (mock). ADR-0072. */
+    isOpen: () => gateway !== null || mockAllowed(),
+
     mode,
 
     /** Gives a PENDING_PAYMENT request its checkout. Repeating it returns the same checkout. */

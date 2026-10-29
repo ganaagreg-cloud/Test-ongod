@@ -123,12 +123,13 @@ export const envSchema = z
     /** Token Authentication key of the library's pull zone (signed HLS URLs). */
     BUNNY_STREAM_TOKEN_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
 
-    // QPay through Wire (ADR-0041). Without WIRE_API_KEY the portal uses a mock checkout, which
-    // is refused in production unless ALLOW_MOCK_PAYMENTS=1 (never set that on the live site).
+    // QPay through Wire (ADR-0041). Without WIRE_API_KEY development uses a mock checkout and
+    // production has payments off (the portal says "Удахгүй нээгдэнэ", ADR-0072).
     WIRE_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
     WIRE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
     /** `sandbox` while testing with an sk_test key; the live operator id (e.g. qpay) in production. */
     WIRE_ALLOWED_OPERATORS: csv.transform((v) => (v.length > 0 ? v : ['sandbox'])),
+    /** Retired (ADR-0072): the mock checkout never runs in production; setting this there is refused. */
     ALLOW_MOCK_PAYMENTS: bool.default(false),
     /** Cron payment sync (ADR-0047): no new Wire call starts after this much of a tick. 20 s. */
     WIRE_SYNC_BUDGET_MS: z.coerce.number().int().positive().default(20_000),
@@ -157,6 +158,14 @@ export const envSchema = z
     if (env.NODE_ENV === 'production') {
       for (const key of [...missingBunnyKeys(env), ...missingStreamKeys(env)]) {
         ctx.addIssue({ code: 'custom', path: [key], message: 'required in production' });
+      }
+      // The mock checkout grants access without money: never in production (audit F03, ADR-0072).
+      if (env.ALLOW_MOCK_PAYMENTS) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ALLOW_MOCK_PAYMENTS'],
+          message: 'must not be set in production (the mock checkout is development only)',
+        });
       }
     }
     // Apple 4.8: Google on iOS needs Sign in with Apple, so the flag needs both (ADR-0009).

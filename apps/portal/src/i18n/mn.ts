@@ -104,6 +104,8 @@ export const mn = {
     haveAccount: 'Бүртгэлтэй юу? Нэвтрэх',
     payNote: 'Төлбөрийг зөвхөн энэ сайтаар хийнэ. Аппад төлбөр хийгдэхгүй.',
     plansUnavailable: 'Эрхийн багцыг ачаалж чадсангүй.',
+    /** Payments off (before launch, ADR-0072): plans are shown, not sold. */
+    paymentsClosed: 'Төлбөр удахгүй нээгдэнэ. Одоогоор багц худалдан авах боломжгүй.',
     appsKicker: 'Апп',
     appsTitle: 'Утсан дээрээ сонсоорой',
     faqKicker: 'Асуулт',
