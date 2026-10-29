@@ -130,7 +130,7 @@ test('Сан: search, category chips, sort; a category card opens it filtered', 
     .getByRole('button', { name: /Ёс заншил/ })
     .first()
     .click();
-  await expect(page.getByRole('heading', { name: mn.library.title })).toBeVisible();
+  await expect(page.getByRole('heading', { name: mn.library.title, exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Ёс заншил', selected: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Цагаан сарын уламжлал/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Хүннү гүрний үүсэл/ })).toHaveCount(0);
@@ -158,7 +158,7 @@ test('the bookmark: save in Сан, find it in Хадгалсан, remove it the
   await tab(mn.tabs.saved).click();
   await expect(page.getByText(mn.saved.emptyTitle)).toBeVisible();
   await page.getByRole('button', { name: mn.saved.browse }).click();
-  await expect(page.getByRole('heading', { name: mn.library.title })).toBeVisible();
+  await expect(page.getByRole('heading', { name: mn.library.title, exact: true })).toBeVisible();
   await page.getByRole('button', { name: mn.episode.save }).first().click();
   await expect(page.getByRole('button', { name: mn.episode.unsave })).toHaveCount(1);
 

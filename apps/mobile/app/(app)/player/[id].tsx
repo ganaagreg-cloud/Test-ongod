@@ -249,19 +249,6 @@ export default function PlayerScreen() {
               onDone={playNext}
               onCancel={() => setAutoplayCancelled(true)}
             />
-          ) : upNext ? (
-            <Enter index={4}>
-              <NextList
-                item={upNext}
-                ofSeries={upNext.id === item.nextInSeries?.id}
-                locked={lockedOf(upNext)}
-                onOpen={playNext}
-                onAll={() => {
-                  router.back();
-                  openLibrary(router, item.category.slug);
-                }}
-              />
-            </Enter>
           ) : null}
         </View>
 
@@ -274,6 +261,18 @@ export default function PlayerScreen() {
         >
           {item.description.trim() ? <DescriptionText text={item.description} /> : null}
           <CommentsSection episodeId={item.id} supportEmail={supportEmail} />
+          {upNext ? (
+            <NextList
+              item={upNext}
+              ofSeries={upNext.id === item.nextInSeries?.id}
+              locked={lockedOf(upNext)}
+              onOpen={playNext}
+              onAll={() => {
+                router.back();
+                openLibrary(router, item.category.slug);
+              }}
+            />
+          ) : null}
         </ScrollView>
 
         <SleepSheet
