@@ -89,6 +89,7 @@ tags: [index]
 | ADR-0065 | [[ADR-0065-player-next-at-the-bottom]]                    | accepted                                                  |
 | ADR-0066 | [[ADR-0066-comments-flat-in-player]]                      | accepted                                                  |
 | ADR-0067 | [[ADR-0067-player-scrolls-with-mini-bar]]                 | accepted                                                  |
+| ADR-0068 | [[ADR-0068-admin-upload-flow-like-creator-platforms]]     | accepted                                                  |
 
 ## Research
 

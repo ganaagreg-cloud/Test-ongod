@@ -88,8 +88,11 @@ export function MediaUploader({
   episode,
   initialFile,
   onInitialStarted,
+  onBusyChange,
 }: {
   episode: AdminEpisodeDto;
+  /** True while bytes are going up: the page asks before the admin leaves (ADR-0068). */
+  onBusyChange?: (busy: boolean) => void;
   /** A file picked before the episode existed: it starts as soon as this mounts. */
   initialFile?: File | undefined;
   onInitialStarted?: () => void;
@@ -118,6 +121,12 @@ export function MediaUploader({
   // Set on a refreshed page: the server still has the half-finished upload, the file is gone.
   const pending =
     phase === 'idle' && media?.status === 'UPLOADING' ? hint.read(episode.id) : undefined;
+
+  const reportBusy = useEffectEvent((busy: boolean) => onBusyChange?.(busy));
+  useEffect(() => {
+    reportBusy(phase === 'uploading');
+  }, [phase]);
+  useEffect(() => () => reportBusy(false), []);
 
   // Leaving the page pauses the upload; the stored fingerprint lets a later visit continue it.
   useEffect(
@@ -285,19 +294,34 @@ export function MediaUploader({
         </div>
       ) : (
         <>
-          <DropZone key={pickerKey} label={t.choose} accept={ACCEPT} onFile={choose}>
-            <span className="admin-drop__icon">
-              <Icon name="audio" />
-            </span>
-            <strong>{mn.episodes.workspace.fileEmpty}</strong>
-            <span className="admin-drop__sub">
-              {mn.episodes.workspace.fileOr} <u>{mn.episodes.workspace.filePick}</u>
-              <br />
-              {mn.episodes.workspace.fileFormats}
-            </span>
-          </DropZone>
+          {media && media.status !== 'FAILED' ? (
+            // A file is in: a small "replace" target instead of the big empty drop zone (ADR-0068).
+            <DropZone
+              key={pickerKey}
+              className="admin-drop--compact"
+              label={t.choose}
+              accept={ACCEPT}
+              onFile={choose}
+            >
+              <Icon name={media.kind === 'VIDEO' ? 'video' : 'audio'} size="small" />
+              <strong>{t.replaceCompact}</strong>
+              <span className="admin-drop__sub">{t.replaceDrop}</span>
+            </DropZone>
+          ) : (
+            <DropZone key={pickerKey} label={t.choose} accept={ACCEPT} onFile={choose}>
+              <span className="admin-drop__icon">
+                <Icon name="audio" />
+              </span>
+              <strong>{mn.episodes.workspace.fileEmpty}</strong>
+              <span className="admin-drop__sub">
+                {mn.episodes.workspace.fileOr} <u>{mn.episodes.workspace.filePick}</u>
+                <br />
+                {mn.episodes.workspace.fileFormats}
+              </span>
+            </DropZone>
+          )}
           <p className="admin-hint">
-            {media && media.status !== 'FAILED' ? `${t.hint} ${t.replaceNotice}` : t.hint}
+            {media && media.status !== 'FAILED' ? t.replaceNotice : t.hint}
           </p>
         </>
       )}

@@ -359,9 +359,11 @@ async function createDraft(label: string, stamp: number): Promise<string> {
 test('one page: files picked before the draft exists wait, then go up when it is made', async () => {
   const title = `E2E анги ${Date.now()}`;
   await sidebar(mn.nav.episodes).click();
+  // No remembered category (ADR-0068), so the files have to wait for one.
+  await page.evaluate(() => localStorage.removeItem('ongod:admin-last-category'));
   await page.getByRole('button', { name: mn.episodes.new }).click();
 
-  // A cover and an audio file first, with no title yet: both are kept and nothing is created.
+  // A cover and an audio file first, with no category yet: both are kept and nothing is created.
   const cover = await sharp({
     create: { width: 600, height: 600, channels: 3, background: '#665544' },
   })
@@ -377,8 +379,10 @@ test('one page: files picked before the draft exists wait, then go up when it is
   await page.getByLabel(mn.episodes.audio.choose).setInputFiles(audioPath);
   await expect(page.getByText('e2e-staged.mp3')).toBeVisible();
   await expect(page).toHaveURL(/episodes\/new$/);
+  // The file name is the starting title.
+  await expect(page.getByLabel(mn.episodes.form.title)).toHaveValue('e2e-staged');
 
-  // Details filled in and saved: the draft is made, the URL moves to it, the files go up.
+  // A category picked: the draft is made by itself (no Үүсгэх), the URL moves, the files go up.
   const chunk = page.waitForResponse(
     (res) =>
       res.request().method() === 'PATCH' &&
@@ -387,13 +391,54 @@ test('one page: files picked before the draft exists wait, then go up when it is
   );
   await page.getByLabel(mn.episodes.form.title).fill(title);
   await page.getByLabel(mn.episodes.form.category).selectOption({ index: 1 });
-  await page.getByRole('button', { name: mn.episodes.form.create }).click();
   await expect(toast(mn.episodes.workspace.saved).first()).toBeVisible();
   await expect(page).toHaveURL(/episodes\/(?!new)[a-z0-9]+$/);
   await expect(toast(mn.episodes.cover.uploaded)).toBeVisible();
   await chunk;
   await expect(page.getByRole('heading', { name: title, level: 1 })).toBeVisible();
   rmSync(folder, { recursive: true, force: true });
+});
+
+test('a picked file names the item, keeps the last category and starts at once; leaving asks first', async () => {
+  // ADR-0068. The test before made a draft, so this browser remembers its category.
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.new }).click();
+  await page.route('**/v1/admin/uploads/**', async (route) => {
+    if (route.request().method() === 'PATCH') await new Promise((r) => setTimeout(r, 2500));
+    // Leaving aborts the upload: the held-back chunk may already be gone.
+    await route.continue().catch(() => undefined);
+  });
+  const name = `E2E анги ${Date.now()}`;
+  await page.getByLabel(mn.episodes.audio.choose).setInputFiles({
+    name: `${name}.mp3`,
+    mimeType: 'audio/mpeg',
+    buffer: Buffer.alloc(12 * 1024 * 1024, 5),
+  });
+  // No Үүсгэх: the title comes from the file name and the draft is made right away.
+  await expect(page).toHaveURL(/episodes\/(?!new)[a-z0-9]+$/);
+  await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible();
+  await expect(page.locator('.admin-uploader__progress progress')).toBeVisible();
+
+  // Leaving during the upload asks; "Болих" stays, "Гарах" leaves.
+  await sidebar(mn.nav.episodes).click();
+  await expect(dialog(mn.episodes.leave.uploadingTitle)).toBeVisible();
+  await dialog(mn.episodes.leave.uploadingTitle)
+    .getByRole('button', { name: mn.common.cancel })
+    .click();
+  await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible();
+  await sidebar(mn.nav.episodes).click();
+  await dialog(mn.episodes.leave.uploadingTitle)
+    .getByRole('button', { name: mn.episodes.leave.leave })
+    .click();
+  await expect(page.getByRole('heading', { name: mn.episodes.title, level: 1 })).toBeVisible();
+  await page.unroute('**/v1/admin/uploads/**');
+});
+
+test('an item with a ready file shows a small "Файл солих" instead of the big drop zone', async () => {
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('row', { name: /Их Монгол улсын зам/ }).click();
+  await expect(page.getByText(mn.episodes.audio.replaceCompact)).toBeVisible();
+  await expect(page.getByText(mn.episodes.workspace.fileEmpty)).toHaveCount(0);
 });
 
 test('series: create, add two existing items, move the second up, order survives a reload', async () => {
