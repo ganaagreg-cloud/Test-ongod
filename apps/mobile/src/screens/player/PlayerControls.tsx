@@ -48,7 +48,8 @@ export function PlayerControls({
         onPress={onRate}
         disabled={!canSeek}
         scale={motion.pressScaleRound}
-        style={[styles.chip, !canSeek && styles.off]}
+        accessibilityState={{ selected: rate !== 1 }}
+        style={[styles.chip, rate !== 1 && styles.chipOn, !canSeek && styles.off]}
       >
         <Text style={[styles.chipText, rate !== 1 && styles.chipTextOn]}>{rateLabel(rate)}</Text>
       </PressableScale>

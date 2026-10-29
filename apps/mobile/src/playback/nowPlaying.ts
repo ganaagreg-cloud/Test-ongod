@@ -43,7 +43,9 @@ export function failureOf(error: unknown): StartFailure {
   if (code === 'NO_ACCESS') return { reason: 'noAccess' };
   if (code === 'MEDIA_NOT_READY' || code === 'NOT_FOUND') return { reason: 'notReady' };
   if (code === 'VIDEO_UNSUPPORTED') return { reason: 'videoUnsupported' };
-  return { reason: 'other', message: error instanceof ApiError ? error.message : undefined };
+  // Dev builds show the raw cause in the toast: on a phone there is no console to read.
+  const raw = __DEV__ ? String(error) : undefined;
+  return { reason: 'other', message: error instanceof ApiError ? error.message : raw };
 }
 
 /**
@@ -62,6 +64,7 @@ export async function startEpisode(item: EpisodeItem): Promise<StartFailure | nu
     });
     return null;
   } catch (error) {
+    if (__DEV__) console.warn('startEpisode failed', item.id, error);
     await player.close();
     setCurrent(null);
     return failureOf(error);

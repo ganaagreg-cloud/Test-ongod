@@ -1,7 +1,7 @@
 ---
 id: ADR-0033
 title: Expo Go allowed for preview only
-status: accepted
+status: 'accepted (the premise "Expo Go runs SDK 57" superseded by [[ADR-0048-upgrade-to-expo-sdk-58|ADR-0048]]; the rules stand)'
 date: 2026-10-09
 tags: [adr, area/mobile, tooling]
 ---

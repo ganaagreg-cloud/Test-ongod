@@ -1,7 +1,7 @@
 ---
 id: ADR-0017
 title: 'Toolchain pins: TypeScript 6.0, React 19.2.3, Prisma 7.10, pnpm 10 hoisted'
-status: accepted
+status: 'accepted (the React 19.2.3 pin superseded by [[ADR-0048-upgrade-to-expo-sdk-58|ADR-0048]]; the other pins stand)'
 date: 2026-10-08
 tags: [adr, area/backend, area/mobile]
 ---

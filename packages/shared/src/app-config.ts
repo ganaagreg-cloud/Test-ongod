@@ -11,7 +11,9 @@ export const appConfigResponseSchema = z.object({
   minVersion: z.object({ ios: semverSchema, android: semverSchema }),
   socialLogin: z.boolean(),
   /** Published contact for the stores' user-content rules (SPEC L). Null = no contact line under the comments (a store build needs one, ADR-0062). */
-  supportEmail: z.string().nullable(),
+  // Defaults to null: an answer without it (an older server) must still parse, or the app would
+  // ignore the whole config, including the minimum version.
+  supportEmail: z.string().nullable().default(null),
 });
 
 export type AppConfigResponse = z.infer<typeof appConfigResponseSchema>;

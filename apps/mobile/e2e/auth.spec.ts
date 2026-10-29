@@ -72,9 +72,10 @@ test.beforeEach(({ page }) => {
 
 /** Text that must never appear in the app (ADR-0006): the app shows no payment UI. */
 const PAYMENT_WORDS = /төлбөр|төлөх|төлсөн|үнэ|эрх\s+ав|багц|банк|данс|шилжүүл|захиалга|төгрөг|₮/i;
+/** ADR-0044: the one approved line (text only) is taken out first, as in test/no-payment-text. */
 async function expectNoPaymentText(page: Page) {
   const text = await page.evaluate(() => document.body.innerText);
-  expect(text).not.toMatch(PAYMENT_WORDS);
+  expect(text.split(mn.noAccess.activate).join('')).not.toMatch(PAYMENT_WORDS);
 }
 
 async function openLogin(page: Page) {

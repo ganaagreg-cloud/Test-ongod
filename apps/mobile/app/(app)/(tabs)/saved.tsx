@@ -55,7 +55,7 @@ export default function Saved() {
               <SavedEmpty onBrowse={() => openLibrary(router)} />
             )
           }
-          onOpen={(item) => openPlayer(router, item.id)}
+          onOpen={(item) => openPlayer(router, item.id, false, items)}
           onEndReached={() => {
             if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
           }}

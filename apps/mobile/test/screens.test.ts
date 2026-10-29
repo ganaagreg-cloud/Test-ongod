@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import type { EpisodeItem, EpisodesPage, HomeResponse } from '@ongod/shared';
 import { createEndpoints, queryString } from '../src/api/endpoints';
 import { mn } from '../src/i18n/mn';
+import { nextInQueue, setPlayQueue } from '../src/playback/queue';
 import { homeRows } from '../src/screens/home/homeRows';
 import {
   accessState,
@@ -15,7 +16,6 @@ import {
   isLocked,
   listenedHours,
   pagesWithSaved,
-  playerLabel,
   progressFraction,
   remainingLabel,
   resumeAt,
@@ -304,10 +304,13 @@ test('series part label and series/playlist/tag calls', async () => {
   ]);
 });
 
-test('the Player says "now playing" only for the episode in the player, else its category', () => {
-  assert.equal(playerLabel(true, 'Ярилцлага'), mn.player.nowPlaying);
-  assert.equal(playerLabel(false, 'Ярилцлага'), 'ЯРИЛЦЛАГА');
-  // Mongolian Ө and Ү upper-case correctly.
-  assert.equal(playerLabel(false, 'Өв уламжлал үү'), 'ӨВ УЛАМЖЛАЛ ҮҮ');
-  assert.equal(playerLabel(false, undefined), mn.player.nowPlaying);
+test('"Дараагийн" is the item after this one in the list the Player was opened from', () => {
+  const [a, b, c] = [episode({ id: 'a' }), episode({ id: 'b' }), episode({ id: 'c' })] as const;
+  setPlayQueue([a, b, c]);
+  assert.equal(nextInQueue('a'), b);
+  assert.equal(nextInQueue('b'), c);
+  assert.equal(nextInQueue('c'), null, 'the last one: nothing next, no row');
+  assert.equal(nextInQueue('zzz'), undefined, 'not in the list (push): the API order is used');
+  setPlayQueue([]);
+  assert.equal(nextInQueue('a'), undefined, 'a screen without a list forgets the old one');
 });

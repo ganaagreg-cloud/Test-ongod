@@ -435,6 +435,39 @@ test('controller: "end of episode" stops at the end and marks the episode heard'
   assert.equal(controller.getState().sleep.mode, null, 'used up');
 });
 
+test('controller: a sleep timer always blocks autoplay-next (ADR-0049)', async () => {
+  const { controller, fake, clock } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  assert.equal(controller.getState().autoplayBlocked, false, 'no timer: allowed');
+
+  controller.startSleep(30);
+  assert.equal(controller.getState().autoplayBlocked, true, 'a timer is set');
+  controller.cancelSleep();
+  assert.equal(controller.getState().autoplayBlocked, false, 'cancelled: allowed again');
+
+  controller.startSleep(15);
+  clock.advance(15 * 60_000);
+  await flush();
+  assert.equal(controller.getState().sleep.mode, null);
+  assert.equal(controller.getState().autoplayBlocked, true, 'it fired for this episode');
+
+  await controller.open({ id: 'ep2', title: 'y' });
+  assert.equal(controller.getState().autoplayBlocked, false, 'a new episode opened by hand');
+
+  controller.startSleep('end');
+  fake.push({ status: 'ended', positionSec: 600 });
+  await flush();
+  assert.equal(controller.getState().autoplayBlocked, true, '"end of episode" is used up');
+});
+
+test('controller: open() always asks the play endpoint, never a kept URL (ADR-0049)', async () => {
+  const { controller, fetched } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  await controller.open({ id: 'ep2', title: 'y' });
+  await controller.open({ id: 'ep1', title: 'x' });
+  assert.deepEqual(fetched, ['ep1', 'ep2', 'ep1']);
+});
+
 test('controller: an expiring URL is replaced before playing and keeps the position', async () => {
   const { controller, fake, fetched, clock } = setup();
   await controller.open({ id: 'ep1', title: 'x' });
