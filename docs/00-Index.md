@@ -85,6 +85,7 @@ tags: [index]
 | ADR-0061 | [[ADR-0061-episode-comments]]                             | accepted                                                  |
 | ADR-0062 | [[ADR-0062-comments-without-contact-gate]]                | accepted                                                  |
 | ADR-0063 | [[ADR-0063-node-22-toolchain]]                            | accepted                                                  |
+| ADR-0064 | [[ADR-0064-api-on-node-22]]                               | accepted                                                  |
 
 ## Research
 

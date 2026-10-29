@@ -9,6 +9,8 @@ tags: [runbook, area/hosting]
 
 Draft. Host details are not confirmed yet ([[R-hosting-limits]], [[ADR-0003-hosting-itools-node|ADR-0003]]).
 
+**Node:** the host must run Node 22.13 or newer ([[ADR-0064-api-on-node-22|ADR-0064]]); set it in the host panel before the first deploy and check `node -v` there.
+
 ## Environment (set in the host panel, never in git)
 
 All keys are listed in `.env.example`; who generates each one, what a leak or a rotation does, and the handover rules are in [[SECRETS]]. Production specifics:

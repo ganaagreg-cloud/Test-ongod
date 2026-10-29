@@ -1,7 +1,7 @@
 ---
 id: ADR-0063
 title: Node 22 for development, CI and the mobile build; the API stays buildable for Node 20
-status: accepted
+status: 'accepted (item 2 and 3, the API build target, superseded by [[ADR-0064-api-on-node-22|ADR-0064]])'
 date: '2026-10-29'
 supersedes: [ADR-0002 (only "Node 20"), ADR-0036 (only the Node version CI reads from .nvmrc)]
 tags: [adr, tooling]
