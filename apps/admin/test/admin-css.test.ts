@@ -22,7 +22,7 @@ test('admin.css has no raw colors, pixel sizes or font names', () => {
 });
 
 test('every var(--...) in admin.css exists in the tokens or the component CSS', () => {
-  // Array.from, not .matchAll(...).map: iterator helpers only exist from Node 22 (.nvmrc is 20).
+  // Array.from, not .matchAll(...).map: kept simple and portable.
   const defined = new Set(
     Array.from(
       [

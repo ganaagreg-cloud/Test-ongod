@@ -17,7 +17,7 @@ Read [CLAUDE.md](CLAUDE.md), [docs/SPEC.md](docs/SPEC.md) and [docs/DESIGN.md](d
 
 ## Requirements
 
-- Node 20.19+ (see `.nvmrc`)
+- Node 22.13+ (see `.nvmrc`; ADR-0063)
 - pnpm 10 (`corepack enable`, version pinned in `package.json`)
 - Docker (local MySQL 8 + Mailpit)
 

@@ -3,6 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/server.ts'],
   format: ['esm'],
+  // The host's Node version is unknown (R-hosting-limits), so the output stays Node 20 compatible (ADR-0063).
   target: 'node20',
   platform: 'node',
   clean: true,

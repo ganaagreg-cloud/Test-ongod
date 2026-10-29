@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-28
+updated: 2026-10-29
 tags: [index]
 ---
 
@@ -84,6 +84,7 @@ tags: [index]
 | ADR-0060 | [[ADR-0060-gift-access]]                                  | accepted                                                  |
 | ADR-0061 | [[ADR-0061-episode-comments]]                             | accepted                                                  |
 | ADR-0062 | [[ADR-0062-comments-without-contact-gate]]                | accepted                                                  |
+| ADR-0063 | [[ADR-0063-node-22-toolchain]]                            | accepted                                                  |
 
 ## Research
 
@@ -131,13 +132,13 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-10-29]]
 - [[2026-10-28]]
 - [[2026-10-27]]
 - [[2026-10-26]]
 - [[2026-10-24]]
 - [[2026-10-23]]
 - [[2026-10-22]]
-- [[2026-10-19]]
 
 ## Runbooks
 
