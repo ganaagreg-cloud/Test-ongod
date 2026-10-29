@@ -97,6 +97,8 @@ export function createMediaRuntime(env: Env): MediaRuntime {
       ? createBunnyStreamClient({
           libraryId: requireStream(env).libraryId,
           apiKey: requireStream(env).apiKey,
+          cdnHost: requireStream(env).cdnHost,
+          tokenKey: requireStream(env).tokenKey,
         })
       : undefined;
   return { storage, dirs, stream };

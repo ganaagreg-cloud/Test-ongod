@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { access, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseFile } from 'music-metadata';
@@ -13,7 +14,7 @@ import {
 } from '../jobs/registry';
 import { thumbPathOf } from '../catalog/media';
 import { classifyStreamVideo, type StreamClient } from '../lib/bunnyStream';
-import { coverFiles } from './cover';
+import { coverFiles, processCover } from './cover';
 import type { MediaStorage, UploadDirs } from './storage';
 
 // Slow media work runs as jobs, never inside a request (CLAUDE.md). All of them are idempotent: a
@@ -72,6 +73,15 @@ export const videoStatusSpec = {
   type: 'media.video-status',
   schema: z.object({ assetId: z.string().min(1), startedAt: z.iso.datetime() }),
   maxAttempts: 5,
+};
+/**
+ * Video without a cover (ADR-0069): Bunny's picture from the video becomes the cover, unless the
+ * admin has set one meanwhile. Best effort: a failure leaves the cover empty, never the video.
+ */
+export const videoCoverSpec = {
+  type: 'media.video-cover',
+  schema: z.object({ assetId: z.string().min(1) }),
+  maxAttempts: 3,
 };
 export const streamDeleteSpec = {
   type: 'media.delete-stream-videos',
@@ -463,6 +473,62 @@ export function createMediaJobs(deps: {
       if (switched.count !== 1) return;
       await removeReplaced(others, log);
       await rm(join(dirs.video, assetId), { force: true });
+      const episode = await db.episode.findUnique({
+        where: { id: asset.episodeId },
+        select: { coverPath: true },
+      });
+      if (episode?.coverPath === '') await enqueue(db, videoCoverSpec, { assetId });
+    },
+  });
+
+  /** Bunny's picture from the video as the cover; only while the episode still has none. */
+  const videoCover = defineJob({
+    ...videoCoverSpec,
+    async handle({ assetId }, { log }) {
+      const asset = await db.mediaAsset.findUnique({
+        where: { id: assetId },
+        select: { kind: true, status: true, path: true, episodeId: true },
+      });
+      if (!asset || asset.kind !== 'VIDEO' || asset.status !== 'READY' || !stream) return;
+      const episodeId = asset.episodeId;
+      const hasCover = async () =>
+        (await db.episode.findUnique({ where: { id: episodeId }, select: { coverPath: true } }))
+          ?.coverPath !== '';
+      if (await hasCover()) return;
+
+      const picture = await stream.getThumbnail(asset.path);
+      if (!picture) {
+        log.warn({ assetId }, 'no picture from Bunny Stream for this video');
+        return;
+      }
+      const coverId = randomUUID();
+      try {
+        await processCover(picture, dirs, coverId);
+      } catch {
+        log.warn({ assetId }, 'the picture from Bunny Stream could not be read');
+        return;
+      }
+      const local = coverFiles(dirs, coverId);
+      try {
+        const path = `covers/${episodeId}/${coverId}.webp`;
+        await storage.putFile(path, local.full, 'image/webp');
+        await storage.putFile(thumbPathOf(path), local.thumb, 'image/webp');
+        // The admin may have set a cover while this ran: theirs wins.
+        const set = await db.episode.updateMany({
+          where: { id: episodeId, coverPath: '' },
+          data: { coverPath: path },
+        });
+        if (set.count === 0) {
+          for (const stored of [path, thumbPathOf(path)]) {
+            await storage
+              .delete(stored)
+              .catch((err) => log.warn({ err }, 'unused cover not deleted'));
+          }
+        }
+      } finally {
+        await rm(local.full, { force: true });
+        await rm(local.thumb, { force: true });
+      }
     },
   });
 
@@ -483,6 +549,7 @@ export function createMediaJobs(deps: {
     deleteFiles,
     videoUpload,
     videoStatus,
+    videoCover,
     deleteStreamVideos,
   ] as unknown as JobDefinition[];
 }

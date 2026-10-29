@@ -414,6 +414,11 @@ function Workspace({
                     </>
                   )}
                 </DropZone>
+                {!coverSrc &&
+                (episode?.media?.kind === 'VIDEO' ||
+                  (stagedMedia && mediaKindOfFile(stagedMedia.name) === 'VIDEO')) ? (
+                  <p className="admin-hint">{w.coverFromVideo}</p>
+                ) : null}
                 {waiting ? <Notice tone="info">{t.cover.processing}</Notice> : null}
                 {uploadCover.isPending ? <p aria-live="polite">{t.cover.uploading}</p> : null}
                 {coverError ? <Notice tone="danger">{coverError}</Notice> : null}

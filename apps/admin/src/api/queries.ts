@@ -202,6 +202,9 @@ export const episodesQuery = (filter: EpisodesFilter) =>
     placeholderData: keepPreviousData,
   });
 
+/** How long after a video is ready the page looks for the cover taken from it. */
+const VIDEO_COVER_WAIT_MS = 2 * 60_000;
+
 /** Refreshes by itself while the server is still working on the file (video: Bunny encodes for minutes). */
 export const episodeQuery = (id: string) =>
   queryOptions({
@@ -209,7 +212,17 @@ export const episodeQuery = (id: string) =>
     queryFn: ({ signal }) =>
       api(`/admin/episodes/${id}`, { schema: adminEpisodeResponseSchema, signal }),
     refetchInterval: (query) => {
-      const media = query.state.data?.episode.media;
+      const episode = query.state.data?.episode;
+      const media = episode?.media;
+      // A video just finished without a cover: its picture becomes the cover in a moment (ADR-0069).
+      if (
+        media?.kind === 'VIDEO' &&
+        media.status === 'READY' &&
+        episode?.missing.includes('cover') === true &&
+        Date.now() - Date.parse(media.updatedAt) < VIDEO_COVER_WAIT_MS
+      ) {
+        return 5000;
+      }
       if (media?.status !== 'UPLOADING' && media?.status !== 'PROCESSING') return false;
       return media.kind === 'VIDEO' && media.status === 'PROCESSING' ? 10_000 : 3000;
     },

@@ -310,6 +310,8 @@ export const mn = {
       detailsTitle: 'Мэдээлэл',
       coverEmpty: 'Ковер оруулах',
       coverHint: '16:9 · 1280×720 · JPG, PNG, WebP',
+      coverFromVideo:
+        'Видеонд ковер оруулаагүй бол видео бэлэн болоход түүнээс зураг авч ковер болгоно.',
       coverChange: 'Солих',
       fileEmpty: 'Аудио эсвэл видео файлаа энд чирнэ үү',
       fileOr: 'эсвэл',

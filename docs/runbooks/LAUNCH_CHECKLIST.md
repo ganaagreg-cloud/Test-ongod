@@ -27,6 +27,7 @@ From [[SPEC#Acceptance tests (must pass before launch)]]. Tick each item with th
 ## Before go-live
 
 - [ ] Bunny switched to the owner's account ([[BUNNY_SWITCH]])
+- [ ] First live video without a cover: Bunny's picture appears as the cover within a minute of READY ([[ADR-0069-cover-from-video-picture|ADR-0069]]; the thumbnail URL is TO-VERIFY in [[R-bunny-stream]])
 - [ ] `ALERT_EMAILS`, `LOG_FILE` and an uptime monitor configured ([[ADR-0016-monitoring-logs-alert-emails|ADR-0016]])
 - [ ] Google Play closed test finished ([[R-google-play-closed-test]])
 - [ ] All TO-VERIFY research notes resolved (`/recheck`)

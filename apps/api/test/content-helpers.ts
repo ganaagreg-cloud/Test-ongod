@@ -127,6 +127,8 @@ export function fakeStream(
     outcome: opts.outcome ?? ('ready' as 'ready' | 'failed'),
     lengthSec: opts.lengthSec ?? 2410.6,
     failUploads: 0,
+    /** The picture Bunny "took" from each video (ADR-0069); null: none. */
+    thumbnail: null as Buffer | null,
   };
   const client: StreamClient = {
     async createVideo(title) {
@@ -158,6 +160,9 @@ export function fakeStream(
     async deleteVideo(guid) {
       deleted.push(guid);
       videos.delete(guid);
+    },
+    async getThumbnail(guid) {
+      return videos.has(guid) ? state.thumbnail : null;
     },
   };
   return { client, videos, deleted, state };
