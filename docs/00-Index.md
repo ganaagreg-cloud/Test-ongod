@@ -94,6 +94,7 @@ tags: [index]
 | ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 | ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
+| ADR-0073 | [[ADR-0073-free-bunny-encoding-show-wait]]                | accepted                                                  |
 
 ## Research
 
@@ -107,6 +108,7 @@ tags: [index]
 | [[R-apple-no-payment-ui]]          | ASSUMPTION | —             |
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
+| [[R-bunny-free-encoding-queue]]    | VERIFIED   | 2027-01-27    |
 | [[R-bunny-stream]]                 | TO-VERIFY  | 2027-01-16    |
 | [[R-wire-qpay-gateway]]            | TO-VERIFY  | 2026-11-19    |
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
