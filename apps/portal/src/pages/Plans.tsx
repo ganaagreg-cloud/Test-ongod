@@ -16,6 +16,8 @@ export default function Plans() {
   const { status, user } = useAuth();
   const navigate = useNavigate();
   const plans = useAsync(() => getPlans());
+  // Off before launch (ADR-0072): the plans stay visible, without the buy buttons.
+  const paymentsOpen = plans.data?.paymentsOpen ?? true;
   const [choosing, setChoosing] = useState<string>();
   const [error, setError] = useState<unknown>();
   const [needsVerify, setNeedsVerify] = useState(false);
@@ -66,6 +68,7 @@ export default function Plans() {
         </Notice>
       ) : null}
       <ErrorNotice error={error ?? plans.error} />
+      {paymentsOpen ? null : <Notice tone="info">{mn.landing.paymentsClosed}</Notice>}
       {hasAccess ? <Notice tone="info">{mn.plans.renewNote}</Notice> : null}
 
       <div className="portal-plans" aria-busy={plans.loading}>
@@ -78,7 +81,7 @@ export default function Plans() {
         ) : null}
         {plans.data?.plans.map((plan) => (
           <PlanCard key={plan.id} plan={plan} heading="h2">
-            {status === 'authenticated' ? (
+            {!paymentsOpen ? null : status === 'authenticated' ? (
               <Button
                 fullWidth
                 loading={choosing === plan.id}
@@ -96,7 +99,7 @@ export default function Plans() {
         ))}
         {plans.data && plans.data.plans.length === 0 ? <p>{mn.plans.empty}</p> : null}
       </div>
-      {status === 'authenticated' ? (
+      {status === 'authenticated' && paymentsOpen ? (
         <p>
           <Link to="/gift">{mn.gift.giveLink}</Link>
         </p>

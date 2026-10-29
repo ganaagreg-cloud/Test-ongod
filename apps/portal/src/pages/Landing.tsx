@@ -30,6 +30,8 @@ export default function Landing() {
   usePage({ title: mn.landing.metaTitle, description: mn.landing.metaDescription });
   const { status } = useAuth();
   const plans = useAsync(() => getPlans());
+  // Off before launch (ADR-0072): the plans stay visible, without the buy links.
+  const paymentsOpen = plans.data?.paymentsOpen ?? true;
   const list = plans.data?.plans ?? [];
   const cheapest = list.reduce<(typeof list)[number] | undefined>(
     (min, p) => (!min || p.priceMnt < min.priceMnt ? p : min),
@@ -139,9 +141,11 @@ export default function Landing() {
             <div className="portal-plans">
               {list.map((plan) => (
                 <PlanCard key={plan.id} plan={plan}>
-                  <Link to={cta} className="portal-linkbutton portal-linkbutton--full">
-                    {signedIn ? mn.nav.plans : mn.landing.planCta}
-                  </Link>
+                  {paymentsOpen ? (
+                    <Link to={cta} className="portal-linkbutton portal-linkbutton--full">
+                      {signedIn ? mn.nav.plans : mn.landing.planCta}
+                    </Link>
+                  ) : null}
                 </PlanCard>
               ))}
             </div>
@@ -153,10 +157,16 @@ export default function Landing() {
               </Button>
             </Notice>
           )}
-          <p className="portal-muted">{mn.landing.payNote}</p>
-          <p>
-            <Link to={signedIn ? '/gift' : '/register'}>{mn.gift.giveLink}</Link>
-          </p>
+          {paymentsOpen ? (
+            <>
+              <p className="portal-muted">{mn.landing.payNote}</p>
+              <p>
+                <Link to={signedIn ? '/gift' : '/register'}>{mn.gift.giveLink}</Link>
+              </p>
+            </>
+          ) : (
+            <Notice tone="info">{mn.landing.paymentsClosed}</Notice>
+          )}
         </div>
       </section>
 

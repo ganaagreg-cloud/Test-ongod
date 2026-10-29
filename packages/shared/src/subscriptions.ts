@@ -27,7 +27,11 @@ export const planSchema = z.object({
   priceMnt: z.number().int().nonnegative(),
 });
 export type PlanDto = z.infer<typeof planSchema>;
-export const plansResponseSchema = z.object({ plans: z.array(planSchema) });
+export const plansResponseSchema = z.object({
+  plans: z.array(planSchema),
+  /** False while payments are off (store review before launch, ADR-0072): plans are shown, not sold. */
+  paymentsOpen: z.boolean().default(true),
+});
 
 export const subscriptionSchema = z.object({
   id: z.string(),

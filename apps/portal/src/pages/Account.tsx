@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Badge, Button, Notice, Skeleton } from '@ongod/ui-web';
-import { getCurrentSubscription } from '../api/endpoints';
+import { getCurrentSubscription, getPlans } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { StoreBadges } from '../components/StoreBadges';
@@ -17,6 +17,9 @@ export default function Account() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const current = useAsync((signal) => getCurrentSubscription(signal));
+  // Off before launch (ADR-0072): no gift links while nothing can be bought.
+  const plans = useAsync(() => getPlans());
+  const paymentsOpen = plans.data?.paymentsOpen ?? true;
 
   if (!user) return null;
 
@@ -82,11 +85,13 @@ export default function Account() {
                   {accessUntil ? mn.account.renew : mn.account.getAccess}
                 </Link>
               )}
-              <p className="portal-gift-links">
-                <Link to="/gift">{mn.gift.giveLink}</Link>
-                <Link to="/redeem">{mn.gift.redeemLink}</Link>
-                <Link to="/gifts">{mn.gift.myTitle}</Link>
-              </p>
+              {paymentsOpen ? (
+                <p className="portal-gift-links">
+                  <Link to="/gift">{mn.gift.giveLink}</Link>
+                  <Link to="/redeem">{mn.gift.redeemLink}</Link>
+                  <Link to="/gifts">{mn.gift.myTitle}</Link>
+                </p>
+              ) : null}
             </div>
           </section>
 

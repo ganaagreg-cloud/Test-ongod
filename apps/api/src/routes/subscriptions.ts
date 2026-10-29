@@ -34,8 +34,13 @@ export async function subscriptionRoutes(
 
   // Public: the landing page shows the plan and its price before anyone signs up. The mobile
   // apps never call it (ADR-0006), and /v1/app-config still carries no prices.
+  // paymentsOpen: false while payments are off (no Wire keys in production, ADR-0072); the portal
+  // then shows the plans without buy buttons.
   app.get('/plans', async () =>
-    plansResponseSchema.parse({ plans: await subscriptions.listPlans() }),
+    plansResponseSchema.parse({
+      plans: await subscriptions.listPlans(),
+      paymentsOpen: payments.isOpen(),
+    }),
   );
 
   await app.register(async (authed) => {
