@@ -203,6 +203,20 @@ describe('admin plans (SPEC K, ADR-0059)', () => {
     expect((await testDb.plan.findUniqueOrThrow({ where: { id: yearly.id } })).active).toBe(true);
   });
 
+  it('two admins switching off the last two active plans at once leave one on (re-audit)', async () => {
+    const admin = await makeAdmin(app);
+    for (let round = 0; round < 5; round++) {
+      await testDb.plan.updateMany({ data: { active: false } });
+      const a = await makePlan({ name: `A${round}` });
+      const b = await makePlan({ name: `B${round}` });
+      const off = (id: string) =>
+        call(app, 'PATCH', `/v1/admin/plans/${id}`, admin.accessToken, { active: false });
+      const codes = (await Promise.all([off(a.id), off(b.id)])).map((r) => r.statusCode).sort();
+      expect(codes).toEqual([200, 409]);
+      expect(await testDb.plan.count({ where: { active: true } })).toBe(1);
+    }
+  });
+
   it('a change that changes nothing writes no audit row', async () => {
     const plan = await makePlan();
     const admin = await makeAdmin(app);

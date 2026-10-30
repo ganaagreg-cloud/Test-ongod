@@ -78,7 +78,7 @@ export const grantRequestSchema = z.object({
    * One key per grant the admin means to make: a retried request with the same key returns the
    * first grant instead of adding another period (audit F02).
    */
-  requestId: z.uuid().optional(),
+  requestId: z.uuid(),
 });
 
 // ---- Plans (SPEC K, ADR-0059) ----

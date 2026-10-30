@@ -76,12 +76,11 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
         planId: string;
         days?: number | undefined;
         note?: string | undefined;
-        requestId?: string | undefined;
+        requestId: string;
       },
     ): Promise<AdminSubscriptionDto> {
       // The same request again (a lost response, a double submit): the first grant, unchanged.
       const earlier = async () => {
-        if (!input.requestId) return null;
         const found = await db.subscription.findUnique({
           where: { grantKey: input.requestId },
           select: { id: true, userId: true },
@@ -116,7 +115,7 @@ export function createDecisionService(deps: { db: Db; now?: (() => Date) | undef
                 decidedById: actor.id,
                 decidedAt: at,
                 createdAt: at,
-                grantKey: input.requestId ?? null,
+                grantKey: input.requestId,
               },
             });
             await tx.payment.create({

@@ -302,6 +302,41 @@ describe('failed audio: the reason, and Retry', () => {
     );
   });
 
+  it('a finished file behind a full page of unfinished uploads is still picked up (re-audit)', async () => {
+    const old = new Date(Date.now() - 10 * 60_000);
+    // More stale unfinished rows than one page, all ordered before the finished one.
+    await testDb.mediaAsset.createMany({
+      data: Array.from({ length: 55 }, (_, i) => ({
+        id: `a-stuck-${String(i).padStart(2, '0')}`,
+        episodeId,
+        kind: 'AUDIO' as const,
+        provider: 'BUNNY_STORAGE' as const,
+        path: `audio/${episodeId}/stuck-${i}.wav`,
+        status: 'UPLOADING' as const,
+        updatedAt: old,
+      })),
+    });
+    const done = await testDb.mediaAsset.create({
+      data: {
+        id: 'b-finished',
+        episodeId,
+        kind: 'AUDIO',
+        provider: 'BUNNY_STORAGE',
+        path: `audio/${episodeId}/finished.wav`,
+        status: 'UPLOADING',
+        updatedAt: old,
+      },
+    });
+    mkdirSync(runtime.dirs.audio, { recursive: true });
+    writeFileSync(join(runtime.dirs.audio, done.id), wavFile());
+
+    const tus = createTusServer({ db: testDb, dirs: runtime.dirs, env: { TRUST_PROXY: false } });
+    expect(await tus.recoverFinished(new Date())).toBe(1);
+    expect((await testDb.mediaAsset.findUniqueOrThrow({ where: { id: done.id } })).status).toBe(
+      'PROCESSING',
+    );
+  });
+
   it('running the job twice (a crash after the work) is harmless', async () => {
     const asset = await uploadFile(wavFile(2), 'twice.wav');
     const run = () =>

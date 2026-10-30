@@ -606,7 +606,18 @@ describe('cron: syncWaitingPayments', () => {
     expect(await testDb.payment.count({ where: { subscriptionId: wrong.sub.id } })).toBe(0);
   });
 
-  it('ignores old, MOCK, NONE, intent-less, CANCELLED and ACTIVE requests (Wire is not asked)', async () => {
+  it('grants once a CANCELLED request whose payment went through anyway (re-audit)', async () => {
+    const { wire, run } = makeTask();
+    const { sub, intentId } = await request({ status: 'CANCELLED' });
+    paid(wire, intentId);
+
+    expect(await run()).toEqual({ affected: 1 });
+    expect(await run()).toEqual({ affected: 0 });
+    expect((await row(sub.id)).status).toBe('ACTIVE');
+    expect(await testDb.payment.count({ where: { subscriptionId: sub.id } })).toBe(1);
+  });
+
+  it('ignores old, MOCK, NONE, intent-less and ACTIVE requests (Wire is not asked)', async () => {
     const { wire, run } = makeTask();
     const others = [
       await request({ ageDays: 11 }),
@@ -614,7 +625,7 @@ describe('cron: syncWaitingPayments', () => {
       await request({ provider: 'MOCK' }),
       await request({ provider: 'NONE' }),
       await request({ intent: false }),
-      await request({ status: 'CANCELLED' }),
+      await request({ status: 'CANCELLED', ageDays: 11 }),
       await request({ status: 'ACTIVE' }),
     ];
     for (const o of others) paid(wire, o.intentId);

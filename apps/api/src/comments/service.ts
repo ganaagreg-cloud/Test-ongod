@@ -161,6 +161,9 @@ export function createCommentService(deps: {
      */
     async report(user: User, id: string, reason: CommentReportReason): Promise<void> {
       await db.$transaction(async (tx) => {
+        // Lock the comment row first, before any read: parallel reports then count one after
+        // another, each seeing the reports committed before it (re-audit).
+        await tx.comment.updateMany({ where: { id }, data: { id } });
         const comment = await tx.comment.findUnique({ where: { id } });
         if (!comment || comment.status !== 'VISIBLE') throw new AppError(404, 'NOT_FOUND');
         if (comment.authorId === user.id) throw new AppError(403, 'COMMENT_FORBIDDEN');

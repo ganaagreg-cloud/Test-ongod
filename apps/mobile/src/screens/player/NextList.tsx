@@ -70,7 +70,13 @@ export function NextList({
 
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
-    section: { gap: spacing.sm },
+    // Its own block with the same top line as the comments card, so the two never run together.
+    section: {
+      gap: spacing.sm,
+      paddingTop: spacing.lg,
+      borderTopWidth: layout.borderWidth,
+      borderTopColor: c.hairline,
+    },
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     text: { flex: 1, gap: spacing.xxs },
     title: {

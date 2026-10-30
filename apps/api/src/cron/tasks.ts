@@ -75,7 +75,7 @@ export const syncWaitingPayments = (
       where: {
         paymentProvider: 'WIRE',
         wirePaymentIntentId: { not: null },
-        status: { in: ['PENDING_PAYMENT', 'EXPIRED'] },
+        status: { in: ['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'] },
         // Never granted: a request that was paid and then ran out is EXPIRED too (ADR-0047).
         startsAt: null,
         createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
@@ -116,7 +116,7 @@ export const syncWaitingGifts = (
       where: {
         paymentProvider: 'WIRE',
         wirePaymentIntentId: { not: null },
-        status: { in: ['PENDING_PAYMENT', 'EXPIRED'] },
+        status: { in: ['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'] },
         paidAt: null,
         createdAt: { gte: new Date(now.getTime() - SYNC_WINDOW_DAYS * DAY_MS) },
       },
