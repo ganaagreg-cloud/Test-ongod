@@ -101,8 +101,13 @@ export function MediaUploader({
     choose(file);
     onInitialStarted?.();
   });
+  // StrictMode runs this effect twice in dev; without the guard one file made two uploads,
+  // two assets and two Bunny videos (seen 2026-10-29).
+  const startedInitial = useRef<File>(undefined);
   useEffect(() => {
-    if (initialFile) startInitial(initialFile);
+    if (!initialFile || startedInitial.current === initialFile) return;
+    startedInitial.current = initialFile;
+    startInitial(initialFile);
   }, [initialFile]);
   // Set on a refreshed page: the server still has the half-finished upload, the file is gone.
   const pending =
@@ -224,7 +229,14 @@ export function MediaUploader({
 
       {media?.status === 'FAILED' ? <FailedMedia episode={episode} /> : null}
       {media?.kind === 'VIDEO' && media.status === 'PROCESSING' ? (
-        <Notice tone="info">{t.videoProcessing}</Notice>
+        <Notice tone="info">
+          {/* The page re-fetches every 10 s while processing, so this counter re-renders with it. */}
+          {t.videoProcessing(
+            formatDuration(
+              Math.max(0, Math.round((Date.now() - Date.parse(media.updatedAt)) / 1000)),
+            ),
+          )}
+        </Notice>
       ) : null}
 
       {pending ? <Notice tone="info">{t.resumeFound(pending.name)}</Notice> : null}

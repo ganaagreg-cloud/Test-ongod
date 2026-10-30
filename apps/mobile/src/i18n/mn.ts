@@ -198,8 +198,8 @@ export const mn = {
 
   player: {
     close: 'Хаах',
-    back15: '15 секунд ухраах',
-    forward30: '30 секунд гүйлгэх',
+    back15: '15 секунд ухрах',
+    forward15: '15 секунд урагшлах',
     speed: (rate: string) => `Хурд ${rate}`,
     sleep: 'Унтах цаг',
     sleepOff: 'Унтраах',
@@ -275,7 +275,8 @@ export const mn = {
     loadError: 'Сэтгэгдлийг ачаалж чадсангүй.',
     loadMore: 'Цааш үзэх',
     write: 'Сэтгэгдэл бичих',
-    placeholder: 'Энэ ангийн талаар бичнэ үү',
+    open: (total: number) => `Сэтгэгдэл, ${total}. Бүгдийг нээх`,
+    placeholder: 'Сэтгэгдэл нэмэх...',
     send: 'Илгээх',
     sent: 'Сэтгэгдэл нэмэгдлээ',
     save: 'Хадгалах',

@@ -79,7 +79,7 @@ export default function AudioScreen() {
           label={state.status === 'playing' ? 'Pause' : 'Play'}
           onPress={() => void player.toggle()}
         />
-        <Button label="+30" variant="secondary" onPress={() => void player.skipForward()} />
+        <Button label="+15" variant="secondary" onPress={() => void player.skipForward()} />
       </View>
       <View style={styles.row}>
         <Button

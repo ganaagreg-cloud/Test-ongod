@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { COMMENT_MAX_LENGTH } from '@ongod/shared';
 import { createEndpoints } from '../src/api/endpoints';
 import { mn } from '../src/i18n/mn';
-import { canSendComment, commentCharsLeft } from '../src/lib/comments';
+import { canSendComment, commentCharsLeft, commentsSummary } from '../src/lib/comments';
 
 // The rules behind the comment box (SPEC L, ADR-0061), without a phone.
 
@@ -69,4 +69,27 @@ test('an app-config answer without supportEmail (an older server) still parses, 
   });
   assert.equal(parsed.supportEmail, null);
   assert.equal(parsed.minVersion.ios, '99.0.0');
+});
+
+test('the Player card takes the total and the newest comment from the first page', () => {
+  const comment = (id: string) => ({
+    id,
+    authorName: 'Бат Э.',
+    authorId: 'u1',
+    body: id,
+    mine: false,
+    edited: false,
+    createdAt: '2026-10-30T00:00:00.000Z',
+  });
+  const page = (ids: string[], total: number) => ({
+    items: ids.map(comment),
+    nextCursor: null,
+    total,
+    canComment: true,
+  });
+  assert.deepEqual(commentsSummary([]), { total: 0, newest: null });
+  assert.deepEqual(commentsSummary([page([], 0)]), { total: 0, newest: null });
+  const summary = commentsSummary([page(['c3', 'c2'], 3), page(['c1'], 3)]);
+  assert.equal(summary.total, 3);
+  assert.equal(summary.newest?.id, 'c3');
 });

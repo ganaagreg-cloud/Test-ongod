@@ -418,16 +418,16 @@ test('controller: pause saves progress, play resumes', async () => {
   assert.equal(fake.engine.getState().status, 'paused');
 });
 
-test('controller: skip back 15 s and forward 30 s stay inside the episode', async () => {
+test('controller: skip back and forward 15 s stay inside the episode', async () => {
   assert.equal(SKIP_BACK_SEC, 15);
-  assert.equal(SKIP_FORWARD_SEC, 30);
+  assert.equal(SKIP_FORWARD_SEC, 15);
   const { controller, fake } = setup();
   await controller.open({ id: 'ep1', title: 'x' });
   fake.push({ positionSec: 100 });
   await controller.skipBack();
   assert.equal(fake.engine.getState().positionSec, 85);
   await controller.skipForward();
-  assert.equal(fake.engine.getState().positionSec, 115);
+  assert.equal(fake.engine.getState().positionSec, 100);
   fake.push({ positionSec: 5 });
   await controller.skipBack();
   assert.equal(fake.engine.getState().positionSec, 0, 'not before the start');
@@ -639,7 +639,7 @@ test('video: progress, speed, skip and the sleep timer work the same as audio', 
   await controller.open({ id: 'v1', title: 'video' });
   video.push({ positionSec: 100 });
   await controller.skipForward();
-  assert.equal(video.engine.getState().positionSec, 130);
+  assert.equal(video.engine.getState().positionSec, 115);
   assert.equal(controller.cycleRate(), 1.25);
   assert.equal(video.engine.getState().rate, 1.25);
 
