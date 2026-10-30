@@ -262,6 +262,27 @@ describe('reports (Apple 1.2: report and timely action)', () => {
     ).toBe(404);
   });
 
+  it('three reports at the same moment still hide the comment (re-audit)', async () => {
+    const { episode, member } = await setup();
+    const reporters = [];
+    for (const email of ['p@example.com', 'q@example.com', 'r@example.com']) {
+      reporters.push(await other(email));
+    }
+    for (let round = 0; round < 5; round++) {
+      const c = (await post(episode.id, member.accessToken, `Жигшүүрт ${round}`)).json().comment;
+      const codes = await Promise.all(
+        reporters.map((m) =>
+          call(app, 'POST', `/v1/comments/${c.id}/report`, m.accessToken, { reason: 'ABUSE' }).then(
+            (r) => r.statusCode,
+          ),
+        ),
+      );
+      expect(codes.every((code) => code < 300)).toBe(true);
+      const row = await testDb.comment.findUniqueOrThrow({ where: { id: c.id } });
+      expect(row).toMatchObject({ status: 'HIDDEN', hiddenBy: 'reports' });
+    }
+  });
+
   it('the third report from three different people hides the comment from everyone', async () => {
     const { episode, member } = await setup();
     const c = (await post(episode.id, member.accessToken, 'Жигшүүрт')).json().comment;

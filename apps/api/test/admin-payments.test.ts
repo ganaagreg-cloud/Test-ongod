@@ -32,8 +32,12 @@ afterEach(async () => {
 
 const revoke = (id: string, body?: unknown) =>
   call(app, 'POST', `/v1/admin/subscriptions/${id}/revoke`, admin.accessToken, body);
-const grant = (userId: string, body: unknown) =>
-  call(app, 'POST', `/v1/admin/users/${userId}/grants`, admin.accessToken, body);
+/** Each call is a new grant (its own request key) unless the body names one. */
+const grant = (userId: string, body: object) =>
+  call(app, 'POST', `/v1/admin/users/${userId}/grants`, admin.accessToken, {
+    requestId: randomUUID(),
+    ...body,
+  });
 const get = (url: string) => call(app, 'GET', url, admin.accessToken);
 const ms = (iso: string) => Date.parse(iso);
 
@@ -205,7 +209,16 @@ describe('manual grant (SPEC E)', () => {
       (await grant(member.userId, { planId: plan.id, requestId: randomUUID() })).statusCode,
     ).toBe(201);
     const other = await makeMember(app, 'other-grant@example.com');
-    expect((await grant(other.userId, { planId: plan.id, requestId })).statusCode).toBe(400);
+    expect((await grant(other.userId, { planId: plan.id, requestId })).statusCode).toBe(400); // The key is required: a client that leaves it out cannot double a grant on a retry (re-audit).
+    const bare = await call(
+      app,
+      'POST',
+      `/v1/admin/users/${member.userId}/grants`,
+      admin.accessToken,
+      { planId: plan.id },
+    );
+    expect(bare.statusCode).toBe(400);
+    expect(bare.json().error.code).toBe('VALIDATION_ERROR');
   });
 
   it('works for an inactive plan, but not an unknown plan, unknown user, deleted user or bad days', async () => {

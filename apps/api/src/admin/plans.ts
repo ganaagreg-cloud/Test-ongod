@@ -71,6 +71,11 @@ export function createPlanService(deps: { db: Db }) {
 
     async update(actor: User, id: string, input: UpdatePlanRequest) {
       await db.$transaction(async (tx) => {
+        // Switching a plan off: lock the active plans before any read, so two admins switching
+        // off two different plans at once cannot each see the other one still on (re-audit).
+        if (input.active === false) {
+          await tx.plan.updateMany({ where: { active: true }, data: { active: true } });
+        }
         const plan = await tx.plan.findUnique({ where: { id }, include });
         if (!plan) throw new AppError(404, 'NOT_FOUND');
         if (input.name !== undefined && (await nameTaken(tx, input.name, id))) {

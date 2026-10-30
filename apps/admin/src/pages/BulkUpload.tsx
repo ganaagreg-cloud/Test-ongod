@@ -80,6 +80,17 @@ export function BulkUploadPage() {
 
   const [items, setItems] = useState<Item[]>([]);
   const [running, setRunning] = useState(false);
+  // Leaving the page stops the list, as the leave warning says: the file being sent is aborted
+  // (tus keeps it, so picking it again on its draft resumes) and the rest are not started.
+  const stopCurrent = useRef<(() => void) | null>(null);
+  const left = useRef(false);
+  useEffect(
+    () => () => {
+      left.current = true;
+      stopCurrent.current?.();
+    },
+    [],
+  );
   const patch = (key: string, change: Partial<Item>) =>
     setItems((all) => all.map((item) => (item.key === key ? { ...item, ...change } : item)));
 
@@ -121,8 +132,13 @@ export function BulkUploadPage() {
           resolve();
         },
       });
+      stopCurrent.current = () => {
+        void upload.abort();
+        resolve();
+      };
       upload.start();
     });
+    stopCurrent.current = null;
   }
 
   async function startAll() {
@@ -130,6 +146,7 @@ export function BulkUploadPage() {
     setRunning(true);
     lastCategory.write(categoryId);
     for (const item of items) {
+      if (left.current) return;
       if (item.status === 'waiting' || item.status === 'failed') await send(item);
     }
     setRunning(false);

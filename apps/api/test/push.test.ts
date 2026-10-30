@@ -121,6 +121,53 @@ describe('push job', () => {
     expect(job.lastError).toContain('503');
   });
 
+  it('a refused ticket (rate limit) is retried later for that device only (re-audit)', async () => {
+    const member = await setup();
+    await testDb.device.updateMany({
+      where: { userId: member.userId },
+      data: { pushToken: TOKEN_A },
+    });
+    await testDb.device.create({
+      data: {
+        userId: member.userId,
+        deviceId: 'second-device-01',
+        platform: 'ios',
+        pushToken: TOKEN_B,
+      },
+    });
+    const sent: string[][] = [];
+    const worker = workerFor({
+      async send(messages) {
+        sent.push(messages.map((m) => m.to));
+        return { deadTokens: [], failedTokens: [TOKEN_B] };
+      },
+    });
+    await enqueuePush(testDb, { userId: member.userId, title: 'T', body: 'B' });
+    await worker.drain(5000);
+
+    const jobs = await testDb.job.findMany({
+      where: { type: 'push.send' },
+      orderBy: { runAt: 'asc' },
+    });
+    expect(jobs).toHaveLength(2);
+    expect(jobs[0]!.status).toBe('DONE');
+    const retry = jobs[1]!;
+    expect(retry.status).toBe('QUEUED');
+    expect(retry.runAt.getTime()).toBeGreaterThan(Date.now());
+    expect(JSON.parse(retry.payload)).toMatchObject({ tokens: [TOKEN_B], round: 1 });
+
+    // The retry goes to the refused device only; after the last round nothing more is queued.
+    await testDb.job.update({ where: { id: retry.id }, data: { runAt: new Date(0) } });
+    await worker.drain(5000);
+    expect(sent[1]).toEqual([TOKEN_B]);
+    await testDb.job.updateMany({ where: { status: 'QUEUED' }, data: { runAt: new Date(0) } });
+    await worker.drain(5000);
+    await testDb.job.updateMany({ where: { status: 'QUEUED' }, data: { runAt: new Date(0) } });
+    await worker.drain(5000);
+    expect(sent).toHaveLength(4);
+    expect(await testDb.job.count({ where: { type: 'push.send', status: 'QUEUED' } })).toBe(0);
+  });
+
   it('validates the payload when it is queued', async () => {
     await expect(enqueuePush(testDb, { userId: '', title: 'T', body: 'B' })).rejects.toThrow();
     await expect(enqueuePush(testDb, { userId: 'u', title: '', body: 'B' })).rejects.toThrow();
@@ -146,7 +193,7 @@ describe('Expo sender', () => {
       title: 't',
       body: 'b',
     }));
-    expect(await sender.send(messages)).toEqual({ deadTokens: [] });
+    expect(await sender.send(messages)).toEqual({ deadTokens: [], failedTokens: [] });
 
     expect(calls.map((c) => JSON.parse(c.init.body as string).length)).toEqual([100, 100, 50]);
     expect(calls[0]!.url).toBe('https://exp.host/--/api/v2/push/send');
@@ -176,6 +223,24 @@ describe('Expo sender', () => {
     ]);
     expect(headers.authorization).toBeUndefined();
     expect(result.deadTokens).toEqual([TOKEN_B]);
+  });
+
+  it('reports a ticket refused for another reason as failed, not dead (re-audit)', async () => {
+    const fetchFn = (async () =>
+      new Response(
+        JSON.stringify({
+          data: [
+            { status: 'error', message: 'slow down', details: { error: 'MessageRateExceeded' } },
+            { status: 'ok' },
+          ],
+        }),
+      )) as unknown as typeof fetch;
+    const sender = createExpoPushSender({ EXPO_ACCESS_TOKEN: undefined }, fetchFn);
+    const result = await sender.send([
+      { to: TOKEN_A, title: 't', body: 'b' },
+      { to: TOKEN_B, title: 't', body: 'b' },
+    ]);
+    expect(result).toEqual({ deadTokens: [], failedTokens: [TOKEN_A] });
   });
 
   it('throws on an HTTP error so the job is retried', async () => {

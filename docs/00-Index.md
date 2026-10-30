@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-29
+updated: 2026-10-30
 tags: [index]
 ---
 
@@ -94,6 +94,7 @@ tags: [index]
 | ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 | ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
+| ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
 
 ## Research
 
@@ -142,6 +143,7 @@ tags: [index]
 ## Latest logs
 
 - [[2026-10-29]]
+- [[2026-10-30]]
 - [[2026-10-28]]
 - [[2026-10-27]]
 - [[2026-10-26]]

@@ -234,6 +234,25 @@ describe('paying for a gift', () => {
     expect(result.affected).toBe(1);
     expect((await testDb.gift.findUniqueOrThrow({ where: { id: gift.id } })).status).toBe('PAID');
   });
+
+  it('the cron also pays a CANCELLED gift whose payment went through anyway (re-audit)', async () => {
+    const ctx = await setup();
+    const { gift } = (await buy(ctx.plan.id, ctx.buyer.accessToken)).json();
+    const stored = await testDb.gift.update({
+      where: { id: gift.id },
+      data: { status: 'CANCELLED' },
+    });
+    ctx.wire!.intents.get(stored.wirePaymentIntentId!)!.status = 'succeeded';
+    const payments = createPaymentService({
+      db: testDb,
+      env: testEnv({ WIRE_API_KEY: 'sk_test_x', WIRE_WEBHOOK_SECRET: SECRET }),
+      gateway: ctx.wire!.gateway,
+    });
+    const task = syncWaitingGifts(payments);
+    expect((await task.run({ db: testDb, now: new Date() })).affected).toBe(1);
+    expect((await task.run({ db: testDb, now: new Date() })).affected).toBe(0);
+    expect((await testDb.gift.findUniqueOrThrow({ where: { id: gift.id } })).status).toBe('PAID');
+  });
 });
 
 describe('redeeming a gift', () => {
