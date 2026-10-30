@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import {
-  COMMENT_MAX_LENGTH,
-  commentReportReasonSchema,
-  type CommentDto,
-  type CommentReportReason,
-} from '@ongod/shared';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   layout,
   nativeFontFamily,
@@ -14,29 +8,16 @@ import {
   spacing,
   type ThemeColors,
 } from '@ongod/tokens';
-import { useCommentActions, useComments } from '../../data/queries';
+import { useComments } from '../../data/queries';
 import { mn } from '../../i18n/mn';
-import { canSendComment, commentCharsLeft } from '../../lib/comments';
-import { formatDate } from '../../lib/format';
-import { useSubmit } from '../../lib/useSubmit';
-import {
-  Button,
-  Icon,
-  ListItem,
-  PressableScale,
-  Sheet,
-  Skeleton,
-  useSurface,
-  useThemedStyles,
-  useToast,
-} from '../../ui';
-
-type Menu = { comment: CommentDto; step: 'actions' | 'report' | 'block' | 'edit' };
+import { commentsSummary } from '../../lib/comments';
+import { Button, PressableScale, Skeleton, useThemedStyles } from '../../ui';
+import { CommentsSheet } from './CommentsSheet';
 
 /**
- * "Сэтгэгдэл" under the Player (SPEC L, ADR-0061). Shown only when the server publishes a support
- * contact (Apple 1.2). The box is there only when the user may post; nothing explains why not.
- * Apple 1.2: every other comment has Report and Block; your own have Edit and Delete.
+ * "Сэтгэгдэл" under the Player (SPEC L, ADR-0075): one small card with the total and the newest
+ * comment; the list and the writing box open in a tall sheet. Shown only when the server publishes
+ * a support contact (Apple 1.2).
  */
 export function CommentsSection({
   episodeId,
@@ -46,99 +27,14 @@ export function CommentsSection({
   supportEmail: string | null;
 }) {
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useSurface();
-  const toast = useToast();
   const comments = useComments(episodeId);
-  const actions = useCommentActions(episodeId);
-  const { pending, run } = useSubmit();
-  const [draft, setDraft] = useState('');
-  const [menu, setMenu] = useState<Menu | null>(null);
-  const [editText, setEditText] = useState('');
-
-  const pages = comments.data?.pages ?? [];
-  const items = pages.flatMap((p) => p.items);
-  const canComment = pages[0]?.canComment ?? false;
-  const left = commentCharsLeft(draft);
-
-  async function send() {
-    if (!canSendComment(draft)) return;
-    const ok = await run(() => actions.post.mutateAsync(draft.trim()));
-    if (ok) {
-      setDraft('');
-      toast.show(mn.comments.sent, { tone: 'success' });
-    }
-  }
-
-  const close = () => setMenu(null);
-
-  async function report(reason: CommentReportReason) {
-    if (!menu) return;
-    const ok = await run(() => actions.report.mutateAsync({ id: menu.comment.id, reason }));
-    if (ok) {
-      close();
-      toast.show(mn.comments.reported, { tone: 'success' });
-    }
-  }
-
-  async function block() {
-    if (!menu) return;
-    const ok = await run(() => actions.block.mutateAsync(menu.comment.id));
-    if (ok) {
-      close();
-      toast.show(mn.comments.blocked, { tone: 'success' });
-    }
-  }
-
-  async function remove() {
-    if (!menu) return;
-    const ok = await run(() => actions.remove.mutateAsync(menu.comment.id));
-    if (ok) {
-      close();
-      toast.show(mn.comments.deleted);
-    }
-  }
-
-  async function saveEdit() {
-    if (!menu || !canSendComment(editText)) return;
-    const ok = await run(() =>
-      actions.edit.mutateAsync({ id: menu.comment.id, body: editText.trim() }),
-    );
-    if (ok) close();
-  }
+  const [open, setOpen] = useState(false);
+  const { total, newest } = commentsSummary(comments.data?.pages ?? []);
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title} accessibilityRole="header">
-        {mn.comments.title}
-      </Text>
-
-      {canComment ? (
-        <View style={styles.compose}>
-          <TextInput
-            accessibilityLabel={mn.comments.write}
-            placeholder={mn.comments.placeholder}
-            placeholderTextColor={colors.textTertiary}
-            selectionColor={colors.focusRing}
-            style={styles.input}
-            value={draft}
-            onChangeText={setDraft}
-            multiline
-            maxLength={COMMENT_MAX_LENGTH}
-          />
-          <View style={styles.composeRow}>
-            <Text style={styles.hint}>{left !== null ? String(left) : mn.comments.rules}</Text>
-            <Button
-              label={mn.comments.send}
-              loading={pending && menu === null}
-              disabled={!canSendComment(draft)}
-              onPress={() => void send()}
-            />
-          </View>
-        </View>
-      ) : null}
-
+    <View style={styles.block}>
       {comments.isPending ? (
-        <View style={styles.list} aria-hidden>
+        <View style={styles.card} aria-hidden>
           <Skeleton width="40%" />
           <Skeleton width="90%" />
         </View>
@@ -148,201 +44,67 @@ export function CommentsSection({
           variant="secondary"
           onPress={() => void comments.refetch()}
         />
-      ) : items.length === 0 ? (
-        <Text style={styles.empty}>{mn.comments.empty}</Text>
       ) : (
-        <View style={styles.list}>
-          {items.map((comment) => (
-            <View key={comment.id} style={styles.item}>
-              <View style={styles.itemHead}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {comment.mine ? mn.comments.mine : comment.authorName}
-                </Text>
-                <Text style={styles.date}>
-                  {formatDate(comment.createdAt)}
-                  {comment.edited ? ` · ${mn.comments.edited}` : ''}
-                </Text>
-                <PressableScale
-                  accessibilityRole="button"
-                  accessibilityLabel={mn.comments.more}
-                  onPress={() => {
-                    setEditText(comment.body);
-                    setMenu({ comment, step: 'actions' });
-                  }}
-                  style={styles.moreButton}
-                >
-                  <Icon name="more" size="small" color={colors.textSecondary} />
-                </PressableScale>
-              </View>
-              <Text style={styles.body}>{comment.body}</Text>
-            </View>
-          ))}
-          {comments.hasNextPage ? (
-            <Button
-              label={mn.comments.loadMore}
-              variant="secondary"
-              loading={comments.isFetchingNextPage}
-              onPress={() => void comments.fetchNextPage()}
-            />
-          ) : null}
-        </View>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={mn.comments.open(total)}
+          onPress={() => setOpen(true)}
+          style={styles.card}
+        >
+          <View style={styles.head}>
+            <Text style={styles.title} accessibilityRole="header">
+              {mn.comments.title}
+            </Text>
+            <Text style={styles.total}>{total}</Text>
+          </View>
+          {newest ? (
+            <Text style={styles.preview} numberOfLines={2}>
+              <Text style={styles.name}>{newest.mine ? mn.comments.mine : newest.authorName}</Text>
+              {`  ${newest.body}`}
+            </Text>
+          ) : (
+            <Text style={styles.placeholder}>{mn.comments.placeholder}</Text>
+          )}
+        </PressableScale>
       )}
 
       {supportEmail ? (
         <Text style={styles.contact}>{mn.comments.contact(supportEmail)}</Text>
       ) : null}
 
-      <Sheet
-        visible={menu !== null}
-        onClose={close}
-        title={
-          menu?.step === 'report'
-            ? mn.comments.reportTitle
-            : menu?.step === 'block'
-              ? mn.comments.blockTitle
-              : menu?.step === 'edit'
-                ? mn.comments.edit
-                : mn.comments.title
-        }
-        closeLabel={mn.close}
-      >
-        {menu?.step === 'actions' ? (
-          <View style={styles.menu}>
-            {menu.comment.mine ? (
-              <>
-                <ListItem
-                  title={mn.comments.edit}
-                  icon="edit"
-                  onPress={() => setMenu({ ...menu, step: 'edit' })}
-                />
-                <ListItem
-                  title={mn.comments.delete}
-                  icon="trash"
-                  tone="destructive"
-                  onPress={() => void remove()}
-                />
-              </>
-            ) : (
-              <>
-                <ListItem
-                  title={mn.comments.report}
-                  icon="alert"
-                  onPress={() => setMenu({ ...menu, step: 'report' })}
-                />
-                <ListItem
-                  title={mn.comments.block}
-                  icon="profile"
-                  onPress={() => setMenu({ ...menu, step: 'block' })}
-                />
-              </>
-            )}
-          </View>
-        ) : null}
-        {menu?.step === 'report' ? (
-          <View style={styles.menu}>
-            {commentReportReasonSchema.options.map((reason) => (
-              <ListItem
-                key={reason}
-                title={mn.comments.reasons[reason]}
-                onPress={() => void report(reason)}
-              />
-            ))}
-          </View>
-        ) : null}
-        {menu?.step === 'block' ? (
-          <>
-            <Text style={styles.sheetText}>{mn.comments.blockText}</Text>
-            <Button
-              label={mn.comments.block}
-              variant="destructive"
-              fullWidth
-              loading={pending}
-              onPress={() => void block()}
-            />
-            <Button label={mn.comments.cancel} variant="secondary" fullWidth onPress={close} />
-          </>
-        ) : null}
-        {menu?.step === 'edit' ? (
-          <>
-            <TextInput
-              accessibilityLabel={mn.comments.edit}
-              placeholderTextColor={colors.textTertiary}
-              selectionColor={colors.focusRing}
-              style={styles.input}
-              value={editText}
-              onChangeText={setEditText}
-              multiline
-              maxLength={COMMENT_MAX_LENGTH}
-            />
-            <Button
-              label={mn.comments.save}
-              fullWidth
-              loading={pending}
-              disabled={!canSendComment(editText)}
-              onPress={() => void saveEdit()}
-            />
-          </>
-        ) : null}
-      </Sheet>
+      <CommentsSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        episodeId={episodeId}
+        supportEmail={supportEmail}
+      />
     </View>
   );
 }
 
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
-    card: {
+    block: {
       paddingTop: spacing.md,
       borderTopWidth: layout.borderWidth,
       borderTopColor: c.hairline,
       gap: spacing.md,
     },
+    card: {
+      gap: spacing.xs,
+      padding: spacing.md,
+      borderRadius: radius.card,
+      backgroundColor: c.surfaceSunken,
+    },
+    head: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
     title: {
       color: c.textPrimary,
       ...nativeTextStyle('body'),
       fontFamily: nativeFontFamily.ui[600],
     },
-    compose: { gap: spacing.xs },
-    input: {
-      minHeight: layout.inputHeight,
-      paddingVertical: spacing.sm,
-      borderBottomWidth: layout.borderWidth,
-      borderBottomColor: c.hairlineStrong,
-      color: c.textPrimary,
-      ...nativeTextStyle('body'),
-      textAlignVertical: 'top',
-    },
-    composeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.sm,
-    },
-    hint: { flexShrink: 1, color: c.textTertiary, ...nativeTextStyle('caption') },
-    list: { gap: spacing.md },
-    empty: { color: c.textSecondary, ...nativeTextStyle('small') },
-    item: { gap: spacing.xxs },
-    itemHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    name: {
-      flexShrink: 1,
-      color: c.textPrimary,
-      ...nativeTextStyle('small'),
-      fontFamily: nativeFontFamily.ui[600],
-    },
-    date: { flex: 1, color: c.textTertiary, ...nativeTextStyle('caption') },
-    moreButton: {
-      width: layout.touchTarget,
-      height: layout.touchTarget,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    body: { color: c.textPrimary, ...nativeTextStyle('body') },
+    total: { color: c.textSecondary, ...nativeTextStyle('small') },
+    preview: { color: c.textPrimary, ...nativeTextStyle('small') },
+    name: { fontFamily: nativeFontFamily.ui[600] },
+    placeholder: { color: c.textTertiary, ...nativeTextStyle('small') },
     contact: { color: c.textTertiary, ...nativeTextStyle('caption') },
-    menu: {
-      borderRadius: radius.cardLarge,
-      borderWidth: layout.borderWidth,
-      borderColor: c.hairline,
-      backgroundColor: c.surface,
-      overflow: 'hidden',
-    },
-    sheetText: { color: c.textSecondary, ...nativeTextStyle('body') },
   });

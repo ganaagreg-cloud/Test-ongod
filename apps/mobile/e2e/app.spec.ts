@@ -192,6 +192,25 @@ test('Player: details, then play without access shows the no-access sheet only',
   await expect(page.getByRole('heading', { name: 'Их Монгол улсын зам' })).toHaveCount(0);
 });
 
+test('Player comments: a small card opens the full sheet; no writing box without access', async () => {
+  await tab(mn.tabs.library).click();
+  await page.getByRole('button', { name: /Их Монгол улсын зам/ }).click();
+  // ADR-0075: the page shows one card ("Сэтгэгдэл" + total), not the list.
+  const card = page.getByRole('button', { name: /^Сэтгэгдэл, \d+\. Бүгдийг нээх$/ });
+  await expect(card).toBeVisible();
+  await expect(page.getByRole('textbox', { name: mn.comments.write })).toHaveCount(0);
+  await card.click();
+  const sheet = page.locator('[aria-modal="true"]');
+  await expect(sheet.getByRole('heading', { name: /^Сэтгэгдэл\s+\d+$/ })).toBeVisible();
+  // The member has no access (and the episode is not free): reading only, no box. Writing and
+  // "sent" need a member with access or a free episode, which this seed does not have.
+  await expect(sheet.getByRole('textbox', { name: mn.comments.write })).toHaveCount(0);
+  await expectNoPaymentText(page);
+  await sheet.getByRole('button', { name: mn.close }).last().click();
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole('button', { name: mn.player.close }).first().click();
+});
+
 test('Профайл and Тохиргоо: inactive access, edit personal information, devices', async () => {
   await tab(mn.tabs.profile).click();
   await expect(page.getByText(mn.profile.accessInactive)).toBeVisible();
