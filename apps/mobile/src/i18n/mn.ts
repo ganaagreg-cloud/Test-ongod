@@ -198,8 +198,8 @@ export const mn = {
 
   player: {
     close: 'Хаах',
-    back15: '15 секунд ухраах',
-    forward30: '30 секунд гүйлгэх',
+    back15: '15 секунд ухрах',
+    forward15: '15 секунд урагшлах',
     speed: (rate: string) => `Хурд ${rate}`,
     sleep: 'Унтах цаг',
     sleepOff: 'Унтраах',

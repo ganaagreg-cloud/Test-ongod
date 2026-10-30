@@ -55,9 +55,9 @@ export interface ControllerDeps {
 
 /** Ask for a fresh URL when the current one has less than this left. */
 export const URL_REFRESH_MARGIN_MS = 60_000;
-/** The in-app skip buttons (the lock screen's are fixed at 10 s by expo-audio, ADR-0032). */
+/** The in-app skip buttons, 15 s both ways (ADR-0076; the lock screen's are fixed at 10 s by expo-audio, ADR-0032). */
 export const SKIP_BACK_SEC = 15;
-export const SKIP_FORWARD_SEC = 30;
+export const SKIP_FORWARD_SEC = 15;
 
 /** Error code when a video episode reaches a player without a video engine. */
 export const VIDEO_UNSUPPORTED = 'VIDEO_UNSUPPORTED';

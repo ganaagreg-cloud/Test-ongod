@@ -97,6 +97,7 @@ tags: [index]
 | ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
 | ADR-0074 | [[ADR-0074-free-bunny-encoding-show-wait]]                | accepted                                                  |
 | ADR-0075 | [[ADR-0075-player-comments-card-and-sheet]]               | accepted                                                  |
+| ADR-0076 | [[ADR-0076-player-skip-15-both-ways]]                     | accepted                                                  |
 
 ## Research
 
