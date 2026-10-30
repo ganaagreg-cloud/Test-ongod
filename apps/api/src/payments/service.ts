@@ -285,7 +285,8 @@ export function createPaymentService(deps: {
     async sync(sub: SubscriptionRow): Promise<void> {
       if (
         !gateway ||
-        (sub.status !== 'PENDING_PAYMENT' && sub.status !== 'EXPIRED') ||
+        // CANCELLED too: a cancel can race a payment that went through (lost webhook, re-audit).
+        !['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'].includes(sub.status) ||
         sub.paymentProvider !== 'WIRE' ||
         !sub.wirePaymentIntentId
       ) {
@@ -341,7 +342,7 @@ export function createPaymentService(deps: {
     async syncGift(gift: Gift): Promise<void> {
       if (
         !gateway ||
-        (gift.status !== 'PENDING_PAYMENT' && gift.status !== 'EXPIRED') ||
+        !['PENDING_PAYMENT', 'EXPIRED', 'CANCELLED'].includes(gift.status) ||
         gift.paymentProvider !== 'WIRE' ||
         !gift.wirePaymentIntentId
       ) {

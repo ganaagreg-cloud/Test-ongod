@@ -14,6 +14,7 @@ tags: [research, area/backend, area/mobile]
 - Optional access token: `Authorization: Bearer <token>`. It becomes mandatory only if "enhanced push security" is enabled for the Expo project (requests without it then fail with `UNAUTHORIZED`). Our env: `EXPO_ACCESS_TOKEN`, optional.
 - Response = one ticket per message: `status` `ok` (with a receipt id) or `error`. `ok` only means Expo received it, not that the phone did.
 - Error `DeviceNotRegistered` (in `details.error`): the token is dead, stop sending to it. We clear `Device.pushToken` for those.
+- ASSUMPTION / TO-VERIFY (docs.expo.dev not reachable from this session on 2026-10-30): other ticket errors (e.g. a rate limit) are temporary or not; we retry every refusal except `DeviceNotRegistered` up to 3 times ([[ADR-0073-reaudit-2026-10-30-fixes|ADR-0073]]).
 - Receipts: `POST https://exp.host/--/api/v2/push/getReceipts` with up to 1000 ticket ids. **We do not read receipts yet** (only ticket errors), so a token that dies later shows up on the next send.
 
 ## How it was checked
@@ -24,3 +25,4 @@ tags: [research, area/backend, area/mobile]
 ## Used by
 
 - [[ADR-0023-subscription-workflows-implementation|ADR-0023]]
+- [[ADR-0073-reaudit-2026-10-30-fixes|ADR-0073]]

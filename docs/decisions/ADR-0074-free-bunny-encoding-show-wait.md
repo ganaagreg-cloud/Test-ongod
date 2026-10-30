@@ -1,5 +1,5 @@
 ---
-id: ADR-0073
+id: ADR-0074
 title: 'Video stays on Bunny free encoding; the admin shows the time waited'
 status: accepted
 date: '2026-10-29'

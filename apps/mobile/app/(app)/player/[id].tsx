@@ -224,6 +224,11 @@ export default function PlayerScreen() {
             contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
             scrollEventThrottle={32}
             onScroll={onScroll}
+            // Typing a comment: the field stays above the keyboard, and a tap on "Илгээх" works
+            // with the keyboard open.
+            automaticallyAdjustKeyboardInsets
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
             <View style={styles.fixed}>
               <Enter index={0}>
@@ -437,7 +442,7 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   miniBar: { position: 'absolute', top: 0, left: 0, right: 0 },
   descriptionArea: { flex: 1 },
-  description: { paddingHorizontal: layout.screenPadding, paddingTop: spacing.xs },
+  description: { paddingHorizontal: layout.screenPadding, paddingTop: spacing.xs, gap: spacing.xl },
   block: { gap: spacing.xxs },
   countdown: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   countdownText: { flex: 1, gap: spacing.xxs },

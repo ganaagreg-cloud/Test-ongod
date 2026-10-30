@@ -368,6 +368,43 @@ test('controller: a refused play URL (no access) is reported and nothing starts'
   assert.equal(controller.getState().error?.code, 'NO_ACCESS');
 });
 
+test('controller: a renewal refused mid-episode stops what is still buffered (re-audit)', async () => {
+  const refused = Object.assign(new Error('Таны эрх идэвхгүй байна.'), { code: 'NO_ACCESS' });
+  let allowed = true;
+  const { controller, fake, clock, saved } = setup({
+    fetchPlay: async () => {
+      if (!allowed) throw refused;
+      return play({}, clock);
+    },
+  });
+  await controller.open({ id: 'ep1', title: 'x' });
+  fake.push({ positionSec: 300 });
+  // Access ended; the URL is about to run out and the member seeks.
+  allowed = false;
+  clock.advance(3_600_000 - URL_REFRESH_MARGIN_MS + 1);
+  await assert.rejects(controller.seekTo(320), refused);
+  assert.equal(fake.engine.getState().status, 'paused');
+  assert.equal(controller.getState().error?.code, 'NO_ACCESS');
+  await flush();
+  assert.deepEqual(saved.at(-1)?.[0], 'ep1');
+});
+
+test('controller: a network error on renewal does not stop playback', async () => {
+  const offline = Object.assign(new Error('offline'), { code: 'NETWORK' });
+  let online = true;
+  const { controller, fake, clock } = setup({
+    fetchPlay: async () => {
+      if (!online) throw offline;
+      return play({}, clock);
+    },
+  });
+  await controller.open({ id: 'ep1', title: 'x' });
+  online = false;
+  clock.advance(3_600_000 - URL_REFRESH_MARGIN_MS + 1);
+  await assert.rejects(controller.seekTo(10), offline);
+  assert.equal(fake.engine.getState().status, 'playing');
+});
+
 test('controller: pause saves progress, play resumes', async () => {
   const { controller, fake, saved } = setup();
   await controller.open({ id: 'ep1', title: 'x' });

@@ -19,4 +19,4 @@ tags: [research, area/media, cost]
 
 ## Implication
 
-Do not promise members or creators a processing time. Show the time waited, not an invented ETA ([[ADR-0073-free-bunny-encoding-show-wait]]). The launch row "a new episode is playable within minutes" in [[LAUNCH_CHECKLIST]] stays open until a long video is timed.
+Do not promise members or creators a processing time. Show the time waited, not an invented ETA ([[ADR-0074-free-bunny-encoding-show-wait]]). The launch row "a new episode is playable within minutes" in [[LAUNCH_CHECKLIST]] stays open until a long video is timed.

@@ -61,6 +61,8 @@ export const SKIP_FORWARD_SEC = 30;
 
 /** Error code when a video episode reaches a player without a video engine. */
 export const VIDEO_UNSUPPORTED = 'VIDEO_UNSUPPORTED';
+/** API answers that mean "you may not play this" (not a network error): playback stops. */
+const REFUSED = new Set(['NO_ACCESS', 'NOT_FOUND', 'UNAUTHORIZED']);
 
 /**
  * The one player of the app: loads an episode through the signed URL, keeps it fresh, saves progress,
@@ -182,10 +184,22 @@ export function createPlayerController(deps: ControllerDeps) {
     return token === openToken;
   }
 
-  /** Before playing or seeking: get a new URL if the old one is about to stop working. */
+  /**
+   * Before playing or seeking: get a new URL if the old one is about to stop working. If the API
+   * refuses it (access ended meanwhile), what is still buffered must not play on (re-audit).
+   */
   async function ensureFresh(position: number): Promise<void> {
     if (!episode || expiresAtMs - now() > URL_REFRESH_MARGIN_MS) return;
-    await loadFresh(position, openToken);
+    try {
+      await loadFresh(position, openToken);
+    } catch (cause) {
+      if (REFUSED.has(String((cause as { code?: unknown }).code))) {
+        engine.pause();
+        void saver.flush('pause');
+        emit();
+      }
+      throw cause;
+    }
   }
 
   const controller = {

@@ -470,6 +470,38 @@ test('Олон файл: several files make one draft each; a wrong file is show
   for (const name of names) await expect(page.getByText(name, { exact: true })).toBeVisible();
 });
 
+test('Олон файл: leaving during the upload stops the list, as the warning says (re-audit)', async () => {
+  await sidebar(mn.nav.episodes).click();
+  await page.getByRole('button', { name: mn.episodes.bulkUpload.button }).click();
+  await page.route('**/v1/admin/uploads/**', async (route) => {
+    if (route.request().method() === 'PATCH') await new Promise((r) => setTimeout(r, 2500));
+    await route.continue().catch(() => undefined);
+  });
+  const stamp = Date.now();
+  const names = [`E2E зогсох ${stamp} A`, `E2E зогсох ${stamp} B`];
+  await page.getByLabel(mn.episodes.bulkUpload.choose).setInputFiles(
+    names.map((name) => ({
+      name: `${name}.mp3`,
+      mimeType: 'audio/mpeg',
+      buffer: Buffer.alloc(12 * 1024 * 1024, 4),
+    })),
+  );
+  await page.getByRole('button', { name: mn.episodes.bulkUpload.start(2) }).click();
+  await expect(page.locator('.admin-bulk-list progress')).toBeVisible();
+
+  await sidebar(mn.nav.episodes).click();
+  await dialog(mn.episodes.leave.uploadingTitle)
+    .getByRole('button', { name: mn.episodes.leave.leave })
+    .click();
+  await expect(page.getByRole('heading', { name: mn.episodes.title, level: 1 })).toBeVisible();
+  await page.unroute('**/v1/admin/uploads/**');
+  // The first draft exists (to resume on); the second file was never started.
+  await page.waitForTimeout(4000);
+  await page.reload();
+  await expect(page.getByText(names[0]!, { exact: true })).toBeVisible();
+  await expect(page.getByText(names[1]!, { exact: true })).toHaveCount(0);
+});
+
 test('series: create, add two existing items, move the second up, order survives a reload', async () => {
   const stamp = Date.now();
   const first = await createDraft('A', stamp);

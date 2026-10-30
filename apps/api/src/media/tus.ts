@@ -1,6 +1,6 @@
 import { access, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { MAX_VIDEO_BYTES, maxBytesOf, mediaKindOfFile } from '@ongod/shared';
+import { MAX_VIDEO_BYTES, maxBytesOf, mediaKindOfFile, type MediaKind } from '@ongod/shared';
 import { FileStore } from '@tus/file-store';
 import { Server } from '@tus/server';
 import { audit } from '../admin/audit';
@@ -30,6 +30,7 @@ const reject = (body: string, status_code = 400) => ({ status_code, body });
  */
 /** An UPLOADING row this old with a finished file is taken as an interrupted handoff. */
 const RECOVER_AFTER_MS = 5 * 60_000;
+const RECOVER_PAGE = 50;
 
 export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env, 'TRUST_PROXY'> }) {
   const { db, dirs } = deps;
@@ -147,31 +148,40 @@ export function createTusServer(deps: { db: Db; dirs: UploadDirs; env: Pick<Env,
    * is a rename, so a file in the folder is always complete. Run by cron.
    */
   async function recoverFinished(now = new Date()): Promise<number> {
-    const stale = await db.mediaAsset.findMany({
-      where: { status: 'UPLOADING', updatedAt: { lt: new Date(now.getTime() - RECOVER_AFTER_MS) } },
-      select: { id: true, kind: true },
-      take: 50,
-    });
+    const before = new Date(now.getTime() - RECOVER_AFTER_MS);
     let recovered = 0;
-    for (const asset of stale) {
-      const file = join(asset.kind === 'VIDEO' ? dirs.video : dirs.audio, asset.id);
-      const size = await access(file).then(
-        () => stat(file).then((s) => s.size),
-        () => null,
-      );
-      if (size === null) continue; // still being uploaded, or abandoned: tus cleanup handles it
-      await db.$transaction(async (tx) => {
-        const { count } = await tx.mediaAsset.updateMany({
-          where: { id: asset.id, status: 'UPLOADING' },
-          data: { status: 'PROCESSING', failReason: null, sizeBytes: BigInt(size) },
-        });
-        if (count === 1) {
-          await enqueueMediaUpload(tx, asset.kind, asset.id);
-          recovered++;
-        }
+    // Pages through every stale row: unfinished uploads stay UPLOADING, so re-reading the first
+    // page would never reach a finished one behind them.
+    let after = '';
+    for (;;) {
+      const page = await db.mediaAsset.findMany({
+        where: { status: 'UPLOADING', updatedAt: { lt: before }, id: { gt: after } },
+        select: { id: true, kind: true },
+        orderBy: { id: 'asc' },
+        take: RECOVER_PAGE,
       });
+      for (const asset of page) recovered += await recoverOne(asset);
+      if (page.length < RECOVER_PAGE) return recovered;
+      after = page[page.length - 1]!.id;
     }
-    return recovered;
+  }
+
+  /** One stale row: hands it over if its file is in the folder. Returns 1 if this call did it. */
+  async function recoverOne(asset: { id: string; kind: MediaKind }): Promise<number> {
+    const file = join(asset.kind === 'VIDEO' ? dirs.video : dirs.audio, asset.id);
+    const size = await access(file).then(
+      () => stat(file).then((s) => s.size),
+      () => null,
+    );
+    if (size === null) return 0; // still being uploaded, or abandoned: tus cleanup handles it
+    return db.$transaction(async (tx) => {
+      const { count } = await tx.mediaAsset.updateMany({
+        where: { id: asset.id, status: 'UPLOADING' },
+        data: { status: 'PROCESSING', failReason: null, sizeBytes: BigInt(size) },
+      });
+      if (count === 1) await enqueueMediaUpload(tx, asset.kind, asset.id);
+      return count;
+    });
   }
 
   return {

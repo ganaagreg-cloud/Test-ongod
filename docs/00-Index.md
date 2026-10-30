@@ -94,7 +94,8 @@ tags: [index]
 | ADR-0070 | [[ADR-0070-admin-several-files-at-once]]                  | accepted                                                  |
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 | ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
-| ADR-0073 | [[ADR-0073-free-bunny-encoding-show-wait]]                | accepted                                                  |
+| ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
+| ADR-0074 | [[ADR-0074-free-bunny-encoding-show-wait]]                | accepted                                                  |
 
 ## Research
 
