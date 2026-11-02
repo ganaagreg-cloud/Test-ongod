@@ -1,6 +1,6 @@
 ﻿---
 type: index
-updated: 2026-10-30
+updated: 2026-11-02
 tags: [index]
 ---
 
@@ -12,7 +12,7 @@ tags: [index]
 ## Specs
 
 - [[SPEC]]: product, workflows, data model, acceptance tests
-- Latest audit: [[AUDIT-2026-10-27]] (admin, portal, app after the redesign merge) · [[AUDIT-2026-10-17]]
+- Latest audit: [[AUDIT-2026-11-02]] (R10–R13 fixes) · [[AUDIT-2026-10-30]] · [[AUDIT-2026-10-27]]
 - [[DESIGN]]: tokens, components, screens (v2) · [[DESIGN-v2-aurora]] · mockups `docs/design/v2-screens/` · screenshots `docs/screens/`
 - [[glossary]]
 - [[open-questions]]
@@ -95,6 +95,7 @@ tags: [index]
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 | ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
 | ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
+| ADR-0074 | [[ADR-0074-audit-2026-11-02-fixes]]                       | accepted                                                  |
 
 ## Research
 
@@ -142,6 +143,7 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-11-02]]
 - [[2026-10-29]]
 - [[2026-10-30]]
 - [[2026-10-28]]

@@ -158,6 +158,8 @@ export const playResponseSchema = z.object({
   url: z.string(),
   /** ISO time the URL stops working. Never later than the end of the user's access. */
   expiresAt: z.iso.datetime(),
+  /** Paid-content access deadline; null for free content. Independent of the URL TTL. */
+  accessEndsAt: z.iso.datetime().nullable().optional(),
   durationSec: z.number().int().nonnegative().nullable(),
 });
 export type PlayResponse = z.infer<typeof playResponseSchema>;

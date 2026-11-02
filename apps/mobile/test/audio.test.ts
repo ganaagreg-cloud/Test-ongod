@@ -43,6 +43,9 @@ function fakeClock(start = 1_000_000) {
   return {
     deps,
     now: () => now,
+    elapseWithoutTimers(ms: number) {
+      now += ms;
+    },
     advance(ms: number) {
       now += ms;
       for (const [id, timer] of [...timers]) {
@@ -309,6 +312,74 @@ test('progress: a flush for another episode is finished before the new one start
 });
 
 // ---- controller ----
+
+test('R11: uninterrupted playback pauses exactly at the access deadline', async () => {
+  const { controller, clock, fake, saved } = setup({
+    fetchPlay: async () => ({
+      ...play({}, clock),
+      accessEndsAt: new Date(clock.now() + 1000).toISOString(),
+    }),
+  });
+  await controller.open({ id: 'deadline', title: 'x' });
+  fake.push({ positionSec: 20 });
+  clock.advance(999);
+  assert.equal(controller.getState().status, 'playing');
+  clock.advance(1);
+  assert.equal(controller.getState().status, 'paused');
+  assert.equal(controller.getState().error?.code, 'NO_ACCESS');
+  await flush();
+  assert.equal(saved.at(-1)?.[0], 'deadline');
+});
+
+test('R11: opening a free episode clears the previous access timer', async () => {
+  const { controller, clock } = setup({
+    fetchPlay: async (id) => ({
+      ...play({}, clock),
+      accessEndsAt: id === 'paid' ? new Date(clock.now() + 1000).toISOString() : null,
+    }),
+  });
+  await controller.open({ id: 'paid', title: 'x' });
+  await controller.open({ id: 'free', title: 'y' });
+  clock.advance(1001);
+  assert.equal(controller.getState().status, 'playing');
+  assert.equal(controller.getState().error, null);
+  await controller.close();
+});
+
+test('R11: foreground check catches a suspended timer and native resume stays paused', async () => {
+  const { controller, clock, fake } = setup({
+    fetchPlay: async () => ({
+      ...play({}, clock),
+      accessEndsAt: new Date(clock.now() + 1000).toISOString(),
+    }),
+  });
+  await controller.open({ id: 'paid', title: 'x' });
+  clock.elapseWithoutTimers(1001);
+  controller.checkAccessDeadline();
+  assert.equal(controller.getState().status, 'paused');
+  assert.equal(controller.getState().error?.code, 'NO_ACCESS');
+  fake.engine.play();
+  assert.equal(controller.getState().status, 'paused');
+  await controller.close();
+  assert.equal(clock.pending(), 0);
+});
+
+test('R11: URL expiry alone is not an access deadline', async () => {
+  const { controller, clock } = setup({
+    fetchPlay: async () => ({
+      ...play({ expiresAt: new Date(clock.now() + 1000).toISOString() }, clock),
+      accessEndsAt: new Date(clock.now() + 10_000).toISOString(),
+    }),
+  });
+  await controller.open({ id: 'paid', title: 'x' });
+  clock.advance(1001);
+  assert.equal(controller.getState().status, 'playing');
+  assert.equal(controller.getState().error, null);
+  await controller.close();
+  clock.advance(10_000);
+  assert.equal(controller.getState().status, 'idle');
+  assert.equal(controller.getState().error, null);
+});
 
 const play = (over: Partial<PlayInfo> = {}, clock = fakeClock()): PlayInfo => ({
   url: 'https://cdn.example.test/a.m4a?token=SECRET',

@@ -27,6 +27,25 @@ async function memberWithPeriod(endsInDays: number, email = 'member@example.com'
 }
 
 describe('access-ending reminder (SPEC F)', () => {
+  it('R13: pages past more than 200 renewed periods and remains idempotent', async () => {
+    const { member, plan } = await memberWithPeriod(1);
+    const at = new Date();
+    await testDb.subscription.createMany({
+      data: Array.from({ length: 201 }, (_, i) => ({
+        userId: member.userId,
+        planId: plan.id,
+        referenceCode: `R13-${i}`,
+        status: 'ACTIVE' as const,
+        amountMnt: 0,
+        endsAt: new Date(at.getTime() + DAY),
+      })),
+    });
+    await makeActive(member.userId, plan.id, at, new Date(at.getTime() + 100 * DAY));
+    await memberWithPeriod(10, 'eligible@example.com');
+    expect(await run(at)).toEqual({ affected: 1 });
+    expect((await notifyEmails()).map((j) => j.payload.to)).toEqual(['eligible@example.com']);
+    expect(await run(at)).toEqual({ affected: 0 });
+  }, 120_000);
   it('queues one email and one push for a period that ends within 14 days, and sets the flag', async () => {
     const { member, sub } = await memberWithPeriod(10);
 

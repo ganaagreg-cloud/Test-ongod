@@ -232,17 +232,30 @@ export function createMediaJobs(deps: {
         await storage.putFile(asset.path, local, audioMime(asset.path));
         const { size } = await stat(local);
 
-        const others = await db.mediaAsset.findMany({
-          where: { episodeId: asset.episodeId, id: { not: assetId } },
-          select: { id: true, provider: true, path: true },
-        });
-        await db.$transaction([
-          db.mediaAsset.updateMany({
+        const others = await db.$transaction(async (tx) => {
+          await tx.episode.updateMany({
+            where: { id: asset.episodeId },
+            data: { id: asset.episodeId },
+          });
+          const switched = await tx.mediaAsset.updateMany({
             where: { id: assetId, status: { in: ['PROCESSING', 'FAILED'] } },
             data: { status: 'READY', failReason: null, sizeBytes: BigInt(size), durationSec },
-          }),
-          db.mediaAsset.deleteMany({ where: { id: { in: others.map((o) => o.id) } } }),
-        ]);
+          });
+          if (switched.count !== 1) return null;
+          const others = await tx.mediaAsset.findMany({
+            where: {
+              episodeId: asset.episodeId,
+              id: { not: assetId },
+              status: { in: ['READY', 'FAILED'] },
+            },
+            select: { id: true, provider: true, path: true },
+          });
+          await tx.mediaAsset.deleteMany({
+            where: { id: { in: others.map((o) => o.id) }, status: { in: ['READY', 'FAILED'] } },
+          });
+          return others;
+        });
+        if (others === null) return;
         // The replaced files (stored copy and any leftover local copy) go away after the switch.
         await removeReplaced(others, log);
         await rm(local, { force: true });
@@ -459,18 +472,30 @@ export function createMediaJobs(deps: {
         return;
       }
 
-      const others = await db.mediaAsset.findMany({
-        where: { episodeId: asset.episodeId, id: { not: assetId } },
-        select: { id: true, provider: true, path: true },
-      });
-      const [switched] = await db.$transaction([
-        db.mediaAsset.updateMany({
+      const others = await db.$transaction(async (tx) => {
+        await tx.episode.updateMany({
+          where: { id: asset.episodeId },
+          data: { id: asset.episodeId },
+        });
+        const switched = await tx.mediaAsset.updateMany({
           where: { id: assetId, status: 'PROCESSING' },
           data: { status: 'READY', failReason: null, durationSec: Math.round(video.length) },
-        }),
-        db.mediaAsset.deleteMany({ where: { id: { in: others.map((o) => o.id) } } }),
-      ]);
-      if (switched.count !== 1) return;
+        });
+        if (switched.count !== 1) return null;
+        const others = await tx.mediaAsset.findMany({
+          where: {
+            episodeId: asset.episodeId,
+            id: { not: assetId },
+            status: { in: ['READY', 'FAILED'] },
+          },
+          select: { id: true, provider: true, path: true },
+        });
+        await tx.mediaAsset.deleteMany({
+          where: { id: { in: others.map((o) => o.id) }, status: { in: ['READY', 'FAILED'] } },
+        });
+        return others;
+      });
+      if (others === null) return;
       await removeReplaced(others, log);
       await rm(join(dirs.video, assetId), { force: true });
       const episode = await db.episode.findUnique({

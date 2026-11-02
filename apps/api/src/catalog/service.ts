@@ -468,7 +468,7 @@ export function createCatalogService(deps: CatalogDeps) {
 
       const ep = await db.episode.findFirst({
         where: { AND: [publishedWhere(now), { id: episodeId }] },
-        select: { id: true, mediaAssets: readyMedia },
+        select: { id: true, isFree: true, mediaAssets: readyMedia },
       });
       if (!ep) throw new AppError(404, 'NOT_FOUND');
       const asset = ep.mediaAssets[0];
@@ -488,6 +488,7 @@ export function createCatalogService(deps: CatalogDeps) {
             ? media.video(asset.path, expiresAt)
             : media.audio(asset.path, expiresAt),
         expiresAt: expiresAt.toISOString(),
+        accessEndsAt: ep.isFree ? null : (accessUntil?.toISOString() ?? null),
         durationSec: asset.durationSec,
       };
     },
