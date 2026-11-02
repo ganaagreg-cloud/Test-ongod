@@ -1,7 +1,7 @@
 ---
 id: ADR-0003
 title: Hosting = iTools Node.js hosting, VPS only as fallback
-status: accepted
+status: superseded by ADR-0075
 date: 2026-10-08
 tags: [adr, area/hosting]
 ---

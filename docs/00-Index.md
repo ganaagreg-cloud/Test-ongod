@@ -24,7 +24,7 @@ tags: [index]
 | -------- | --------------------------------------------------------- | --------------------------------------------------------- |
 | ADR-0001 | [[ADR-0001-mobile-react-native-expo]]                     | accepted                                                  |
 | ADR-0002 | [[ADR-0002-api-fastify-prisma-mysql-single-process]]      | accepted                                                  |
-| ADR-0003 | [[ADR-0003-hosting-itools-node]]                          | accepted                                                  |
+| ADR-0003 | [[ADR-0003-hosting-itools-node]]                          | superseded by ADR-0075                                    |
 | ADR-0004 | [[ADR-0004-media-bunny-token-auth]]                       | accepted                                                  |
 | ADR-0005 | [[ADR-0005-bunny-dev-zone-env-switch]]                    | accepted                                                  |
 | ADR-0006 | [[ADR-0006-manual-bank-transfer-web-only-payments]]       | accepted (bank part amended by ADR-0041, ADR-0046)        |
@@ -95,6 +95,7 @@ tags: [index]
 | ADR-0071 | [[ADR-0071-audit-2026-10-29-fixes]]                       | accepted                                                  |
 | ADR-0072 | [[ADR-0072-payments-off-until-launch]]                    | accepted                                                  |
 | ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
+| ADR-0075 | [[ADR-0075-hosting-own-vps]]                              | accepted                                                  |
 
 ## Research
 
@@ -128,7 +129,8 @@ tags: [index]
 | [[R-google-signin-v16]]            | VERIFIED   | 2026-12-08    |
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
-| [[R-hosting-limits]]               | TO-VERIFY  | —             |
+| [[R-hosting-limits]]               | SUPERSEDED | —             |
+| [[R-node-cve-2026-111497]]         | TO-VERIFY  | 2026-11-16    |
 | [[R-ios-device-install]]           | TO-VERIFY  | 2027-01-15    |
 | [[R-motion-libs-sdk-57]]           | VERIFIED   | 2026-12-08    |
 | [[R-mysql-skip-locked-claim]]      | VERIFIED   | —             |

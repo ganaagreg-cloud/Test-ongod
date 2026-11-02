@@ -1,7 +1,7 @@
 ---
 id: ADR-0064
 title: The API is built for Node 22 and needs Node 22 on the host
-status: accepted
+status: accepted (items 2 and 3 superseded by ADR-0075)
 date: '2026-10-29'
 supersedes: [ADR-0063 (only item 2 and 3, the API build target)]
 tags: [adr, tooling, area/backend, area/hosting]
