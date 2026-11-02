@@ -1,5 +1,6 @@
 ﻿import { useSyncExternalStore } from 'react';
 import { api } from '../api';
+import { AppState } from 'react-native';
 import { createPlayerController, type PlayerState } from './controller';
 import { engine } from './engine';
 import { videoAvailable, videoEngine } from '../video/engine';
@@ -16,6 +17,10 @@ export const player = createPlayerController({
   ...(videoAvailable ? { videoEngine } : {}),
   fetchPlay: (episodeId) => api.playEpisode(episodeId),
   saveProgress: (episodeId, body) => api.saveProgress(episodeId, body),
+});
+
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') player.checkAccessDeadline();
 });
 
 let snapshot: PlayerState = player.getState();

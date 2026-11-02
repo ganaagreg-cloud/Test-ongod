@@ -36,6 +36,16 @@ async function readyEpisode() {
 }
 
 describe('POST /v1/episodes/:id/play: access rules', () => {
+  it('R11: separates paid access deadline from URL expiry and omits it for free content', async () => {
+    const end = new Date(now.getTime() + 10 * HOUR);
+    const user = await memberOn(app, { accessUntil: end });
+    const { episode } = await readyEpisode();
+    const paid = (await play(episode.id, user.accessToken)).json();
+    expect(paid.accessEndsAt).toBe(end.toISOString());
+    expect(Date.parse(paid.expiresAt)).toBe(now.getTime() + 4 * HOUR);
+    await testDb.episode.update({ where: { id: episode.id }, data: { isFree: true } });
+    expect((await play(episode.id, user.accessToken)).json().accessEndsAt).toBeNull();
+  });
   it('refuses a user with no access: 403 NO_ACCESS, and says nothing about price or payment', async () => {
     const user = await memberOn(app, { accessUntil: null });
     const { episode } = await readyEpisode();

@@ -1,5 +1,6 @@
 ﻿import { createProgressSaver, type ProgressBody } from './progress';
 import { nextRate } from './rates';
+import { mn } from '../i18n/mn';
 import {
   createSleepTimer,
   type SleepMode,
@@ -18,6 +19,7 @@ export interface PlayInfo {
   url: string;
   /** ISO time; the URL is refused after it. */
   expiresAt: string;
+  accessEndsAt?: string | null;
   durationSec: number | null;
 }
 
@@ -83,6 +85,30 @@ export function createPlayerController(deps: ControllerDeps) {
   const saver = createProgressSaver(saveProgress);
   let episode: EpisodeToPlay | undefined;
   let expiresAtMs = 0;
+  let accessEndsAtMs: number | null = null;
+  let accessTimer: unknown;
+  const timers = deps.sleepDeps ?? {
+    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+    clearTimeout: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  };
+  const clearAccessTimer = () => {
+    if (accessTimer !== undefined) timers.clearTimeout(accessTimer);
+    accessTimer = undefined;
+  };
+  function checkAccessDeadline(): boolean {
+    clearAccessTimer();
+    if (accessEndsAtMs === null) return false;
+    const remaining = accessEndsAtMs - now();
+    if (remaining > 0) {
+      accessTimer = timers.setTimeout(checkAccessDeadline, Math.min(remaining, 2_147_483_647));
+      return false;
+    }
+    error = { code: 'NO_ACCESS', message: mn.noAccess.title };
+    if (engine.getState().status !== 'paused') engine.pause();
+    void saver.flush('pause');
+    emit();
+    return true;
+  }
   let error: PlayerState['error'] = null;
   let openToken = 0;
   let lastStatus = engine.getState().status;
@@ -114,6 +140,10 @@ export function createPlayerController(deps: ControllerDeps) {
     source.onChange((s) => {
       // The idle engine's changes (its unload after a switch) are not the current episode's.
       if (source !== engine) return;
+      if (s.status === 'playing' && accessEndsAtMs !== null && now() >= accessEndsAtMs) {
+        checkAccessDeadline();
+        return;
+      }
       saver.setDuration(s.durationSec);
       saver.update(s.positionSec, s.status === 'playing');
       if (s.status === 'ended' && lastStatus !== 'ended') {
@@ -171,6 +201,7 @@ export function createPlayerController(deps: ControllerDeps) {
     kind = nextKind;
     error = null;
     expiresAtMs = Date.parse(info.expiresAt);
+    accessEndsAtMs = info.accessEndsAt ? Date.parse(info.accessEndsAt) : null;
     saver.setDuration(info.durationSec ?? 0);
     await engine.load(
       {
@@ -181,7 +212,8 @@ export function createPlayerController(deps: ControllerDeps) {
       },
       position,
     );
-    return token === openToken;
+    if (token !== openToken) return false;
+    return !checkAccessDeadline();
   }
 
   /**
@@ -212,6 +244,9 @@ export function createPlayerController(deps: ControllerDeps) {
     /** Load an episode and start it. Throws the API error (e.g. NO_ACCESS) if the URL is refused. */
     async open(next: EpisodeToPlay): Promise<void> {
       const token = ++openToken;
+      clearAccessTimer();
+      accessEndsAtMs = null;
+      if (engine.getState().status === 'playing') engine.pause();
       sleepFired = false;
       await saver.flush('switch');
       episode = next;
@@ -226,6 +261,7 @@ export function createPlayerController(deps: ControllerDeps) {
     async play(): Promise<void> {
       if (!episode) return;
       await ensureFresh(engine.getState().positionSec);
+      if (checkAccessDeadline()) return;
       engine.play();
     },
     pause(): void {
@@ -267,6 +303,8 @@ export function createPlayerController(deps: ControllerDeps) {
     /** Stop everything (sign-out, no access): final save, unload, lock-screen controls removed. */
     async close(): Promise<void> {
       openToken++;
+      clearAccessTimer();
+      accessEndsAtMs = null;
       sleepFired = false;
       sleep.cancel();
       await saver.flush('close');
@@ -279,7 +317,7 @@ export function createPlayerController(deps: ControllerDeps) {
       emit();
     },
   };
-  return controller;
+  return { ...controller, checkAccessDeadline };
 }
 
 export type PlayerController = ReturnType<typeof createPlayerController>;

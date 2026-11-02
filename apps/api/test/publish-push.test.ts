@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { publishScheduledEpisodes } from '../src/cron/tasks';
 import { authApp, device, signedIn, post } from './auth-helpers';
 import { call, jobsOf, makeAdmin } from './admin-helpers';
@@ -96,6 +96,37 @@ describe('push on publish', () => {
 });
 
 describe('cron publish', () => {
+  it('R12: a schedule moved after selection is not published', async () => {
+    await member('r12@example.com');
+    const category = await makeCategory();
+    const episode = await makeEpisode(category.id, {
+      status: 'SCHEDULED',
+      scheduledFor: new Date(Date.now() - 1000),
+    });
+    const future = new Date(Date.now() + DAY);
+    const find = testDb.episode.findMany.bind(testDb.episode);
+    // Only awaited by this task: the hook preserves the real DB read, then interleaves the edit.
+    const selectThenReschedule = async (args: Parameters<typeof find>[0]) => {
+      const rows = await find(args);
+      await testDb.episode.update({ where: { id: episode.id }, data: { scheduledFor: future } });
+      return rows;
+    };
+    const spy = vi
+      .spyOn(testDb.episode, 'findMany')
+      .mockImplementationOnce(selectThenReschedule as unknown as typeof testDb.episode.findMany);
+    try {
+      expect(await publishScheduledEpisodes.run({ db: testDb, now: new Date() })).toEqual({
+        affected: 0,
+      });
+      expect(await testDb.episode.findUnique({ where: { id: episode.id } })).toMatchObject({
+        status: 'SCHEDULED',
+        scheduledFor: future,
+      });
+      expect(await jobsOf('push.send')).toHaveLength(0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
   const due = () => new Date(Date.now() - 60_000);
 
   it('publishes a scheduled VIDEO item', async () => {

@@ -181,6 +181,7 @@ export const expireEndedSubscriptions: CronTask = {
 };
 
 const REMINDER_BATCH = 200;
+const REMINDER_MAX_PAGES = 5;
 
 /**
  * SPEC F: 14 days before access ends -> email + push, once. `Subscription.reminderSentAt` is the
@@ -191,49 +192,65 @@ const REMINDER_BATCH = 200;
 export const sendAccessEndingReminders: CronTask = {
   name: 'sendAccessEndingReminders',
   async run({ db, now }) {
-    const due = await db.subscription.findMany({
-      where: {
-        status: 'ACTIVE',
-        reminderSentAt: null,
-        endsAt: { gt: now, lte: new Date(now.getTime() + REMINDER_DAYS_BEFORE_END * DAY_MS) },
-      },
-      select: { id: true, userId: true },
-      orderBy: { endsAt: 'asc' },
-      take: REMINDER_BATCH,
-    });
-
     let queued = 0;
-    for (const { id, userId } of due) {
-      const done = await db.$transaction(async (tx) => {
-        await lockUser(tx, userId);
-        const sub = await tx.subscription.findUnique({ where: { id }, include: { user: true } });
-        if (!sub || sub.status !== 'ACTIVE' || sub.reminderSentAt || !sub.endsAt) return false;
-        if (sub.user.status !== 'ACTIVE') return false;
-        const renewed = await tx.subscription.count({
-          where: { userId, status: 'ACTIVE', endsAt: { gt: sub.endsAt } },
-        });
-        if (renewed > 0) return false;
-
-        const claimed = await tx.subscription.updateMany({
-          where: { id, status: 'ACTIVE', reminderSentAt: null },
-          data: { reminderSentAt: now },
-        });
-        if (claimed.count !== 1) return false;
-
-        const until = ubDate(sub.endsAt);
-        await enqueueEmail(tx, sub.user.email, 'accessEnding', {
-          firstName: sub.user.firstName,
-          endsAt: until,
-        });
-        await enqueuePush(tx, {
-          userId,
-          title: mn.push.accessEnding.title,
-          body: mn.push.accessEnding.body({ endsAt: until }),
-          data: { type: 'access_ending' },
-        });
-        return true;
+    let cursor: { id: string; endsAt: Date } | undefined;
+    for (let page = 0; page < REMINDER_MAX_PAGES && queued < REMINDER_BATCH; page++) {
+      const due = await db.subscription.findMany({
+        where: {
+          status: 'ACTIVE',
+          user: { status: 'ACTIVE' },
+          reminderSentAt: null,
+          endsAt: { gt: now, lte: new Date(now.getTime() + REMINDER_DAYS_BEFORE_END * DAY_MS) },
+          ...(cursor
+            ? {
+                OR: [
+                  { endsAt: { gt: cursor.endsAt } },
+                  { endsAt: cursor.endsAt, id: { gt: cursor.id } },
+                ],
+              }
+            : {}),
+        },
+        select: { id: true, userId: true, endsAt: true },
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+        take: REMINDER_BATCH,
       });
-      if (done) queued++;
+
+      for (const { id, userId } of due) {
+        if (queued >= REMINDER_BATCH) break;
+        const done = await db.$transaction(async (tx) => {
+          await lockUser(tx, userId);
+          const sub = await tx.subscription.findUnique({ where: { id }, include: { user: true } });
+          if (!sub || sub.status !== 'ACTIVE' || sub.reminderSentAt || !sub.endsAt) return false;
+          if (sub.user.status !== 'ACTIVE') return false;
+          const renewed = await tx.subscription.count({
+            where: { userId, status: 'ACTIVE', endsAt: { gt: sub.endsAt } },
+          });
+          if (renewed > 0) return false;
+
+          const claimed = await tx.subscription.updateMany({
+            where: { id, status: 'ACTIVE', reminderSentAt: null },
+            data: { reminderSentAt: now },
+          });
+          if (claimed.count !== 1) return false;
+
+          const until = ubDate(sub.endsAt);
+          await enqueueEmail(tx, sub.user.email, 'accessEnding', {
+            firstName: sub.user.firstName,
+            endsAt: until,
+          });
+          await enqueuePush(tx, {
+            userId,
+            title: mn.push.accessEnding.title,
+            body: mn.push.accessEnding.body({ endsAt: until }),
+            data: { type: 'access_ending' },
+          });
+          return true;
+        });
+        if (done) queued++;
+      }
+      if (due.length < REMINDER_BATCH) break;
+      const last = due[due.length - 1]!;
+      cursor = { id: last.id, endsAt: last.endsAt! };
     }
     return { affected: queued };
   },
@@ -276,14 +293,21 @@ export const publishScheduledEpisodes: CronTask = {
       const won: PublishedEpisode[] = [];
       for (const episode of due) {
         const done = await tx.episode.updateMany({
-          where: { id: episode.id, status: 'SCHEDULED' },
+          where: { id: episode.id, status: 'SCHEDULED', scheduledFor: episode.scheduledFor },
           data: {
             status: 'PUBLISHED',
             publishedAt: episode.scheduledFor ?? now,
             scheduledFor: null,
           },
         });
-        if (done.count === 1) won.push(episode);
+        if (done.count === 1) {
+          won.push(
+            await tx.episode.findUniqueOrThrow({
+              where: { id: episode.id },
+              select: { id: true, title: true, pushText: true, notifyOnPublish: true },
+            }),
+          );
+        }
       }
       await enqueuePublishPush(tx, won, now);
       return won.length;

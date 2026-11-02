@@ -65,6 +65,53 @@ describe('video upload over tus, processed by Bunny Stream', () => {
   });
 
   const assets = () => testDb.mediaAsset.findMany({ where: { episodeId }, orderBy: { id: 'asc' } });
+  it('R10: parallel video completions preserve in-flight media and leave one READY', async () => {
+    stream.state.pollsUntilDone = 0;
+    for (let round = 0; round < 5; round++) {
+      const rows = await Promise.all(
+        [0, 1].map(async () => {
+          const path = await stream.client.createVideo('test');
+          stream.videos.get(path)!.data = videoBytes();
+          return testDb.mediaAsset.create({
+            data: {
+              episodeId,
+              kind: 'VIDEO',
+              provider: 'BUNNY_STREAM',
+              path,
+              status: 'PROCESSING',
+            },
+          });
+        }),
+      );
+      const uploading = await testDb.mediaAsset.create({
+        data: {
+          episodeId,
+          kind: 'VIDEO',
+          provider: 'BUNNY_STREAM',
+          path: 'pending',
+          status: 'UPLOADING',
+        },
+      });
+      const job = createMediaJobs({
+        db: testDb,
+        storage: runtime.storage,
+        dirs: runtime.dirs,
+        stream: stream.client,
+      }).find((d) => d.type === 'media.video-status')!;
+      await Promise.all(
+        rows.map((row) =>
+          job.handle(
+            { assetId: row.id, startedAt: new Date().toISOString() },
+            { db: testDb, log: logger, jobId: row.id, attempt: 1 },
+          ),
+        ),
+      );
+      expect(await testDb.mediaAsset.count({ where: { episodeId, status: 'READY' } })).toBe(1);
+      expect(await testDb.mediaAsset.findUnique({ where: { id: uploading.id } })).toMatchObject({
+        status: 'UPLOADING',
+      });
+    }
+  });
   const meta = (filename = 'ep1.mp4') => ({ episodeId, filename, filetype: 'video/mp4' });
   const upload = (file: Buffer, filename?: string) =>
     tusClient(base, adminToken).upload(file, meta(filename), 4 * 1024);

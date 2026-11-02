@@ -50,6 +50,60 @@ const mediaJob = (type: string) => {
 };
 
 describe('audio upload over tus (SPEC G, ADR-0010)', () => {
+  it('R10: parallel creates leave one uploading asset across repeated rounds', async () => {
+    const tus = tusClient(base, adminToken);
+    for (let round = 0; round < 5; round++) {
+      const replies = await Promise.all([tus.create(1000, meta()), tus.create(1000, meta())]);
+      expect(replies.every((r) => r.status === 201 || r.status === 409)).toBe(true);
+      expect(await audioAssets()).toHaveLength(1);
+      expect((await audioAssets())[0]!.status).toBe('UPLOADING');
+    }
+  });
+
+  it('R10: audio completion preserves another in-flight upload', async () => {
+    await tusClient(base, adminToken).upload(wavFile(1), meta());
+    const other = await testDb.mediaAsset.create({
+      data: {
+        episodeId,
+        kind: 'AUDIO',
+        provider: 'BUNNY_STORAGE',
+        path: 'pending',
+        status: 'UPLOADING',
+      },
+    });
+    await runMediaJobs(runtime);
+    expect(await testDb.mediaAsset.findUnique({ where: { id: other.id } })).toMatchObject({
+      status: 'UPLOADING',
+    });
+    expect(await testDb.mediaAsset.count({ where: { episodeId, status: 'READY' } })).toBe(1);
+  });
+
+  it('R10: two parallel audio completions leave exactly one READY asset', async () => {
+    for (let round = 0; round < 5; round++) {
+      const rows = await Promise.all(
+        [0, 1].map((i) =>
+          testDb.mediaAsset.create({
+            data: {
+              episodeId,
+              kind: 'AUDIO',
+              provider: 'BUNNY_STORAGE',
+              path: `audio/${episodeId}/${round}-${i}.wav`,
+              status: 'PROCESSING',
+            },
+          }),
+        ),
+      );
+      mkdirSync(runtime.dirs.audio, { recursive: true });
+      for (const row of rows) writeFileSync(join(runtime.dirs.audio, row.id), wavFile(1));
+      const job = mediaJob('media.audio-upload');
+      await Promise.all(
+        rows.map((row) =>
+          job.handle({ assetId: row.id }, { db: testDb, log: logger, jobId: row.id, attempt: 1 }),
+        ),
+      );
+      expect(await testDb.mediaAsset.count({ where: { episodeId, status: 'READY' } })).toBe(1);
+    }
+  });
   it('uploads in chunks, moves the file aside, queues the job, and the job stores it and sets READY', async () => {
     const file = wavFile(3);
     const tus = tusClient(base, adminToken);
