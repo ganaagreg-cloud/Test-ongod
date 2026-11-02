@@ -86,3 +86,11 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** paid by the client (Ganaa confirmed on 2026-10-28 that the payment is received). Amount and written confirmation still to be added to [[approvals]]. Work estimate (ASSUMPTION): API 2–3 days (comments per episode, edit/delete own, report, rate limit, admin hide/delete, tests), app 2–3 days (comment list and box on the Player, report, block), admin 1–1.5 days (moderation queue), store rules research and docs 0.5–1 day = **5.5–8.5 days**.
 - **Status:** built 2026-10-28 ([[ADR-0061-episode-comments|ADR-0061]]): API, mobile Player section and blocked list, admin Сэтгэгдэл page. Built on stated assumptions for [[open-questions]] #31. Not store-ready until `SUPPORT_EMAIL` is set and the Google rule is read ([[R-store-ugc-rules]], TO-VERIFY).
 - **Notes:** the App Store and Google Play have rules for user-generated content (filtering, reporting, blocking, a way to contact the developer); a research note is needed before an ADR (TO-VERIFY, no note yet). Moderation is ongoing work for the owner. Who may comment: members with access only, or free users too ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]])?
+
+### 2026-11-02: Members will not use the portal
+
+- **Client asked:** the member portal is not needed; members will not use it (relayed by Ganaa on 2026-11-02, the reason is not recorded yet).
+- **In scope:** recorded only. Nothing in the code, [[SPEC]] or [[DESIGN]] has changed: the portal (sign-up, plans, QPay payment, gifts, account page, privacy, terms and account deletion pages) is still built and still served at `/`.
+- **Price:** not quoted. Removing or hiding the portal would be a scope change; keeping it costs nothing extra.
+- **Status:** recorded, decision on consequences open ([[open-questions]] #33).
+- **Notes:** the portal is the only place where a member can pay ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]), and the stores need reachable privacy, terms and account-deletion pages ([[STORE]]). With no portal, access would have to come from admin grants or another payment path.
