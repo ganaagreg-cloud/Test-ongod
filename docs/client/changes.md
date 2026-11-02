@@ -87,10 +87,10 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Status:** built 2026-10-28 ([[ADR-0061-episode-comments|ADR-0061]]): API, mobile Player section and blocked list, admin Сэтгэгдэл page. Built on stated assumptions for [[open-questions]] #31. Not store-ready until `SUPPORT_EMAIL` is set and the Google rule is read ([[R-store-ugc-rules]], TO-VERIFY).
 - **Notes:** the App Store and Google Play have rules for user-generated content (filtering, reporting, blocking, a way to contact the developer); a research note is needed before an ADR (TO-VERIFY, no note yet). Moderation is ongoing work for the owner. Who may comment: members with access only, or free users too ([[ADR-0043-allow-free-users-and-free-content|ADR-0043]])?
 
-### 2026-11-02: Members will not use the portal
+### 2026-11-02: In-app "Эрх авах" button that opens banks, instead of the portal
 
-- **Client asked:** the member portal is not needed; members will not use it (relayed by Ganaa on 2026-11-02, the reason is not recorded yet).
-- **In scope:** recorded only. Nothing in the code, [[SPEC]] or [[DESIGN]] has changed: the portal (sign-up, plans, QPay payment, gifts, account page, privacy, terms and account deletion pages) is still built and still served at `/`.
-- **Price:** not quoted. Removing or hiding the portal would be a scope change; keeping it costs nothing extra.
-- **Status:** recorded, decision on consequences open ([[open-questions]] #33).
-- **Notes:** the portal is the only place where a member can pay ([[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]), and the stores need reachable privacy, terms and account-deletion pages ([[STORE]]). With no portal, access would have to come from admin grants or another payment path.
+- **Client asked:** members will not use the web portal. An "Эрх авах" (get access) button inside the mobile app replaces it, and opens the banks to pay (relayed by Ganaa on 2026-11-02).
+- **In scope:** no, and it **conflicts with accepted rules**: the apps never show prices, plan names, links to pay or payment buttons ([[SPEC#Surfaces]], CLAUDE.md, [[ADR-0006-manual-bank-transfer-web-only-payments|ADR-0006]], [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0044-free-items-and-activate-message-in-app|ADR-0044]]). Apple 3.1.1 / 3.1.3 (VERIFIED, [[R-apple-no-payment-ui]]) forbid a purchase button or a link to another payment method for digital content in the app (outside the US storefront); Google Play Billing rules are TO-VERIFY ([[R-google-play-payments]]). Nothing has been built or changed.
+- **Price:** not quoted.
+- **Status:** recorded, **blocked until Ganaa and the client decide** ([[open-questions]] #33). No code before that.
+- **Notes:** the options are in [[open-questions]] #33. The portal is still built and still serves the privacy, terms and account-deletion pages the stores need.
