@@ -9,6 +9,14 @@ tags: [runbook, area/mobile, store/apple, store/google]
 
 Draft checklist. Account ownership is still open ([[open-questions]] #1).
 
+## Payment phases (no code is commented out)
+
+Payments are switched by configuration, never by removing or commenting out code ([[ADR-0072-payments-off-until-launch|ADR-0072]]). The mobile apps contain no payment screen at all, so a store reviewer who reads the app sees nothing to remove.
+
+1. **Test phase (payments on, not production):** run the API in development mode (`NODE_ENV=development`, locally or on a separate test server) with the mock checkout, or with a Wire `sk_test` key and operator `sandbox`. Production never grants access for a test payment ([[ADR-0047-wire-payment-sync-window|ADR-0047]], the `livemode` check), so end-to-end payment testing cannot happen on the production server.
+2. **Store review (production, payments off):** production has no `WIRE_API_KEY`, and `ALLOW_MOCK_PAYMENTS` is unset (the API refuses to start with it). The portal shows plans with "Удахгүй нээгдэнэ" and no buy buttons; the reviewer's `demo` account gets access by a manual grant. Describe this in the review notes: purchases happen on the website and are not open yet, so the app and the website behave the same for reviewer and customer.
+3. **Go live:** add the live Wire keys to the production env file and restart; add the webhook in the Wire dashboard; make one small real payment and check the exact amount ([[DEPLOY]], [[LAUNCH_CHECKLIST]]). No app update is needed, because the apps do not change.
+
 ## Both stores
 
 - No price, plan, bank details or payment links anywhere in the app (payment is QPay in the portal only, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0046-remove-bank-transfer-path|ADR-0046]], [[R-apple-no-payment-ui]], [[R-google-play-payments]]).

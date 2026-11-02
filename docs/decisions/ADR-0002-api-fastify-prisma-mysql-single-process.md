@@ -1,7 +1,7 @@
 ---
 id: ADR-0002
 title: API = Node 20 + Fastify + Prisma + MySQL 8, one process serves everything
-status: 'accepted (the Node version superseded by [[ADR-0063-node-22-toolchain|ADR-0063]]; the rest stands)'
+status: 'accepted (the Node version superseded by [[ADR-0063-node-22-toolchain|ADR-0063]]; the shared-hosting reason no longer applies, we host on our own VPS, [[ADR-0075-hosting-own-vps|ADR-0075]], and one process stays by choice; the rest stands)'
 date: 2026-10-08
 tags: [adr, area/backend, area/hosting]
 ---
