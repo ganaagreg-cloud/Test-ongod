@@ -22,6 +22,7 @@ export { springs, timing, useAmbientActive, useEnterStyle } from './motion';
 export { NumberTicker } from './NumberTicker';
 export { Screen } from './Screen';
 export { Scrubber } from './Scrubber';
+export { SkipIcon } from './SkipIcon';
 export { SearchField } from './SearchField';
 export { Segmented, type SegmentItem } from './Segmented';
 export { Sheet, type SheetProps } from './Sheet';

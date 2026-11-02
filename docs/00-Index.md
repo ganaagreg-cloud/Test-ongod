@@ -87,7 +87,7 @@ tags: [index]
 | ADR-0063 | [[ADR-0063-node-22-toolchain]]                            | accepted                                                  |
 | ADR-0064 | [[ADR-0064-api-on-node-22]]                               | accepted                                                  |
 | ADR-0065 | [[ADR-0065-player-next-at-the-bottom]]                    | accepted                                                  |
-| ADR-0066 | [[ADR-0066-comments-flat-in-player]]                      | accepted                                                  |
+| ADR-0066 | [[ADR-0066-comments-flat-in-player]]                      | superseded by ADR-0075                                    |
 | ADR-0067 | [[ADR-0067-player-scrolls-with-mini-bar]]                 | accepted                                                  |
 | ADR-0068 | [[ADR-0068-admin-upload-flow-like-creator-platforms]]     | accepted                                                  |
 | ADR-0069 | [[ADR-0069-cover-from-video-picture]]                     | accepted                                                  |
@@ -97,6 +97,9 @@ tags: [index]
 | ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
 | ADR-0074 | [[ADR-0074-audit-2026-11-02-fixes]]                       | accepted                                                  |
 | ADR-0075 | [[ADR-0075-hosting-own-vps]]                              | accepted                                                  |
+| ADR-0077 | [[ADR-0077-free-bunny-encoding-show-wait]]                | accepted                                                  |
+| ADR-0078 | [[ADR-0078-player-comments-card-and-sheet]]               | accepted                                                  |
+| ADR-0079 | [[ADR-0079-player-skip-15-both-ways]]                     | accepted                                                  |
 
 ## Research
 
@@ -110,6 +113,7 @@ tags: [index]
 | [[R-apple-no-payment-ui]]          | ASSUMPTION | —             |
 | [[R-audio-bitrate]]                | ASSUMPTION | —             |
 | [[R-bunny-pricing]]                | VERIFIED   | 2027-01-06    |
+| [[R-bunny-free-encoding-queue]]    | VERIFIED   | 2027-01-27    |
 | [[R-bunny-stream]]                 | TO-VERIFY  | 2027-01-16    |
 | [[R-wire-qpay-gateway]]            | TO-VERIFY  | 2026-11-19    |
 | [[R-bunny-token-auth]]             | VERIFIED   | 2027-01-06    |
@@ -146,14 +150,14 @@ tags: [index]
 ## Latest logs
 
 - [[2026-11-02]]
-- [[2026-10-29]]
+- [[2026-10-31]]
 - [[2026-10-30]]
+- [[2026-10-29]]
 - [[2026-10-28]]
 - [[2026-10-27]]
 - [[2026-10-26]]
 - [[2026-10-24]]
 - [[2026-10-23]]
-- [[2026-10-22]]
 
 ## Runbooks
 

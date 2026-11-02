@@ -33,6 +33,8 @@ export const listCommentsQuerySchema = z.object({
 export const commentsPageSchema = z.object({
   items: z.array(commentSchema),
   nextCursor: z.string().nullable(),
+  /** All comments this viewer can see on the episode (same filter as the list), on every page. */
+  total: z.number().int().min(0),
   /** Posting is allowed: active access or a free episode, and the user is not muted. */
   canComment: z.boolean(),
 });
