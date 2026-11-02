@@ -97,6 +97,7 @@ tags: [index]
 | ADR-0073 | [[ADR-0073-reaudit-2026-10-30-fixes]]                     | accepted                                                  |
 | ADR-0074 | [[ADR-0074-audit-2026-11-02-fixes]]                       | accepted                                                  |
 | ADR-0075 | [[ADR-0075-hosting-own-vps]]                              | accepted                                                  |
+| ADR-0076 | [[ADR-0076-in-app-payment-with-bank-deeplinks]]           | accepted                                                  |
 
 ## Research
 
