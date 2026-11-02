@@ -1,7 +1,7 @@
 ---
 id: ADR-0010
 title: 'Reliability: DB job queue, idempotent cron, transactional approve, tus uploads, TOTP'
-status: 'accepted (the 15-minute job lock rule superseded in part by [[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]])'
+status: 'accepted (the 15-minute job lock rule superseded in part by [[ADR-0045-audit-hardening-limits-refresh-jobs-payments|ADR-0045]]; "Admin requires TOTP 2FA" superseded by [[ADR-0040-admin-password-only-no-totp|ADR-0040]]; "not available on shared hosting" no longer applies, we host on our own VPS, [[ADR-0075-hosting-own-vps|ADR-0075]], and the decision stands)'
 date: 2026-10-08
 tags: [adr, area/backend]
 ---

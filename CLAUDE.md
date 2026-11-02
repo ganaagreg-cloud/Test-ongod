@@ -9,7 +9,7 @@ Rules:
 - Secrets only in env. Keep .env.example updated with placeholders. Never print or commit secrets.
 - All Bunny settings come from env, so the Bunny account can be swapped by changing env only.
 - One Node process serves everything: API at /v1, portal at /, admin at /admin (our own VPS, one process: ADR-0075).
-- The mobile apps (iOS AND Android) never show prices, bank details, plan names, links to pay or payment buttons. The only payment-related text allowed is the plain activate message for paid items without access (ADR-0044). Payment happens only in the portal.
+- The mobile apps (iOS AND Android) show no prices, plan names or payment buttons while the server switch `inAppPayment` is off (the default, and the store-review setting): then the only payment-related text is the plain activate message for paid items without access (ADR-0044). When the switch is on, "Эрх авах" opens the member's bank app by deeplink (ADR-0076, owner's decision, store-policy risk accepted).
 - Auth uses proven primitives only: argon2id, google-auth-library, jose + Apple JWKS, and opaque refresh tokens stored as SHA-256 hashes with rotation and reuse detection. No custom crypto.
 - Every state change that grants or removes access runs in a DB transaction with a status precondition (idempotent).
 - Slow work (Bunny upload, email, push) goes through the Job table, never inside a request.
