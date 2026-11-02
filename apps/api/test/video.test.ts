@@ -525,6 +525,7 @@ describe('play and catalog with video episodes', () => {
         expiresAt,
       }),
       expiresAt: expiresAt.toISOString(),
+      accessEndsAt: accessUntil.toISOString(),
       durationSec: 2400,
     });
     expect(body.url).toMatch(
