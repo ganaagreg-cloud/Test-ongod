@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: ['src/server.ts'],
   format: ['esm'],
-  // The host must run Node 22 (ADR-0064, a launch gate until iTools confirms it).
+  // The server must run Node 22 (ADR-0064, ADR-0075: our own VPS).
   target: 'node22',
   platform: 'node',
   clean: true,
