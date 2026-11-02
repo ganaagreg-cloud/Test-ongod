@@ -1,4 +1,4 @@
-import { COMMENT_MAX_LENGTH } from '@ongod/shared';
+import { COMMENT_MAX_LENGTH, type CommentDto, type CommentsPage } from '@ongod/shared';
 
 /** What the comment box may send: not empty after trimming, and not over the limit (SPEC L). */
 export function canSendComment(text: string): boolean {
@@ -10,4 +10,12 @@ export function canSendComment(text: string): boolean {
 export function commentCharsLeft(text: string): number | null {
   const left = COMMENT_MAX_LENGTH - text.length;
   return left <= 100 ? left : null;
+}
+
+/** What the Player card shows: the total (the same on every page) and the newest comment. */
+export function commentsSummary(pages: CommentsPage[]): {
+  total: number;
+  newest: CommentDto | null;
+} {
+  return { total: pages[0]?.total ?? 0, newest: pages[0]?.items[0] ?? null };
 }

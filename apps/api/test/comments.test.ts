@@ -102,6 +102,7 @@ describe('reading comments (SPEC L)', () => {
     ).json();
     expect(second.items.map((c: { body: string }) => c.body)).toEqual(['Сэтгэгдэл 1']);
     expect(second.nextCursor).toBeNull();
+    expect([first.total, second.total]).toEqual([3, 3]);
   });
 });
 
@@ -341,6 +342,17 @@ describe('blocking', () => {
       (await call(app, 'DELETE', `/v1/me/blocks/${member.userId}`, friend.accessToken)).statusCode,
     ).toBe(204);
     expect((await list(episode.id, friend.accessToken)).json().items).toHaveLength(2);
+  });
+
+  it('the total drops by one for the viewer who blocked an author, not for others', async () => {
+    const { episode, member } = await setup();
+    const friend = await other('friend2@example.com', 'Сараа', 'Дорж');
+    const c = (await post(episode.id, member.accessToken, 'Нэг')).json().comment;
+    await post(episode.id, friend.accessToken, 'Хоёр');
+    expect((await list(episode.id, friend.accessToken)).json().total).toBe(2);
+    await call(app, 'POST', `/v1/comments/${c.id}/block`, friend.accessToken);
+    expect((await list(episode.id, friend.accessToken)).json().total).toBe(1);
+    expect((await list(episode.id, member.accessToken)).json().total).toBe(2);
   });
 });
 

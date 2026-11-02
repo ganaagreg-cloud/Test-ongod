@@ -80,21 +80,26 @@ export function createCommentService(deps: {
         where: { blockerId: user.id },
         select: { blockedId: true },
       });
-      const rows = await db.comment.findMany({
-        where: {
-          episodeId,
-          status: 'VISIBLE',
-          ...(blocked.length > 0 ? { authorId: { notIn: blocked.map((b) => b.blockedId) } } : {}),
-        },
-        include: { author: true },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: query.limit + 1,
-        ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      });
+      const where: Prisma.CommentWhereInput = {
+        episodeId,
+        status: 'VISIBLE',
+        ...(blocked.length > 0 ? { authorId: { notIn: blocked.map((b) => b.blockedId) } } : {}),
+      };
+      const [rows, total] = await Promise.all([
+        db.comment.findMany({
+          where,
+          include: { author: true },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: query.limit + 1,
+          ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+        }),
+        db.comment.count({ where }),
+      ]);
       const page = rows.slice(0, query.limit);
       return {
         items: page.map((c) => toDto(c, user.id)),
         nextCursor: rows.length > query.limit ? page[page.length - 1]!.id : null,
+        total,
         canComment: canPost(user, episode, at),
       };
     },

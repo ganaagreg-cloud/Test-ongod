@@ -5,13 +5,19 @@ import {
   nativeFontFamily,
   nativeTextStyle,
   radius,
-  spacing,
   type ThemeColors,
 } from '@ongod/tokens';
 import { SKIP_BACK_SEC, SKIP_FORWARD_SEC } from '../../audio/controller';
 import { rateLabel } from '../../audio/rates';
 import { mn } from '../../i18n/mn';
-import { goldGlowShadow, Icon, PressableScale, useSurface, useThemedStyles } from '../../ui';
+import {
+  goldGlowShadow,
+  Icon,
+  PressableScale,
+  SkipIcon,
+  useSurface,
+  useThemedStyles,
+} from '../../ui';
 
 /**
  * One row (Player.dc.html): speed chip (1x / 1.25x / 1.5x / 2x), -15, the gold play / pause, +30,
@@ -62,8 +68,7 @@ export function PlayerControls({
         scale={motion.pressScaleRound}
         style={[styles.skip, !canSeek && styles.off]}
       >
-        <Icon name="skipBack" size="large" color={colors.textPrimary} />
-        <Text style={styles.skipText}>{SKIP_BACK_SEC}</Text>
+        <SkipIcon direction="back" seconds={SKIP_BACK_SEC} />
       </PressableScale>
 
       <PressableScale
@@ -78,14 +83,13 @@ export function PlayerControls({
 
       <PressableScale
         accessibilityRole="button"
-        accessibilityLabel={mn.player.forward30}
+        accessibilityLabel={mn.player.forward15}
         onPress={onForward}
         disabled={!canSeek}
         scale={motion.pressScaleRound}
         style={[styles.skip, !canSeek && styles.off]}
       >
-        <Icon name="skipForward" size="large" color={colors.textPrimary} />
-        <Text style={styles.skipText}>{SKIP_FORWARD_SEC}</Text>
+        <SkipIcon direction="forward" seconds={SKIP_FORWARD_SEC} />
       </PressableScale>
 
       <PressableScale
@@ -129,13 +133,6 @@ const makeStyles = (c: ThemeColors) =>
       height: layout.playerControl,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    skipText: {
-      position: 'absolute',
-      color: c.textPrimary,
-      ...nativeTextStyle('caption'),
-      fontFamily: nativeFontFamily.ui[600],
-      paddingTop: spacing.xxs,
     },
     play: {
       width: layout.playerPlayButton,
