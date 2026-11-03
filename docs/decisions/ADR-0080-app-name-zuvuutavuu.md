@@ -1,7 +1,7 @@
 ---
 id: ADR-0080
 title: The product is named "Зөв үү? Тав уу?"; technical names use zuvuutavuu
-status: accepted
+status: 'accepted (item 4 and the open domain superseded by [[ADR-0081-store-name-without-question-marks-domain|ADR-0081]])'
 date: '2026-11-03'
 supersedes: []
 tags: [adr, area/brand, area/mobile]

@@ -19,7 +19,7 @@ Payments are switched by configuration, never by removing or commenting out code
 
 ## Both stores
 
-- Name and ids ([[ADR-0080-app-name-zuvuutavuu|ADR-0080]]): store title "Зөв үү? Тав уу?" (if refused, "Зөв үү Тав уу"; TO-VERIFY); app id `mn.zuvuutavuu.app` on both stores; link scheme `zuvuutavuu`. Create the EAS project, Firebase and Google/Apple sign-in entries with this id, not `mn.ongod.app`.
+- Name and ids ([[ADR-0080-app-name-zuvuutavuu|ADR-0080]]): store title and icon label "Зөв үү Тав уу" without question marks ([[ADR-0081-store-name-without-question-marks-domain|ADR-0081]]); app id `mn.zuvuutavuu.app` on both stores; link scheme `zuvuutavuu`. Create the EAS project, Firebase and Google/Apple sign-in entries with this id, not `mn.ongod.app`.
 
 - No price, plan, bank details or payment links anywhere in the app (payment is QPay in the portal only, [[ADR-0041-qpay-via-wire-replaces-bank-transfer|ADR-0041]], [[ADR-0046-remove-bank-transfer-path|ADR-0046]], [[R-apple-no-payment-ui]], [[R-google-play-payments]]).
 - In-app account deletion, plus the portal deletion page ([[R-account-deletion-stores]]).

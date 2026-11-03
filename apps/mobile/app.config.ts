@@ -52,7 +52,8 @@ if (sentryOrg && sentryProject) {
 }
 
 const config: ExpoConfig = {
-  name: 'Зөв үү? Тав уу?',
+  // ADR-0081: no question marks towards the stores and under the icon.
+  name: 'Зөв үү Тав уу',
   slug: 'zuvuutavuu',
   scheme: 'zuvuutavuu',
   version: '0.1.0',

@@ -102,6 +102,7 @@ tags: [index]
 | ADR-0078 | [[ADR-0078-player-comments-card-and-sheet]]               | accepted                                                  |
 | ADR-0079 | [[ADR-0079-player-skip-15-both-ways]]                     | accepted                                                  |
 | ADR-0080 | [[ADR-0080-app-name-zuvuutavuu]]                          | accepted                                                  |
+| ADR-0081 | [[ADR-0081-store-name-without-question-marks-domain]]     | accepted                                                  |
 
 ## Research
 
