@@ -52,9 +52,9 @@ if (sentryOrg && sentryProject) {
 }
 
 const config: ExpoConfig = {
-  name: 'Онгод',
-  slug: 'ongod',
-  scheme: 'ongod',
+  name: 'Зөв үү? Тав уу?',
+  slug: 'zuvuutavuu',
+  scheme: 'zuvuutavuu',
   version: '0.1.0',
   // 'default' so a fullscreen video can turn to landscape on iOS (R-expo-video-sdk57); every
   // screen is locked to portrait at runtime (src/video/orientation.ts).
@@ -62,7 +62,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'dark',
   backgroundColor: '#021512', // themes.dark.bg (app.config cannot import the workspace package)
   ios: {
-    bundleIdentifier: 'mn.ongod.app',
+    bundleIdentifier: 'mn.zuvuutavuu.app',
     supportsTablet: false,
     // Required when Google sign-in is offered on iOS (App Review 4.8, see R-apple-login-services-4-8).
     usesAppleSignIn: true,
@@ -73,7 +73,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    package: 'mn.ongod.app',
+    package: 'mn.zuvuutavuu.app',
     ...(googleServicesFile ? { googleServicesFile } : {}),
   },
   ...(easProjectId ? { extra: { eas: { projectId: easProjectId } } } : {}),

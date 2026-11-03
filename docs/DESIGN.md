@@ -3,6 +3,8 @@ type: design
 tags: [design]
 ---
 
+> Brand name: **Зөв үү? Тав уу?** ([[ADR-0080-app-name-zuvuutavuu|ADR-0080]]); older notes say "Онгод". Colors and layout are unchanged.
+
 # Principles
 
 Decisions: [[ADR-0027-design-v2-aurora-forest-motion|ADR-0027]] · [[ADR-0028-cream-library-and-16x9-artwork|ADR-0028]] (replace [[ADR-0012-design-dark-theme-inspiration-only|ADR-0012]]) · Full v2 spec: [[DESIGN-v2-aurora]] · Mockups: `docs/design/v2-screens/*.dc.html` · Home: [[00-Index]]

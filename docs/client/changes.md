@@ -100,5 +100,5 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Client asked:** rename the app from "Онгод" to a name that Ganaa relayed as "ЗӨВ ҮҮ ? ТАВ УУ ?" (confirmed by Ganaa on 2026-11-03: "Зөв үү? Тав уу?"; if that is not possible, "zuvuutavuu").
 - **In scope:** no, a change to what was agreed ([[SPEC]] and the whole brand use "Онгод"). Mostly find-and-replace plus new brand assets.
 - **Price:** not quoted.
-- **Status:** recorded, **not started**: the exact name is needed first ([[open-questions]] #34).
+- **Status:** **done in code on 2026-11-03** ([[ADR-0080-app-name-zuvuutavuu|ADR-0080]]): users see "Зөв үү? Тав уу?", technical names use `zuvuutavuu`. Price still to be quoted.
 - **Notes:** the visible name is in a few places: the app name and Welcome texts (`apps/mobile`), portal texts and page titles (`apps/portal`), email and push texts (`apps/api`), the admin title, and `docs/`. The internal names (`@ongod/*` packages, folders, env keys, the `ongod` service and database) can stay and need no change. **The decision window is now:** the app id (`mn.ongod.app`), the link scheme (`ongod`) and the store name are fixed once the app is published, so change them before the first store submission or never.

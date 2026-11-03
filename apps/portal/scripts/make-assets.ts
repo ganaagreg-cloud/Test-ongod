@@ -32,11 +32,11 @@ const html = `<!doctype html><html lang="mn"><head><meta charset="utf-8"><style>
 *{margin:0;box-sizing:border-box}
 body{width:1200px;height:630px;background:${c.bg};color:${c.textPrimary};display:flex;flex-direction:column;justify-content:center;gap:28px;padding:0 96px;font-family:Inter,sans-serif;position:relative;overflow:hidden}
 .mountain{position:absolute;right:-40px;bottom:-10px;width:760px;height:228px;opacity:.9}
-h1{font:600 120px/1.05 Lora,serif}
+h1{font:600 88px/1.1 Lora,serif}
 p{font:400 40px/1.35 Inter,sans-serif;color:${c.textSecondary};max-width:640px}
 </style></head><body>
 <svg class="mountain" viewBox="${mountainLine.viewBox}" fill="none" stroke="${c.accent}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="${mountainLine.path}"/></svg>
-<h1>Онгод</h1><p>Гишүүдэд зориулсан аудио сан</p>
+<h1>Зөв үү? Тав уу?</h1><p>Гишүүдэд зориулсан аудио сан</p>
 </body></html>`;
 
 const browser = await chromium.launch();

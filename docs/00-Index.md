@@ -101,6 +101,7 @@ tags: [index]
 | ADR-0077 | [[ADR-0077-free-bunny-encoding-show-wait]]                | accepted                                                  |
 | ADR-0078 | [[ADR-0078-player-comments-card-and-sheet]]               | accepted                                                  |
 | ADR-0079 | [[ADR-0079-player-skip-15-both-ways]]                     | accepted                                                  |
+| ADR-0080 | [[ADR-0080-app-name-zuvuutavuu]]                          | accepted                                                  |
 
 ## Research
 

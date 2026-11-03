@@ -3,7 +3,7 @@
 // details or payment buttons (ADR-0006): test/no-payment-text.test.ts guards this file.
 
 export const mn = {
-  appName: 'Онгод',
+  appName: 'Зөв үү? Тав уу?',
   close: 'Хаах',
   back: 'Буцах',
   audioWebOnly: 'Аудио зөвхөн утсан дээр тоглоно',
@@ -223,7 +223,7 @@ export const mn = {
   noAccess: {
     title: 'Таны эрх идэвхгүй байна',
     /** ADR-0044: the one allowed line about the plan; text only, no button, no link. */
-    activate: 'Онгод Premium, та багцаа идэвхжүүлнэ үү',
+    activate: 'Зөв үү? Тав уу? Premium, та багцаа идэвхжүүлнэ үү',
     text: 'Эрх тань идэвхжсэн бол доорх товчийг дарж шинэчилнэ үү.',
     check: 'Эрхээ шалгах',
     checking: 'Шалгаж байна…',

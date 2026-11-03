@@ -3,6 +3,8 @@ type: spec
 tags: [spec]
 ---
 
+> Brand name: **Зөв үү? Тав уу?** (technical name `zuvuutavuu`, [[ADR-0080-app-name-zuvuutavuu|ADR-0080]]). Older notes and ADRs say "Онгод"; that is the same product.
+
 # Product
 
 Decisions: [[ADR-0038-video-episodes-bunny-stream|ADR-0038]] (replaces [[ADR-0011-audio-first-media-asset|ADR-0011]]) · Home: [[00-Index]]
