@@ -97,7 +97,7 @@ Dates are when the entries were logged; the requests came from earlier planning 
 
 ### 2026-11-03: New app name instead of "Онгод"
 
-- **Client asked:** rename the app from "Онгод" to a name that Ganaa relayed as "ЗӨВ ҮҮ ? ТАВ УУ ?" (the exact spelling, spaces and question marks are not confirmed).
+- **Client asked:** rename the app from "Онгод" to a name that Ganaa relayed as "ЗӨВ ҮҮ ? ТАВ УУ ?" (confirmed by Ganaa on 2026-11-03: "Зөв үү? Тав уу?"; if that is not possible, "zuvuutavuu").
 - **In scope:** no, a change to what was agreed ([[SPEC]] and the whole brand use "Онгод"). Mostly find-and-replace plus new brand assets.
 - **Price:** not quoted.
 - **Status:** recorded, **not started**: the exact name is needed first ([[open-questions]] #34).
