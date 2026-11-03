@@ -1,6 +1,6 @@
-﻿---
+---
 type: index
-updated: 2026-11-02
+updated: 2026-11-03
 tags: [index]
 ---
 
@@ -103,6 +103,9 @@ tags: [index]
 | ADR-0079 | [[ADR-0079-player-skip-15-both-ways]]                     | accepted                                                  |
 | ADR-0080 | [[ADR-0080-app-name-zuvuutavuu]]                          | accepted                                                  |
 | ADR-0081 | [[ADR-0081-store-name-without-question-marks-domain]]     | accepted                                                  |
+| ADR-0082 | [[ADR-0082-admin-user-page-access-clarity]] | accepted |
+| ADR-0083 | [[ADR-0083-mobile-qpay-deeplink-test-builds-only]] | accepted |
+| ADR-0084 | [[ADR-0084-wire-operators-empty-means-all]] | accepted |
 
 ## Research
 
@@ -137,6 +140,7 @@ tags: [index]
 | [[R-google-signin-v16]]            | VERIFIED   | 2026-12-08    |
 | [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
 | [[R-google-play-payments]]         | TO-VERIFY  | —             |
+| [[R-mongolia-store-payment-rules]] | TO-VERIFY  | 2026-11-30    |
 | [[R-hosting-limits]]               | SUPERSEDED | —             |
 | [[R-node-cve-2026-111497]]         | TO-VERIFY  | 2026-11-16    |
 | [[R-ios-device-install]]           | TO-VERIFY  | 2027-01-15    |
@@ -160,7 +164,6 @@ tags: [index]
 - [[2026-10-27]]
 - [[2026-10-26]]
 - [[2026-10-24]]
-- [[2026-10-23]]
 
 ## Runbooks
 

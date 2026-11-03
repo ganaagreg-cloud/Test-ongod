@@ -10,7 +10,7 @@ import { Button, Icon, Notice } from '@ongod/ui-web';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { categoriesQuery, useEpisodeActions, useInvalidate } from '../api/queries';
-import { PageHeader, SelectField } from '../components/bits';
+import { PageHeader, SelectField, BackLink } from '../components/bits';
 import { DropZone } from '../components/DropZone';
 import { LeaveGuard } from '../components/LeaveGuard';
 import { errorText } from '../components/Modal';
@@ -159,9 +159,7 @@ export function BulkUploadPage() {
 
   return (
     <>
-      <Link className="admin-back" to="/episodes">
-        ← {mn.episodes.title}
-      </Link>
+      <BackLink to="/episodes">{mn.episodes.title}</BackLink>
       <PageHeader title={t.title} subtitle={t.subtitle} />
 
       <section className="admin-card admin-form" aria-label={t.title}>

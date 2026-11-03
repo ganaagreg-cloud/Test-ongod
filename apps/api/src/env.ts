@@ -127,8 +127,8 @@ export const envSchema = z
     // production has payments off (the portal says "Удахгүй нээгдэнэ", ADR-0072).
     WIRE_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
     WIRE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
-    /** `sandbox` while testing with an sk_test key; the live operator id (e.g. qpay) in production. */
-    WIRE_ALLOWED_OPERATORS: csv.transform((v) => (v.length > 0 ? v : ['sandbox'])),
+    /** Operator ids enabled on the Wire project (e.g. qpay). Empty = send none, Wire uses all enabled (ADR-0084). */
+    WIRE_ALLOWED_OPERATORS: csv,
     /** Retired (ADR-0072): the mock checkout never runs in production; setting this there is refused. */
     ALLOW_MOCK_PAYMENTS: bool.default(false),
     /** Cron payment sync (ADR-0047): no new Wire call starts after this much of a tick. 20 s. */

@@ -52,7 +52,9 @@ export function createWireGateway(
       const intent = await wire.paymentIntents.create({
         amount: toMinor(input.amountMnt),
         currency: 'MNT',
-        allowed_operators: env.WIRE_ALLOWED_OPERATORS,
+        ...(env.WIRE_ALLOWED_OPERATORS.length > 0
+          ? { allowed_operators: env.WIRE_ALLOWED_OPERATORS }
+          : {}),
         metadata: {
           subscription_id: input.subscriptionId,
           description: input.description.slice(0, 200),

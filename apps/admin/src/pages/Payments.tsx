@@ -4,7 +4,7 @@ import {
   type AdminStatusFilter,
   type AdminSubscriptionDto,
 } from '@ongod/shared';
-import { Button, Input, Skeleton, useToast } from '@ongod/ui-web';
+import { Button, Icon, Input, Skeleton, useToast } from '@ongod/ui-web';
 import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { downloadPaymentsCsv, subscriptionHistoryQuery, subscriptionsQuery } from '../api/queries';
@@ -164,8 +164,9 @@ function PaymentPanel({
       <div className="admin-panel__header">
         <h2 className="admin-panel__title">{mn.payments.panel.title}</h2>
         <SubscriptionBadge status={s.status} />
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="secondary" onClick={onClose}>
           {mn.common.close}
+          <Icon name="chevronRight" size="small" />
         </Button>
       </div>
 

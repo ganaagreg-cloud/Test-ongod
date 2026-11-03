@@ -1,7 +1,7 @@
 ---
 id: ADR-0044
 title: 'Free items (per item, login required) and an activate message for paid items in the app'
-status: accepted
+status: 'accepted (for flagged test builds only, partly superseded by [[ADR-0083-mobile-qpay-deeplink-test-builds-only|ADR-0078]])'
 date: '2026-10-23'
 tags: [adr, area/product, area/mobile, area/api, area/store]
 ---

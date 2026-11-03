@@ -2,6 +2,7 @@
 // NoAccess.dc.html). Store-safe: one button that re-reads the access, nothing else. NO price, NO
 // link, NO payment text (ADR-0006); the one exception is the plain activate line (ADR-0044).
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   ReduceMotion,
@@ -19,9 +20,11 @@ import {
   type ThemeColors,
 } from '@ongod/tokens';
 import { useAuth } from '../auth/AuthContext';
+import { env } from '../config/env';
 import { mn } from '../i18n/mn';
 import { accessState } from '../lib/episode';
 import { formatDate } from '../lib/format';
+import { payMn } from '../testpay/mn';
 import { Button, haptic, Icon, Sheet, useSurface, useThemedStyles } from '../ui';
 
 type Phase = 'idle' | 'busy' | 'still' | 'ok';
@@ -41,6 +44,7 @@ export function NoAccessSheet({
   const styles = useThemedStyles(makeStyles);
   const { colors } = useSurface();
   const { refreshUser } = useAuth();
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>('idle');
   const [until, setUntil] = useState<string | null>(null);
   const shake = useSharedValue(0);
@@ -117,6 +121,17 @@ export function NoAccessSheet({
             fullWidth
             onPress={() => void check()}
           />
+          {env.mobilePayments ? (
+            <Button
+              label={payMn.open}
+              variant="secondary"
+              fullWidth
+              onPress={() => {
+                onClose();
+                router.push('/pay');
+              }}
+            />
+          ) : null}
         </Animated.View>
       )}
     </Sheet>

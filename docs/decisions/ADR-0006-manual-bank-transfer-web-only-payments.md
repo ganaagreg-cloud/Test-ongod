@@ -1,7 +1,7 @@
 ---
 id: ADR-0006
 title: Manual bank transfer approved in admin; payment UI only in the web portal
-status: 'accepted (the bank-transfer part superseded by ADR-0041 and [[ADR-0046-remove-bank-transfer-path|ADR-0046]]; payment UI only in the web portal still stands)'
+status: 'accepted (the bank-transfer part superseded by ADR-0041 and [[ADR-0046-remove-bank-transfer-path|ADR-0046]]; payment UI only in the web portal still stands for store builds; flagged test builds partly superseded by [[ADR-0083-mobile-qpay-deeplink-test-builds-only|ADR-0078]])'
 date: 2026-10-08
 tags: [adr, area/payments, area/mobile]
 ---

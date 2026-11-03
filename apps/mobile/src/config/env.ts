@@ -7,6 +7,8 @@ const clean = (value: string | undefined): string | undefined => {
 };
 
 export const env = {
+  /** ADR-0083: QPay test flow. Off unless an internal (preview) build sets it to 1. */
+  mobilePayments: process.env.EXPO_PUBLIC_MOBILE_PAYMENTS === '1',
   /** e.g. http://10.0.2.2:3000 (no trailing slash, no /v1). */
   apiUrl: clean(process.env.EXPO_PUBLIC_API_URL)?.replace(/\/+$/, ''),
   /** Portal base address (terms and privacy pages), e.g. https://<final domain>. Empty = no legal links. */

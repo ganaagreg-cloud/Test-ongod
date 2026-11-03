@@ -33,7 +33,12 @@ const stripComments = (code: string) =>
     .split(ACTIVATE_TEXT)
     .join('');
 
-const files = [...sourceFiles(join(root, 'src')), ...sourceFiles(join(root, 'app'))];
+/** ADR-0083: the flagged QPay test flow lives only here; see the tests at the bottom. */
+const FLAGGED = ['src/testpay/', 'app/(app)/pay.tsx'];
+const isFlagged = (file: string) => FLAGGED.some((f) => file.replaceAll('\\', '/').includes(f));
+const files = [...sourceFiles(join(root, 'src')), ...sourceFiles(join(root, 'app'))].filter(
+  (file) => !isFlagged(file),
+);
 
 /** Mongolian and English payment vocabulary. Matched case-insensitively. */
 const FORBIDDEN: Array<[string, RegExp]> = [
@@ -102,4 +107,16 @@ test('the check does catch payment text', () => {
   ]) {
     assert.ok(!FORBIDDEN.some(([, pattern]) => pattern.test(sample)), `wrongly flagged: ${sample}`);
   }
+});
+
+// ADR-0083: the flagged files may only reach the user when the flag is on.
+test('payment test flow is off unless the flag is 1, and never in the production profile', () => {
+  const env = readFileSync(join(root, 'src/config/env.ts'), 'utf8');
+  assert.match(env, /EXPO_PUBLIC_MOBILE_PAYMENTS === '1'/);
+  const eas = JSON.parse(readFileSync(join(root, 'eas.json'), 'utf8'));
+  assert.equal(eas.build.production.env?.EXPO_PUBLIC_MOBILE_PAYMENTS, undefined);
+  const sheet = readFileSync(join(root, 'src/screens/NoAccessSheet.tsx'), 'utf8');
+  assert.match(sheet, /env\.mobilePayments \? \(/);
+  const route = readFileSync(join(root, 'app/(app)/pay.tsx'), 'utf8');
+  assert.match(route, /env\.mobilePayments \?/);
 });

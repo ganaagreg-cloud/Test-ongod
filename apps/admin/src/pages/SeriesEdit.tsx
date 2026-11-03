@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import type { AdminSeriesDetailDto } from '@ongod/shared';
 import { Button, Input, Notice, Skeleton, Textarea, useToast } from '@ongod/ui-web';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { seriesQuery, useSeriesActions } from '../api/queries';
-import { EpisodeBadge, LoadError, PageHeader } from '../components/bits';
+import { EpisodeBadge, LoadError, PageHeader, BackLink } from '../components/bits';
 import { CoverCard } from '../components/CoverCard';
 import { EpisodePicker } from '../components/EpisodePicker';
 import { ConfirmDialog, errorText } from '../components/Modal';
@@ -30,9 +30,7 @@ function SeriesCreate() {
 
   return (
     <>
-      <Link className="admin-back" to="/series">
-        ← {t.title}
-      </Link>
+      <BackLink to="/series">{t.title}</BackLink>
       <PageHeader title={t.createTitle} />
       <section className="admin-card">
         <DetailsForm
@@ -57,9 +55,7 @@ function SeriesEdit({ id }: { id: string }) {
   if (query.error instanceof ApiError && query.error.status === 404) {
     return (
       <>
-        <Link className="admin-back" to="/series">
-          ← {t.title}
-        </Link>
+        <BackLink to="/series">{t.title}</BackLink>
         <Notice tone="warning">{t.notFound}</Notice>
       </>
     );
@@ -93,9 +89,7 @@ function SeriesScreen({ series, refetch }: { series: AdminSeriesDetailDto; refet
 
   return (
     <>
-      <Link className="admin-back" to="/series">
-        ← {t.title}
-      </Link>
+      <BackLink to="/series">{t.title}</BackLink>
       <PageHeader title={series.title} />
 
       <div className="admin-columns">

@@ -1,8 +1,22 @@
-import { Badge, Button, Notice, type BadgeTone } from '@ongod/ui-web';
+import { Badge, Button, Icon, Notice, type BadgeTone } from '@ongod/ui-web';
 import type { ReactNode } from 'react';
 import { useEffect, useId, useState } from 'react';
+import { Link } from 'react-router';
 import { ApiError } from '../api/client';
+import type { AccessState } from '../lib/access';
 import { mn } from '../i18n/mn';
+
+/** The way back from a detail page: a pill with a round arrow that slides left on hover. */
+export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link className="admin-back-link" to={to}>
+      <span className="admin-back-link__icon">
+        <Icon name="chevronLeft" size="small" />
+      </span>
+      {children}
+    </Link>
+  );
+}
 
 /** A value that follows `value` after the user stopped typing for `ms`. */
 export function useDebounced<T>(value: T, ms = 300): T {
@@ -79,6 +93,17 @@ const USER_TONE: Record<keyof typeof mn.userStatus, BadgeTone> = {
 
 export function UserStatusBadge({ status }: { status: keyof typeof mn.userStatus }) {
   return <Badge tone={USER_TONE[status]}>{mn.userStatus[status]}</Badge>;
+}
+
+const ACCESS_TONE: Record<AccessState, BadgeTone> = {
+  ACTIVE: 'success',
+  EXPIRED: 'warning',
+  NONE: 'neutral',
+};
+
+/** Whether the account has access now: not the account status and not a subscription's status. */
+export function AccessBadge({ state }: { state: AccessState }) {
+  return <Badge tone={ACCESS_TONE[state]}>{mn.users.detail.accessState[state]}</Badge>;
 }
 
 /** A failed load, in the server's own (Mongolian) words, with a retry. */

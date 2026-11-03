@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import type { AdminPlaylistDetailDto, CreatePlaylistRequest } from '@ongod/shared';
 import { Button, Input, Notice, Skeleton, Textarea, useToast } from '@ongod/ui-web';
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { playlistQuery, usePlaylistActions } from '../api/queries';
-import { EpisodeBadge, LoadError, PageHeader } from '../components/bits';
+import { EpisodeBadge, LoadError, PageHeader, BackLink } from '../components/bits';
 import { CoverCard } from '../components/CoverCard';
 import { EpisodePicker } from '../components/EpisodePicker';
 import { errorText } from '../components/Modal';
@@ -30,9 +30,7 @@ function PlaylistCreate() {
 
   return (
     <>
-      <Link className="admin-back" to="/playlists">
-        ← {t.title}
-      </Link>
+      <BackLink to="/playlists">{t.title}</BackLink>
       <PageHeader title={t.createTitle} />
       <section className="admin-card">
         <DetailsForm
@@ -57,9 +55,7 @@ function PlaylistEdit({ id }: { id: string }) {
   if (query.error instanceof ApiError && query.error.status === 404) {
     return (
       <>
-        <Link className="admin-back" to="/playlists">
-          ← {t.title}
-        </Link>
+        <BackLink to="/playlists">{t.title}</BackLink>
         <Notice tone="warning">{t.notFound}</Notice>
       </>
     );
@@ -99,9 +95,7 @@ function PlaylistScreen({
 
   return (
     <>
-      <Link className="admin-back" to="/playlists">
-        ← {t.title}
-      </Link>
+      <BackLink to="/playlists">{t.title}</BackLink>
       <PageHeader title={playlist.title} />
 
       <div className="admin-columns">

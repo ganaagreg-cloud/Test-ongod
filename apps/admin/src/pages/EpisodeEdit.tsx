@@ -13,7 +13,14 @@ import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from 'rea
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { categoriesQuery, episodeQuery, seriesListQuery, useEpisodeActions } from '../api/queries';
-import { EpisodeBadge, LoadError, PageHeader, SelectField, useNow } from '../components/bits';
+import {
+  EpisodeBadge,
+  LoadError,
+  PageHeader,
+  SelectField,
+  useNow,
+  BackLink,
+} from '../components/bits';
 import { DropZone } from '../components/DropZone';
 import { LeaveGuard } from '../components/LeaveGuard';
 import { MediaPreview } from '../components/MediaPreview';
@@ -54,9 +61,7 @@ export function EpisodeEditPage() {
   if (!stays && query.error instanceof ApiError && query.error.status === 404) {
     return (
       <>
-        <Link className="admin-back" to="/episodes">
-          ← {t.title}
-        </Link>
+        <BackLink to="/episodes">{t.title}</BackLink>
         <Notice tone="warning">{t.notFound}</Notice>
       </>
     );
@@ -335,9 +340,7 @@ function Workspace({
 
   return (
     <>
-      <Link className="admin-back" to="/episodes">
-        ← {t.title}
-      </Link>
+      <BackLink to="/episodes">{t.title}</BackLink>
       <PageHeader title={episode ? episode.title : t.form.createTitle}>
         {episode ? <EpisodeBadge status={episode.status} /> : null}
         {episode ? (
