@@ -24,7 +24,7 @@ function sourceFiles(dir: string): string[] {
  * button, no link, no price, no plan name). Exactly this string is removed before the patterns
  * run; any other use of "багц" still fails.
  */
-const ACTIVATE_TEXT = 'Онгод Premium, та багцаа идэвхжүүлнэ үү';
+const ACTIVATE_TEXT = 'Зөв үү? Тав уу? Premium, та багцаа идэвхжүүлнэ үү';
 
 const stripComments = (code: string) =>
   code

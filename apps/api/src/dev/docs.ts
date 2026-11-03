@@ -65,7 +65,7 @@ export function createDocs() {
     await app.register(swagger, {
       openapi: {
         openapi: '3.0.3',
-        info: { title: 'Онгод API (dev)', version: '0.0.0', description: INTRO },
+        info: { title: 'Зөв үү? Тав уу? API (dev)', version: '0.0.0', description: INTRO },
         servers: [{ url: '/' }],
         components: {
           securitySchemes: {

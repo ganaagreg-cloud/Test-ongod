@@ -8,7 +8,7 @@ const shot = (name: string) => screenPath(`portal-${name}`);
 test.use({ viewport: { width: 390, height: 844 } });
 
 const PAGES: Array<{ path: string; name: string; heading: string }> = [
-  { path: '/', name: 'landing', heading: 'Онгод' },
+  { path: '/', name: 'landing', heading: 'Зөв үү? Тав уу?' },
   { path: '/plans', name: 'plans', heading: 'Эрх авах' },
   { path: '/login', name: 'login', heading: 'Нэвтрэх' },
   { path: '/register', name: 'register', heading: 'Бүртгүүлэх' },
@@ -31,7 +31,7 @@ for (const { path, name, heading } of PAGES) {
 
     // Exactly one h1, a title and a description, indexable.
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-    await expect(page).toHaveTitle(/Онгод/);
+    await expect(page).toHaveTitle(/Зөв үү\? Тав уу\?/);
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /.{20,}/);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow');
 

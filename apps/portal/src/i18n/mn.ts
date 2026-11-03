@@ -3,7 +3,7 @@ import { planLength } from '@ongod/shared';
 // must replace or approve before launch (see docs/log and docs/runbooks/LAUNCH_CHECKLIST).
 
 export const mn = {
-  appName: 'Онгод',
+  appName: 'Зөв үү? Тав уу?',
   welcome: 'Тавтай морил',
 
   nav: {
@@ -29,7 +29,7 @@ export const mn = {
   },
 
   footer: {
-    rights: '© Онгод',
+    rights: '© Зөв үү? Тав уу?',
     privacy: 'Нууцлалын бодлого',
     terms: 'Үйлчилгээний нөхцөл',
     deleteAccount: 'Бүртгэл устгах',
@@ -37,16 +37,16 @@ export const mn = {
 
   // TODO(owner): approve the landing page wording (portal design A, ADR-0058).
   landing: {
-    metaTitle: 'Онгод — гишүүдэд зориулсан аудио сан',
+    metaTitle: 'Зөв үү? Тав уу? — гишүүдэд зориулсан аудио сан',
     metaDescription:
-      'Онгод: гишүүдэд зориулсан аудио сан. Нэг удаа эрх авч, шинэ ангиудыг утсан дээрээ хүссэн үедээ сонсоорой.',
+      'Зөв үү? Тав уу? — гишүүдэд зориулсан аудио сан. Нэг удаа эрх авч, шинэ ангиудыг утсан дээрээ хүссэн үедээ сонсоорой.',
     kicker: 'Гишүүдэд зориулсан сан',
-    title: 'Онгод',
+    title: 'Зөв үү? Тав уу?',
     lead: 'Аудио ба видео ангиуд нэг дор. Шинэ анги тогтмол нэмэгдэнэ. Эрхээ авч, утсан дээрээ хүссэн үедээ сонсоорой.',
     browse: 'Сан үзэх',
     priceLine: (plan: string, price: string) => `${plan} ${price} · QPay-ээр төлнө`,
     // TODO(owner): the first two facts describe the owner's own release rhythm; confirm or change.
-    factsLabel: 'Онгодын тухай товчхон',
+    factsLabel: 'Товч танилцуулга',
     facts: [
       { value: 'Долоо хоног бүр', text: 'шинэ анги нэмэгдэнэ' },
       { value: '40+ мин', text: 'нэг ангийн дундаж урт' },
@@ -56,7 +56,7 @@ export const mn = {
     samplesKicker: 'Сангаас',
     samplesTitle: 'Шинээр нэмэгдсэн',
     // TODO(owner): replace the sample episodes with real ones, then drop this note.
-    samplesNote: 'Зөвхөн жишээ. Бүх ангийг Онгод аппаас сонсоно.',
+    samplesNote: 'Зөвхөн жишээ. Бүх ангийг аппаас сонсоно.',
     samples: [
       { title: 'Малчин өвөөгийн яриа', meta: 'Ярилцлага · Аудио', minutes: 41 },
       { title: 'Цагаан сарын уламжлал', meta: 'Ёс заншил · Видео', minutes: 24 },
@@ -95,7 +95,7 @@ export const mn = {
       },
       {
         title: 'Аппаар сонсох',
-        text: 'Онгод аппаар нэвтэрч, бүх ангийг утсан дээрээ сонсож, үзнэ.',
+        text: 'Аппаар нэвтэрч, бүх ангийг утсан дээрээ сонсож, үзнэ.',
       },
     ],
     planKicker: 'Эрхийн багц',
@@ -146,8 +146,8 @@ export const mn = {
   },
 
   plans: {
-    metaTitle: 'Эрх авах — Онгод',
-    metaDescription: 'Онгодын эрхийн багц ба үнэ. QPay-ээр төлнө.',
+    metaTitle: 'Эрх авах — Зөв үү? Тав уу?',
+    metaDescription: 'Эрхийн багц ба үнэ. QPay-ээр төлнө.',
     title: 'Эрх авах',
     lead: 'Багцаа сонгоно уу.',
     /** "1 сар", "1 жил", "2 жил"; other lengths in days. */
@@ -177,7 +177,7 @@ export const mn = {
 
   // Gift access (SPEC J, ADR-0060). TODO(owner): approve the wording.
   gift: {
-    buyMetaTitle: 'Эрх бэлэглэх — Онгод',
+    buyMetaTitle: 'Эрх бэлэглэх — Зөв үү? Тав уу?',
     buyTitle: 'Эрх бэлэглэх',
     buyLead:
       'Багцаа сонгож төлбөрөө төлөөд, гарсан кодыг хүссэн хүндээ илгээнэ. Хүлээн авагч кодыг энэ сайтад оруулмагц эрх нь эхэлнэ.',
@@ -191,7 +191,7 @@ export const mn = {
       'Кодыг хүлээн авагчид илгээнэ. Тэр энэ сайтад нэвтэрч кодыг оруулна.',
     ],
     myTitle: 'Миний бэлгүүд',
-    myMetaTitle: 'Миний бэлгүүд — Онгод',
+    myMetaTitle: 'Миний бэлгүүд — Зөв үү? Тав уу?',
     empty: 'Та одоогоор бэлэг авч өгөөгүй байна.',
     buyAnother: 'Эрх бэлэглэх',
     redeemLink: 'Бэлгийн код ашиглах',
@@ -214,7 +214,7 @@ export const mn = {
       EXPIRED: 'Хугацаа дууссан',
       VOID: 'Хүчингүй болсон',
     },
-    redeemMetaTitle: 'Бэлгийн код ашиглах — Онгод',
+    redeemMetaTitle: 'Бэлгийн код ашиглах — Зөв үү? Тав уу?',
     redeemTitle: 'Бэлгийн код ашиглах',
     redeemLead: 'Танд ирсэн бэлгийн кодыг оруулна уу. Эрх тань тэр дороо эхэлнэ.',
     redeemCode: 'Бэлгийн код',
@@ -223,15 +223,15 @@ export const mn = {
     redeemInvalid: 'Кодыг 12 тэмдэгтээр (үсэг, тоо) оруулна уу.',
     redeemedTitle: 'Эрх идэвхжлээ',
     redeemedText: (date: string) => `Таны эрх ${date} хүртэл хүчинтэй.`,
-    redeemedNote: 'Одоо Онгод аппаар нэвтэрч сонсоорой.',
+    redeemedNote: 'Одоо аппаар нэвтэрч сонсоорой.',
     toAccount: 'Миний бүртгэл',
     giveLink: 'Бусдад эрх бэлэглэх',
-    mockMetaTitle: 'Туршилтын төлбөр — Онгод',
+    mockMetaTitle: 'Туршилтын төлбөр — Зөв үү? Тав уу?',
   },
 
   login: {
-    metaTitle: 'Нэвтрэх — Онгод',
-    metaDescription: 'Онгодын бүртгэлдээ нэвтэрнэ үү.',
+    metaTitle: 'Нэвтрэх — Зөв үү? Тав уу?',
+    metaDescription: 'Бүртгэлдээ нэвтэрнэ үү.',
     title: 'Нэвтрэх',
     identifier: 'Имэйл эсвэл нэвтрэх нэр',
     password: 'Нууц үг',
@@ -252,8 +252,8 @@ export const mn = {
   },
 
   register: {
-    metaTitle: 'Бүртгүүлэх — Онгод',
-    metaDescription: 'Онгодод бүртгүүлж, имэйлээ баталгаажуулаад эрх аваарай.',
+    metaTitle: 'Бүртгүүлэх — Зөв үү? Тав уу?',
+    metaDescription: 'Бүртгүүлж, имэйлээ баталгаажуулаад эрх аваарай.',
     title: 'Бүртгүүлэх',
     lastName: 'Овог',
     firstName: 'Нэр',
@@ -275,7 +275,7 @@ export const mn = {
   },
 
   verify: {
-    metaTitle: 'Имэйл баталгаажуулах — Онгод',
+    metaTitle: 'Имэйл баталгаажуулах — Зөв үү? Тав уу?',
     title: 'Имэйлээ баталгаажуулна уу',
     text: (email: string) => `${email} хаяг руу 6 оронтой код илгээлээ. Код 10 минут хүчинтэй.`,
     textNoEmail: 'Имэйл хаягаа оруулж, ирсэн 6 оронтой кодыг бичнэ үү.',
@@ -291,7 +291,7 @@ export const mn = {
   },
 
   forgot: {
-    metaTitle: 'Нууц үг сэргээх — Онгод',
+    metaTitle: 'Нууц үг сэргээх — Зөв үү? Тав уу?',
     title: 'Нууц үг сэргээх',
     text: 'Бүртгэлтэй имэйл хаягаа оруулна уу. Сэргээх код илгээнэ.',
     email: 'Имэйл',
@@ -301,7 +301,7 @@ export const mn = {
   },
 
   reset: {
-    metaTitle: 'Шинэ нууц үг — Онгод',
+    metaTitle: 'Шинэ нууц үг — Зөв үү? Тав уу?',
     title: 'Шинэ нууц үг',
     email: 'Имэйл',
     code: 'Сэргээх код',
@@ -310,7 +310,7 @@ export const mn = {
   },
 
   pay: {
-    metaTitle: 'Төлбөр хийх — Онгод',
+    metaTitle: 'Төлбөр хийх — Зөв үү? Тав уу?',
     title: 'Төлбөр хийх',
     lead: (plan: string) => `Таны сонгосон багц: ${plan}`,
     amount: 'Төлөх дүн',
@@ -322,7 +322,7 @@ export const mn = {
   },
 
   mock: {
-    metaTitle: 'Туршилтын төлбөр — Онгод',
+    metaTitle: 'Туршилтын төлбөр — Зөв үү? Тав уу?',
     title: 'Туршилтын төлбөр',
     devOnly: 'Энэ нь хөгжүүлэлтийн горим. Жинхэнэ төлбөр хийгдэхгүй.',
     success: 'Төлбөр амжилттай болсон гэж үзэх',
@@ -330,7 +330,7 @@ export const mn = {
   },
 
   status: {
-    metaTitle: 'Төлбөрийн төлөв — Онгод',
+    metaTitle: 'Төлбөрийн төлөв — Зөв үү? Тав уу?',
     title: 'Төлбөрийн төлөв',
     reference: 'Лавлах код',
     stateLabels: { done: 'дууссан', current: 'одоогийн алхам', upcoming: 'дараагийн алхам' },
@@ -338,7 +338,7 @@ export const mn = {
     active: 'Идэвхжсэн',
     activeText: (date: string) => `Таны эрх ${date} хүртэл хүчинтэй.`,
     activeTitle: 'Эрх идэвхжлээ',
-    activeNote: 'Одоо Онгод аппаар нэвтэрч сонсоорой.',
+    activeNote: 'Одоо аппаар нэвтэрч сонсоорой.',
     expired: 'Энэ хүсэлтийн хугацаа дууссан.',
     /** The request was cancelled (at the checkout, or it failed): nothing was paid. */
     cancelled: 'Энэ хүсэлт цуцлагдсан. Төлбөр хийгдээгүй.',
@@ -351,13 +351,13 @@ export const mn = {
   },
 
   account: {
-    metaTitle: 'Миний бүртгэл — Онгод',
+    metaTitle: 'Миний бүртгэл — Зөв үү? Тав уу?',
     title: 'Миний бүртгэл',
     hello: (name: string) => `Сайн байна уу, ${name}`,
     access: 'Эрх',
     daysLeft: (days: number) => `${days} хоног үлдсэн`,
     daysLeftShort: 'хоног',
-    inactiveText: 'Эрх авсны дараа Онгод аппаар бүх ангийг сонсоно.',
+    inactiveText: 'Эрх авсны дараа аппаар бүх ангийг сонсоно.',
     appsTitle: 'Аппаа татах',
     appsText: 'Энэ имэйл, нууц үгээрээ аппад нэвтэрнэ.',
     infoTitle: 'Мэдээлэл',
@@ -393,9 +393,9 @@ export const mn = {
       'TODO (эзэмшигч): Энэ хуудасны текст түр жишээ юм. Хууль зүйн зөвлөхтэй баталгаажуулж солино уу.',
     updated: 'Сүүлд шинэчилсэн: TODO',
     privacy: {
-      metaTitle: 'Нууцлалын бодлого — Онгод',
+      metaTitle: 'Нууцлалын бодлого — Зөв үү? Тав уу?',
       metaDescription:
-        'Онгод ямар мэдээлэл цуглуулдаг, хэрхэн ашигладаг, хэрхэн устгуулах талаарх нууцлалын бодлого.',
+        'Зөв үү? Тав уу? ямар мэдээлэл цуглуулдаг, хэрхэн ашигладаг, хэрхэн устгуулах талаарх нууцлалын бодлого.',
       title: 'Нууцлалын бодлого',
       sections: [
         {
@@ -425,13 +425,13 @@ export const mn = {
       ],
     },
     terms: {
-      metaTitle: 'Үйлчилгээний нөхцөл — Онгод',
-      metaDescription: 'Онгодын үйлчилгээний нөхцөл: эрх ба төлбөр, төхөөрөмж, зохиогчийн эрх.',
+      metaTitle: 'Үйлчилгээний нөхцөл — Зөв үү? Тав уу?',
+      metaDescription: 'Үйлчилгээний нөхцөл: эрх ба төлбөр, төхөөрөмж, зохиогчийн эрх.',
       title: 'Үйлчилгээний нөхцөл',
       sections: [
         {
           title: 'Үйлчилгээ',
-          text: 'Онгод нь гишүүдэд зориулсан аудио сан. Агуулгыг зөвхөн идэвхтэй эрхтэй гишүүн сонсоно. [TODO]',
+          text: 'Зөв үү? Тав уу? нь гишүүдэд зориулсан аудио сан. Агуулгыг зөвхөн идэвхтэй эрхтэй гишүүн сонсоно. [TODO]',
         },
         {
           // Left out of the app copy (/app/terms): the apps show no payment wording (ADR-0053).
@@ -460,12 +460,12 @@ export const mn = {
   },
 
   deleteAccount: {
-    metaTitle: 'Бүртгэл устгах — Онгод',
-    metaDescription: 'Онгодын бүртгэлээ хэрхэн устгах заавар.',
+    metaTitle: 'Бүртгэл устгах — Зөв үү? Тав уу?',
+    metaDescription: 'Бүртгэлээ хэрхэн устгах заавар.',
     title: 'Бүртгэл устгах',
     lead: 'Та бүртгэлээ хүссэн үедээ устгаж болно.',
     howTitle: 'Яаж устгах вэ',
-    howApp: 'Онгод апп дотроос: Профайл → Тохиргоо → Бүртгэл устгах.',
+    howApp: 'Апп дотроос: Профайл → Тохиргоо → Бүртгэл устгах.',
     howWeb: 'Энэ сайтаас: нэвтэрч ороод доорх "Бүртгэлээ устгах" товчийг дарна.',
     whatTitle: 'Юу болох вэ',
     what: [
@@ -484,7 +484,7 @@ export const mn = {
   },
 
   notFound: {
-    metaTitle: 'Хуудас олдсонгүй — Онгод',
+    metaTitle: 'Хуудас олдсонгүй — Зөв үү? Тав уу?',
     title: 'Хуудас олдсонгүй',
     text: 'Таны хайсан хуудас байхгүй байна.',
     home: 'Нүүр хуудас руу',

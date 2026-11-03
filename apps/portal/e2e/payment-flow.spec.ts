@@ -105,7 +105,7 @@ test('register -> verify -> pay -> review -> approved -> access', async ({ page,
 
   // ---- the payment succeeds: access arrives by itself, nobody approves anything ----
   await page.getByRole('button', { name: 'Төлбөр амжилттай болсон гэж үзэх' }).click();
-  await expect(page.getByText('Одоо Онгод аппаар нэвтэрч сонсоорой.')).toBeVisible();
+  await expect(page.getByText('Одоо аппаар нэвтэрч сонсоорой.')).toBeVisible();
   await expect(page.getByText(/Таны эрх \d{4}\.\d{2}\.\d{2} хүртэл хүчинтэй\./)).toBeVisible();
   await page.screenshot({ path: shots('portal-status-active'), fullPage: true });
 

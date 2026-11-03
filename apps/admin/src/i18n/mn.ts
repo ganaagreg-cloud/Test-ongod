@@ -3,7 +3,7 @@ import { planLength } from '@ongod/shared';
 // error.message; the texts here cover the screens themselves.
 
 export const mn = {
-  appName: 'Онгод',
+  appName: 'Зөв үү? Тав уу?',
   adminTitle: 'Удирдлагын самбар',
 
   common: {

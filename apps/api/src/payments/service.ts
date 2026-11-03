@@ -259,7 +259,7 @@ export function createPaymentService(deps: {
         const checkout = await gateway.createCheckout({
           subscriptionId: sub.id,
           amountMnt: sub.amountMnt,
-          description: `Онгод · ${sub.plan.name}`,
+          description: `Зөв үү? Тав уу? · ${sub.plan.name}`,
           successUrl: `${base}/status`,
           cancelUrl: `${base}/pay?canceled=1`,
         });
@@ -319,7 +319,7 @@ export function createPaymentService(deps: {
         const checkout = await gateway.createCheckout({
           subscriptionId: `gift_${gift.id}`,
           amountMnt: gift.amountMnt,
-          description: `Онгод бэлэг · ${gift.plan.name}`,
+          description: `Зөв үү? Тав уу? бэлэг · ${gift.plan.name}`,
           successUrl: `${base}/gifts`,
           cancelUrl: `${base}/gift?canceled=1`,
         });
