@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import type { EpisodeItem } from '@ongod/shared';
 import { colors, layout, motion, nativeTextStyle, spacing } from '@ongod/tokens';
 import { player, usePlayerState } from '../../../src/audio/player';
@@ -57,6 +58,8 @@ export default function PlayerScreen() {
   const { id, autoplay } = useLocalSearchParams<{ id: string; autoplay?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // ADR-0085: no screenshots or screen recording while the player is open.
+  usePreventScreenCapture();
   const toast = useToast();
   const { user } = useAuth();
   const { supportEmail } = useAppConfig();
