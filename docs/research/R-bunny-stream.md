@@ -23,6 +23,14 @@ All TO-VERIFY (read through search summaries of Bunny's docs on 2026-10-18, not 
 - **Video `status` numbers are not confirmed:** sources disagree (a webhook enum with 3 = finished, 5 = failed; plugins reading the video object with 4 = finished). The API treats 4, or `encodeProgress` 100 with a length, as ready and 5 / 6 as failed; check against the first live upload.
 - **MediaCage Basic reportedly works only in Bunny's own player** (a player vendor's guidance, TO-VERIFY): keep it **off** for this library, or expo-video cannot play.
 
+## Live findings (VERIFIED by live test, 2026-11-03, new account)
+
+- **Status numbers:** a finished video has `status` 4 with `encodeProgress` 100 (the 4 = finished reading above is right).
+- **Stored size is a multiple of the source.** A 62-minute 360p upload (source recorded as about 99 MB in `MediaAsset.sizeBytes`) shows `storageSize` about 659 MB on Bunny, about 6.6 times. A 98-minute 720p video shows about 2.83 GB. Plan cost from the Bunny `storageSize`, not the file size. Whether the original is kept was not checked.
+- **Signed HLS playback works** with the app's signer (`path-style` directory token, `tokenPath: /<guid>/`, token in the URL path): playlist 200, variant playlist by relative URL 200, segment with Range 206. No token, tampered token, expired token and a token for another video all return 403.
+- **"Block direct URL file access" must be OFF** on the library's pull zone, with Token Authentication ON. With it on, even a correct token gets 403 (also happens with no referrer, as in the app). Settings take about 30 to 45 seconds to apply.
+- The stream and storage rates themselves are still TO-VERIFY above; compare the first invoice.
+
 ## How it was checked
 
 Web search, 2026-10-18 (several queries); direct fetches of bunny.net and docs.bunny.net failed (session network policy). Third-party reviews disagree on base storage and delivery rates; the figures above are the ones attributed to Bunny's own docs. Before quoting the client: open the pricing pages, and measure a real 40-minute upload (rendition sizes, actual bitrate of slide video).
