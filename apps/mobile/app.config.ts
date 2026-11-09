@@ -79,6 +79,9 @@ const config: ExpoConfig = {
     ...(googleServicesFile ? { googleServicesFile } : {}),
   },
   ...(easProjectId ? { extra: { eas: { projectId: easProjectId } } } : {}),
+  // EAS Update (the eas.json channels need it); a new store version = a new runtime, so OTA never hits an incompatible binary.
+  updates: { url: `https://u.expo.dev/${easProjectId}` },
+  runtimeVersion: { policy: 'appVersion' },
   plugins,
   experiments: {
     typedRoutes: true,
