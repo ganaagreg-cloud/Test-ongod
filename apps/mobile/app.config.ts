@@ -13,7 +13,8 @@
 const googleIosScheme = process.env.GOOGLE_IOS_URL_SCHEME;
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
-const easProjectId = process.env.EAS_PROJECT_ID;
+// Public id, not a secret: fixed default so no shell variable is needed; env can still override.
+const easProjectId = process.env.EAS_PROJECT_ID ?? '6d5fda6b-d20a-4256-838e-32976f4c0358';
 const googleServicesFile = process.env.GOOGLE_SERVICES_FILE;
 
 const plugins: NonNullable<ExpoConfig['plugins']> = [
