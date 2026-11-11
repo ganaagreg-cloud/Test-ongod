@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import { contentSecurityPolicy } from './csp';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyBaseLogger, type FastifyError, type FastifyInstance } from 'fastify';
 import { createDecisionService } from './admin/decisions';
@@ -118,7 +119,7 @@ export async function buildApp(deps: AppDeps) {
     reply.header('x-request-id', req.id);
   });
 
-  await app.register(helmet);
+  await app.register(helmet, { contentSecurityPolicy: contentSecurityPolicy(env) });
   await app.register(cookie);
   await app.register(cors, {
     origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false,
