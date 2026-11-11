@@ -102,3 +102,11 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** not quoted.
 - **Status:** **done in code on 2026-11-03** ([[ADR-0080-app-name-zuvuutavuu|ADR-0080]]): users see "Зөв үү? Тав уу?", technical names use `zuvuutavuu`. Price still to be quoted.
 - **Notes:** the visible name is in a few places: the app name and Welcome texts (`apps/mobile`), portal texts and page titles (`apps/portal`), email and push texts (`apps/api`), the admin title, and `docs/`. The internal names (`@ongod/*` packages, folders, env keys, the `ongod` service and database) can stay and need no change. **The decision window is now:** the app id (`mn.ongod.app`), the link scheme (`ongod`) and the store name are fixed once the app is published, so change them before the first store submission or never.
+
+### 2026-11-11: Intro pages and browsing before login
+
+- **Client asked:** (1) three introduction pages about the app before the login; (2) show the library from the start after the intro, and ask for registration only when the person wants to watch.
+- **In scope:** no for both. [[SPEC]] describes sign-up and log-in before browsing; the intro pages are new UI, and guest browsing changes the catalog access rules and tests.
+- **Price:** not quoted.
+- **Status:** (1) **done in code on 2026-11-11** ([[ADR-0088-mobile-intro-pages|ADR-0088]]), texts are a draft for the client to approve, not tested on a device. (2) **not started**: needs an ADR, a SPEC change approved by Ganaa, public catalog routes with access-rule tests, and a signed-out Home and Library. Store acceptance of a login wall vs guest browsing is an ASSUMPTION / TO-VERIFY (no research note).
+- **Notes:** guest browsing questions for the client: what a guest can open, and whether free episodes play without an account.
