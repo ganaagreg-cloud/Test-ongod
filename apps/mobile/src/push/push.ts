@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
@@ -47,10 +47,16 @@ async function permission(): Promise<PermissionState> {
   return { granted: p.granted, status: p.status, canAskAgain: p.canAskAgain };
 }
 
+// The last token the server accepted: the same token is never sent twice in one run, so a
+// re-rendering effect cannot flood PUT /v1/me/push-token (it hit the rate limit and login).
+let lastSent: string | null = null;
+
 /** Sends the current Expo token to the API. Errors (offline, Expo down) wait for the next start. */
 async function register(): Promise<void> {
   const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+  if (data === lastSent) return;
   await api.setPushToken(data);
+  lastSent = data;
 }
 
 /**
@@ -95,6 +101,7 @@ export async function setPushEnabled(on: boolean): Promise<PushResult> {
   if (!on) {
     // Server first: offline, nothing changes and the switch flips back.
     await api.setPushToken(null);
+    lastSent = null;
     await setItem(OFF_KEY, '1');
     return 'off';
   }
@@ -110,13 +117,16 @@ export async function setPushEnabled(on: boolean): Promise<PushResult> {
  */
 export function usePush() {
   const router = useRouter();
+  // A ref keeps the effect from re-running (and re-registering) when the router object changes.
+  const routerRef = useRef(router);
+  routerRef.current = router;
   useEffect(() => {
     if (!pushIsAvailable) return;
     void sync('start').catch(reportError);
 
     const open = (data: unknown) => {
       const id = episodeIdOf(data);
-      if (id) router.push({ pathname: '/player/[id]', params: { id } });
+      if (id) routerRef.current.push({ pathname: '/player/[id]', params: { id } });
     };
     const launched = Notifications.getLastNotificationResponse();
     if (launched) {
@@ -135,5 +145,5 @@ export function usePush() {
       tapped.remove();
       renewed.remove();
     };
-  }, [router]);
+  }, []);
 }
