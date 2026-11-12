@@ -343,10 +343,43 @@ export const purgeDoneJobs: CronTask = {
   },
 };
 
+/** A sign-up whose email was not confirmed within this long is removed (ADR-0098). */
+export const UNVERIFIED_SIGNUP_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * ADR-0098: a sign-up that never confirmed its email holds a stranger's name, phone and email
+ * for nothing (it cannot log in, ADR-0097). After 24 hours it is deleted, with the same guard as
+ * the replace rule of ADR-0037: still unconfirmed, a plain user, a password sign-up, and nothing
+ * attached to it (no session ever, no subscription, no gift). The person can simply sign up again.
+ */
+export const purgeUnverifiedSignups: CronTask = {
+  name: 'purgeUnverifiedSignups',
+  async run({ db, now }) {
+    const { count } = await db.user.deleteMany({
+      where: {
+        emailVerifiedAt: null,
+        role: 'USER',
+        status: 'ACTIVE',
+        passwordHash: { not: null },
+        createdAt: { lt: new Date(now.getTime() - UNVERIFIED_SIGNUP_TTL_MS) },
+        identities: { none: {} },
+        sessions: { none: {} },
+        subscriptions: { none: {} },
+        giftsBought: { none: {} },
+        giftsRedeemed: { none: {} },
+        comments: { none: {} },
+        auditLogs: { none: {} },
+      },
+    });
+    return { affected: count };
+  },
+};
+
 export const cronTasks: CronTask[] = [
   expirePendingPayments,
   expireEndedSubscriptions,
   sendAccessEndingReminders,
   publishScheduledEpisodes,
   purgeDoneJobs,
+  purgeUnverifiedSignups,
 ];

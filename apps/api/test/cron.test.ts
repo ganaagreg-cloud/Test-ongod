@@ -105,6 +105,60 @@ describe('POST /v1/cron/tick', () => {
     });
   });
 
+  it('removes sign-ups that did not confirm their email within 24 hours, and nothing else (ADR-0098)', async () => {
+    const app = await testApp();
+    const hours = (n: number) => new Date(Date.now() - n * 3_600_000);
+    const mk = (
+      name: string,
+      over: { createdAt: Date; verified?: boolean; role?: 'USER' | 'ADMIN'; password?: boolean },
+    ) =>
+      testDb.user.create({
+        data: {
+          username: `${name}@example.com`,
+          email: `${name}@example.com`,
+          firstName: name,
+          lastName: name,
+          phone: '99112233',
+          passwordHash: over.password === false ? null : 'x',
+          createdAt: over.createdAt,
+          emailVerifiedAt: over.verified ? new Date() : null,
+          ...(over.role ? { role: over.role } : {}),
+        },
+      });
+    const stale = await mk('stale', { createdAt: hours(25) });
+    await testDb.emailCode.create({
+      data: { userId: stale.id, purpose: 'VERIFY', codeHash: 'h', expiresAt: hours(24) },
+    });
+    await mk('fresh', { createdAt: hours(23) });
+    await mk('verified', { createdAt: hours(100), verified: true });
+    await mk('staff', { createdAt: hours(100), role: 'ADMIN' });
+    await mk('social', { createdAt: hours(100), password: false });
+    const used = await mk('used', { createdAt: hours(100) });
+    await testDb.session.create({
+      data: {
+        userId: used.id,
+        deviceId: 'device-0001',
+        refreshTokenHash: 'hash-used',
+        familyId: 'family-used',
+        expiresAt: new Date(Date.now() + 3_600_000),
+      },
+    });
+
+    const tick = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/cron/tick',
+        headers: { 'x-cron-secret': CRON_SECRET },
+      });
+    expect((await tick()).json().tasks.purgeUnverifiedSignups).toEqual({ affected: 1 });
+    const left = (await testDb.user.findMany({ select: { firstName: true } }))
+      .map((u) => u.firstName)
+      .sort();
+    expect(left).toEqual(['fresh', 'social', 'staff', 'used', 'verified']);
+    expect(await testDb.emailCode.count()).toBe(0);
+    expect((await tick()).json().tasks.purgeUnverifiedSignups).toEqual({ affected: 0 });
+  });
+
   it('drains due jobs', async () => {
     const runs: number[] = [];
     const def = defineJob({

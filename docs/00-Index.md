@@ -119,6 +119,7 @@ tags: [index]
 | ADR-0095 | [[ADR-0095-dashboard-top-10-viewed-and-commented]]           | accepted                                                                    |
 | ADR-0096 | [[ADR-0096-one-gift-code-per-request-push-token-limit]]      | accepted                                                                    |
 | ADR-0097 | [[ADR-0097-email-must-be-verified-to-log-in]]                | accepted                                                                    |
+| ADR-0098 | [[ADR-0098-remove-unverified-signups-after-24-hours]]        | accepted                                                                    |
 
 ## Research
 
