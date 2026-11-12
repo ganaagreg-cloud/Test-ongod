@@ -104,7 +104,7 @@ tags: [index]
 | ADR-0080 | [[ADR-0080-app-name-zuvuutavuu]]                                     | accepted                                                                    |
 | ADR-0081 | [[ADR-0081-store-name-without-question-marks-domain]]                | accepted                                                                    |
 | ADR-0082 | [[ADR-0082-admin-user-page-access-clarity]]                          | accepted                                                                    |
-| ADR-0083 | [[ADR-0083-mobile-qpay-deeplink-test-builds-only]]                   | accepted                                                                    |
+| ADR-0083 | [[ADR-0083-mobile-qpay-deeplink-test-builds-only]]                   | accepted (item 5 superseded by [[ADR-0101-no-server-gate-for-mobile-payment\|ADR-0101]]) |
 | ADR-0084 | [[ADR-0084-wire-operators-empty-means-all]]                          | accepted                                                                    |
 | ADR-0085 | [[ADR-0085-block-screen-capture-in-player]]                          | accepted (item 3 amended by ADR-0094)                                       |
 | ADR-0086 | [[ADR-0086-domain-app-zuwuutawuu-mn]]                                | accepted                                                                    |
@@ -122,6 +122,7 @@ tags: [index]
 | ADR-0098 | [[ADR-0098-remove-unverified-signups-after-24-hours]]                | accepted                                                                    |
 | ADR-0099 | [[ADR-0099-notification-list-and-help-screen]]                       | accepted                                                                    |
 | ADR-0100 | [[ADR-0100-optional-phone-owner-alert-on-admin-codes-version-0-2-0]] | accepted                                                                    |
+| ADR-0101 | [[ADR-0101-no-server-gate-for-mobile-payment]]                       | accepted                                                                    |
 
 ## Research
 

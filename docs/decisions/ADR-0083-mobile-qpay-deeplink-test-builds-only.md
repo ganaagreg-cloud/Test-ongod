@@ -1,7 +1,7 @@
 ---
 id: ADR-0083
 title: 'QPay (Wire) with a bank-app deeplink in the mobile apps: test builds only, behind a flag'
-status: accepted
+status: 'accepted (item 5 superseded by [[ADR-0101-no-server-gate-for-mobile-payment|ADR-0101]])'
 date: '2026-10-31'
 tags: [adr, area/payments, area/mobile, area/store]
 ---
