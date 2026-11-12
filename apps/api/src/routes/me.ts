@@ -6,10 +6,12 @@ import {
   changePasswordRequestSchema,
   devicesResponseSchema,
   meResponseSchema,
+  notificationsResponseSchema,
   pushTokenRequestSchema,
   removeDeviceRequestSchema,
   updateProfileRequestSchema,
 } from '@ongod/shared';
+import type { NotificationService } from '../notifications/service';
 import { authOf, type createAuthGuard } from '../auth/guard';
 import type { AuthLimiter } from '../auth/rate-limit';
 import { toUserDto, type AuthService } from '../auth/service';
@@ -25,10 +27,11 @@ export async function meRoutes(
   opts: {
     auth: AuthService;
     limiter: AuthLimiter;
+    notifications: NotificationService;
     requireAuth: ReturnType<typeof createAuthGuard>;
   },
 ) {
-  const { auth, limiter } = opts;
+  const { auth, limiter, notifications } = opts;
   app.addHook('preHandler', opts.requireAuth);
 
   app.get('/me', { config: { allowPending: true } }, async (req) =>
@@ -94,6 +97,16 @@ export async function meRoutes(
       return reply.code(204).send();
     },
   );
+
+  // The bell on Нүүр (ADR-0099): the member's own notifications, and "all read".
+  app.get('/me/notifications', async (req, reply) => {
+    reply.header('cache-control', 'private, no-store');
+    return notificationsResponseSchema.parse(await notifications.list(authOf(req).user.id));
+  });
+  app.post('/me/notifications/read', async (req, reply) => {
+    await notifications.markAllRead(authOf(req).user.id);
+    return reply.code(204).send();
+  });
 
   app.delete('/me', async (req, reply) => {
     await auth.deleteAccount(authOf(req).user.id);

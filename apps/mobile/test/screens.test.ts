@@ -195,6 +195,8 @@ test('the phase 3 screens call the right endpoints, and none for payments', asyn
   await api.save('ep1');
   await api.unsave('ep1');
   await api.stats();
+  await api.notifications();
+  await api.markNotificationsRead();
   await api.updateProfile({ firstName: 'Болд' });
   await api.changePassword({ currentPassword: 'old-pass-1', newPassword: 'new-pass-22' });
   await api.changeEmail({ newEmail: 'new@example.com', password: 'pw-123456' });
@@ -211,6 +213,8 @@ test('the phase 3 screens call the right endpoints, and none for payments', asyn
     ['PUT', '/saved/ep1', undefined],
     ['DELETE', '/saved/ep1', undefined],
     ['GET', '/me/stats', undefined],
+    ['GET', '/me/notifications', undefined],
+    ['POST', '/me/notifications/read', undefined],
     ['PATCH', '/me', { firstName: 'Болд' }],
     ['POST', '/me/change-password', { currentPassword: 'old-pass-1', newPassword: 'new-pass-22' }],
     ['POST', '/me/change-email', { newEmail: 'new@example.com', password: 'pw-123456' }],

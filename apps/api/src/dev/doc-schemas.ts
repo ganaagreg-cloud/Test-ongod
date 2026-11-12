@@ -18,6 +18,7 @@ import {
   createGiftRequestSchema,
   giftResponseSchema,
   giftsResponseSchema,
+  notificationsResponseSchema,
   listGiftsQuerySchema,
   redeemGiftRequestSchema,
   redeemGiftResponseSchema,
@@ -278,6 +279,16 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   }),
   'GET /v1/me/stats': user('me', 'Profile numbers: episodes finished, listening time (ADR-0039)', {
     responses: { 200: meStatsResponseSchema },
+  }),
+  'GET /v1/me/notifications': user(
+    'app',
+    'The bell on Нүүр: own notifications, newest first (ADR-0099)',
+    {
+      responses: { 200: notificationsResponseSchema },
+    },
+  ),
+  'POST /v1/me/notifications/read': user('app', 'Mark all own notifications read', {
+    responses: { 204: noContent },
   }),
   'POST /v1/me/change-password': user('me', 'H. Change password', {
     body: changePasswordRequestSchema,

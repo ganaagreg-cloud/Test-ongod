@@ -1,4 +1,8 @@
-import { PENDING_PAYMENT_TTL_DAYS, REMINDER_DAYS_BEFORE_END } from '@ongod/shared';
+import {
+  NOTIFICATION_KEEP_DAYS,
+  PENDING_PAYMENT_TTL_DAYS,
+  REMINDER_DAYS_BEFORE_END,
+} from '@ongod/shared';
 import { lockUser } from '../auth/service';
 import type { Db } from '../db';
 import { enqueueEmail } from '../email';
@@ -343,6 +347,17 @@ export const purgeDoneJobs: CronTask = {
   },
 };
 
+/** ADR-0099: notifications are kept 90 days. */
+export const purgeOldNotifications: CronTask = {
+  name: 'purgeOldNotifications',
+  async run({ db, now }) {
+    const { count } = await db.notification.deleteMany({
+      where: { createdAt: { lt: new Date(now.getTime() - NOTIFICATION_KEEP_DAYS * DAY_MS) } },
+    });
+    return { affected: count };
+  },
+};
+
 /** A sign-up whose email was not confirmed within this long is removed (ADR-0098). */
 export const UNVERIFIED_SIGNUP_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -382,4 +397,5 @@ export const cronTasks: CronTask[] = [
   publishScheduledEpisodes,
   purgeDoneJobs,
   purgeUnverifiedSignups,
+  purgeOldNotifications,
 ];

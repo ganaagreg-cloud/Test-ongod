@@ -116,6 +116,7 @@ export default function Profile() {
             {paymentsOn ? (
               <ListItem title={inpayMn.gift.row} icon="gift" onPress={() => router.push('/gift')} />
             ) : null}
+            <ListItem title={mn.profile.help} icon="info" onPress={() => router.push('/help')} />
             {termsUrl ? (
               <ListItem
                 title={mn.legal.terms}

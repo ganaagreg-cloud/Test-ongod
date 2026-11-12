@@ -13,6 +13,7 @@ import {
   loginResponseSchema,
   meResponseSchema,
   meStatsResponseSchema,
+  notificationsResponseSchema,
   playResponseSchema,
   playlistResponseSchema,
   registerResponseSchema,
@@ -166,6 +167,10 @@ export function createEndpoints(client: ApiClient) {
     /** Тохиргоо: first name, last name, phone (ADR-0039). */
     updateProfile: (body: UpdateProfileRequest) =>
       request('/me', { method: 'PATCH', body, schema: meResponseSchema }),
+
+    /** The bell on Нүүр (ADR-0099): own notifications, newest first. */
+    notifications: () => request('/me/notifications', { schema: notificationsResponseSchema }),
+    markNotificationsRead: () => request('/me/notifications/read', { method: 'POST' }),
 
     /** Профайл: episodes finished and listening time. */
     stats: () => request('/me/stats', { schema: meStatsResponseSchema }),

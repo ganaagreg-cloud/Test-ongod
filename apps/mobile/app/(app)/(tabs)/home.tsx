@@ -10,9 +10,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDurationMn, type EpisodeItem } from '@ongod/shared';
-import { colors, glass, layout, motion, nativeTextStyle, spacing } from '@ongod/tokens';
+import {
+  colors,
+  glass,
+  layout,
+  motion,
+  nativeTextStyle,
+  radius,
+  spacing,
+  withAlpha,
+} from '@ongod/tokens';
 import { useAuth } from '../../../src/auth/AuthContext';
-import { keys, useHome } from '../../../src/data/queries';
+import { keys, useHome, useNotifications } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
 import { durationBadge, greeting, isLocked } from '../../../src/lib/episode';
 import { ContinueCard } from '../../../src/screens/home/ContinueCard';
@@ -31,6 +40,8 @@ import {
   EpisodeCard,
   Glass,
   HeroCarousel,
+  Icon,
+  PressableScale,
   Skeleton,
   SurfaceProvider,
   type HeroItem,
@@ -47,6 +58,9 @@ export default function Home() {
   const bottom = useBottomSpace();
   const home = useHome();
   const [refreshing, setRefreshing] = useState(false);
+  // The dot on the bell (ADR-0099); asked again each time Нүүр comes into view.
+  const notifications = useNotifications();
+  const unreadCount = notifications.data?.unread ?? 0;
   const lockedOf = (item: EpisodeItem) => isLocked(item, user?.accessUntil, new Date());
   const scrollY = useSharedValue(0);
 
@@ -57,6 +71,10 @@ export default function Home() {
       // A fetch already running (the first visit) is left alone, not restarted.
       void queryClient.refetchQueries(
         { queryKey: keys.home, stale: true },
+        { cancelRefetch: false },
+      );
+      void queryClient.refetchQueries(
+        { queryKey: keys.notifications, stale: true },
         { cancelRefetch: false },
       );
     }, [queryClient]),
@@ -237,11 +255,25 @@ export default function Home() {
             />
           }
         >
-          <Enter index={0} style={styles.padded}>
-            <Text style={styles.hello}>{greeting(new Date())}</Text>
-            <Text style={styles.name} accessibilityRole="header" numberOfLines={1}>
-              {name}
-            </Text>
+          <Enter index={0} style={[styles.padded, styles.greetingRow]}>
+            <View style={styles.greetingText}>
+              <Text style={styles.hello}>{greeting(new Date())}</Text>
+              <Text style={styles.name} accessibilityRole="header" numberOfLines={1}>
+                {name}
+              </Text>
+            </View>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={
+                unreadCount > 0 ? mn.notifications.bellUnread(unreadCount) : mn.notifications.bell
+              }
+              onPress={() => router.push('/notifications')}
+              scale={motion.pressScaleRound}
+              style={styles.bell}
+            >
+              <Icon name="bell" color={colors.textPrimary} />
+              {unreadCount > 0 ? <View style={styles.bellDot} /> : null}
+            </PressableScale>
           </Enter>
           {body}
         </Animated.ScrollView>
@@ -278,6 +310,30 @@ const styles = StyleSheet.create({
   sectionTight: { gap: spacing.sm },
   cards: { paddingHorizontal: layout.screenPadding, gap: spacing.md },
   categoryList: { gap: spacing.sm },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  greetingText: { flex: 1 },
+  bell: {
+    width: layout.touchTarget,
+    height: layout.touchTarget,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: withAlpha(colors.textPrimary, 0.06),
+  },
+  bellDot: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    width: layout.dotSize + spacing.xxs,
+    height: layout.dotSize + spacing.xxs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
   hello: { color: colors.textSecondary, ...nativeTextStyle('small') },
   name: { color: colors.textPrimary, ...nativeTextStyle('display') },
   header: { position: 'absolute', top: 0, left: 0, right: 0 },

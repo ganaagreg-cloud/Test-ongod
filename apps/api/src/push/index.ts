@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Db } from '../db';
+import type { Db, Prisma } from '../db';
 import type { Env } from '../env';
 import { enqueue, type EnqueueOptions, type JobWriter } from '../jobs/queue';
 import { defineJob } from '../jobs/registry';
@@ -125,11 +125,23 @@ export function createPushJob(db: Db, sender: PushSender) {
   });
 }
 
-/** Queues a push to one user. Pass a transaction client to send only if the change commits. */
-export function enqueuePush(
+/**
+ * Queues a push to one user and keeps it as a notification for the bell on Нүүр (ADR-0099), in
+ * the same writer, so both happen or neither. Pass a transaction client to do it only if the
+ * change commits.
+ */
+export async function enqueuePush(
   db: JobWriter,
   payload: z.input<typeof pushPayloadSchema>,
   opts?: EnqueueOptions,
 ) {
+  await db.notification.create({
+    data: {
+      userId: payload.userId,
+      title: payload.title,
+      body: payload.body,
+      ...(payload.data ? { data: payload.data as Prisma.InputJsonValue } : {}),
+    },
+  });
   return enqueue(db, pushJobSpec, payload, opts);
 }
