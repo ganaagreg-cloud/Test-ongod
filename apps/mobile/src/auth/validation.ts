@@ -27,7 +27,8 @@ const schemaCheck =
 export const checks = {
   name: schemaCheck(nameSchema, mn.errors.required),
   email: schemaCheck(emailSchema, mn.errors.email),
-  phone: schemaCheck(phoneSchema, mn.errors.phone),
+  /** Optional (ADR-0100): empty is fine. */
+  phone: ((value) => (phoneSchema.safeParse(value).success ? undefined : mn.errors.phone)) as Check,
   password: schemaCheck(passwordSchema, mn.errors.password),
   code: schemaCheck(codeSchema, mn.errors.code),
   username: schemaCheck(usernameSchema, mn.errors.username),

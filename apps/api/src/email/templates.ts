@@ -19,6 +19,15 @@ export const emailTemplateSchemas = {
     planName: z.string().min(1),
     validUntil: z.string().min(1),
   }),
+  /** To every OWNER when an admin makes a free gift code (ADR-0100). The code itself is not in it. */
+  giftIssued: z.object({
+    firstName: name,
+    adminName: z.string().min(1).max(200),
+    note: z.string().min(1).max(200),
+    planName: z.string().min(1),
+    days: z.number().int().positive(),
+    validUntil: z.string().min(1),
+  }),
   /** To ALERT_EMAILS (owner/admins), see monitoring/alerts.ts. */
   errorAlert: z.object({
     kind: z.enum(['http', 'job']),

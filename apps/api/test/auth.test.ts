@@ -6,6 +6,7 @@ import { AuthLimiter, WindowCounter } from '../src/auth/rate-limit';
 import {
   PASSWORD,
   authApp,
+  person,
   device,
   emailsTo,
   expireCodes,
@@ -135,6 +136,22 @@ describe('SPEC A: register', () => {
     expect(res.json()).toEqual({
       error: { code: 'VALIDATION_ERROR', message: expect.any(String) },
     });
+  });
+
+  it('a phone number is optional: left out or empty, the account is made with an empty one (ADR-0100)', async () => {
+    const app = await authApp();
+    const withoutPhone = {
+      lastName: person.lastName,
+      firstName: person.firstName,
+      password: person.password,
+      email: EMAIL,
+    };
+    const first = await post(app, '/v1/auth/register', withoutPhone);
+    expect(first.statusCode).toBe(201);
+    const second = await register(app, { email: 'second@example.com', phone: '' });
+    expect(second.statusCode).toBe(201);
+    const rows = await testDb.user.findMany({ select: { phone: true } });
+    expect(rows.map((r) => r.phone)).toEqual(['', '']);
   });
 });
 

@@ -184,7 +184,7 @@ function PaymentPanel({
           </Link>
         </Fact>
         <Fact label={mn.payments.panel.email}>{s.user.email}</Fact>
-        <Fact label={mn.payments.panel.phone}>{s.user.phone}</Fact>
+        <Fact label={mn.payments.panel.phone}>{s.user.phone || mn.common.none}</Fact>
         {s.startsAt && s.endsAt ? (
           <Fact label={mn.payments.panel.period}>
             {formatDateTime(s.startsAt)} → {formatDateTime(s.endsAt)}

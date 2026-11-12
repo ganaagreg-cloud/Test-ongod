@@ -44,7 +44,7 @@ const columns = [
   col.display({
     id: 'phone',
     header: mn.users.columns.phone,
-    cell: ({ row }) => row.original.phone,
+    cell: ({ row }) => row.original.phone || mn.common.none,
   }),
   col.display({
     id: 'status',

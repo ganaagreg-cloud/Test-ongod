@@ -16,7 +16,7 @@ test('phone', () => {
   assert.equal(checks.phone('99112233'), undefined);
   assert.equal(checks.phone('+976 9911-2233'), undefined);
   assert.equal(checks.phone('abc'), mn.errors.phone);
-  assert.equal(checks.phone(''), mn.errors.required);
+  assert.equal(checks.phone(''), undefined); // optional (ADR-0100)
 });
 
 test('password needs 8 characters', () => {

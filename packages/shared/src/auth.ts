@@ -26,10 +26,11 @@ export const codeSchema = z
   .trim()
   .regex(/^\d{6}$/);
 export const nameSchema = z.string().trim().min(1).max(100);
+/** A phone number is optional (ADR-0100): empty is fine, anything else must look like a number. */
 export const phoneSchema = z
   .string()
   .trim()
-  .regex(/^\+?[0-9\s-]{6,20}$/);
+  .refine((value) => value === '' || /^\+?[0-9\s-]{6,20}$/.test(value));
 
 export const platformSchema = z.enum(['ios', 'android', 'web', 'admin']);
 export const deviceIdSchema = z.string().trim().min(8).max(128);
@@ -82,7 +83,7 @@ export type TokenPair = z.infer<typeof tokenPairSchema>;
 export const registerRequestSchema = z.object({
   lastName: nameSchema,
   firstName: nameSchema,
-  phone: phoneSchema,
+  phone: phoneSchema.default(''),
   email: emailSchema,
   /** Optional; defaults to the email. */
   username: usernameSchema.optional(),
@@ -190,7 +191,7 @@ export const completeProfileRequestSchema = z.object({
   password: passwordSchema,
   lastName: nameSchema,
   firstName: nameSchema,
-  phone: phoneSchema,
+  phone: phoneSchema.default(''),
 });
 export const completeProfileResponseSchema = z.object({ user: userSchema });
 
