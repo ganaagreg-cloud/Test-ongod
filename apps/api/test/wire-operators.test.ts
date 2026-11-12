@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { createWireGateway } from '../src/payments/wire';
 
 // ADR-0084: an empty WIRE_ALLOWED_OPERATORS sends no allowed_operators (Wire uses all enabled).
@@ -11,7 +11,10 @@ async function bodyOfFirstWireCall(operators: string[]) {
     return new Response('{"error":{"message":"stop"}}', { status: 400 });
   }) as typeof fetch;
   try {
-    const wire = createWireGateway({ WIRE_API_KEY: 'sk_test_x', WIRE_ALLOWED_OPERATORS: operators });
+    const wire = createWireGateway({
+      WIRE_API_KEY: 'sk_test_x',
+      WIRE_ALLOWED_OPERATORS: operators,
+    });
     await wire!
       .createCheckout({
         amountMnt: 100,

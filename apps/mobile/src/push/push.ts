@@ -119,7 +119,9 @@ export function usePush() {
   const router = useRouter();
   // A ref keeps the effect from re-running (and re-registering) when the router object changes.
   const routerRef = useRef(router);
-  routerRef.current = router;
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
   useEffect(() => {
     if (!pushIsAvailable) return;
     void sync('start').catch(reportError);

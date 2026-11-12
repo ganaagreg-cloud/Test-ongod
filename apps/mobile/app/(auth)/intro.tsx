@@ -42,9 +42,7 @@ export default function Intro() {
       <View style={styles.root}>
         <AuroraBackground variant="welcome" />
         <View style={[styles.top, { paddingTop: insets.top + spacing.sm }]}>
-          {last ? null : (
-            <TextLink label={mn.intro.skip} onPress={() => void finish()} />
-          )}
+          {last ? null : <TextLink label={mn.intro.skip} onPress={() => void finish()} />}
         </View>
         <FlatList
           ref={list}
@@ -53,9 +51,7 @@ export default function Intro() {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) =>
-            setPage(Math.round(e.nativeEvent.contentOffset.x / width))
-          }
+          onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
           getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
           renderItem={({ item, index }) => (
             <View style={[styles.page, { width }]}>
