@@ -58,7 +58,9 @@ const config: ExpoConfig = {
   name: 'Зөв үү Тав уу',
   slug: 'zuvuutavuu',
   scheme: 'zuvuutavuu',
-  version: '0.1.0',
+  // 0.2.0: the native recording guard and the in-app browser (ADR-0093, ADR-0094). The runtime
+  // version follows it, so over-the-air updates never reach a build without those native parts.
+  version: '0.2.0',
   // 'default' so a fullscreen video can turn to landscape on iOS (R-expo-video-sdk57); every
   // screen is locked to portrait at runtime (src/video/orientation.ts).
   orientation: 'default',

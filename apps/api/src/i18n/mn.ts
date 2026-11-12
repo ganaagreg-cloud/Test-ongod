@@ -138,6 +138,18 @@ export const mn = {
       body: (p: { firstName: string; code: string; planName: string; validUntil: string }) =>
         `Сайн байна уу, ${p.firstName}.\n\nБэлгийн төлбөр баталгаажлаа (${p.planName}). Бэлгийн код:\n\n${p.code}\n\nХүлээн авагч вэбсайтад бүртгүүлж эсвэл нэвтэрч, "Бэлгийн код ашиглах" хэсэгт энэ кодыг оруулна. Код ${p.validUntil} хүртэл хүчинтэй. Кодыг дараа нь сайтын "Миний бэлгүүд" хэсгээс ч харж болно.`,
     },
+    giftIssued: {
+      subject: 'Зөв үү? Тав уу? — админ бэлгийн код үүсгэлээ',
+      body: (p: {
+        firstName: string;
+        adminName: string;
+        note: string;
+        planName: string;
+        days: number;
+        validUntil: string;
+      }) =>
+        `Сайн байна уу, ${p.firstName}.\n\n${p.adminName} үнэгүй бэлгийн код үүсгэлээ.\nХэнд: ${p.note}\nБагц: ${p.planName}, ${p.days} хоног\nКод ${p.validUntil} хүртэл хүчинтэй.\n\nКодыг админы "Бэлэг" хуудсанд харж, шаардлагатай бол хүчингүй болгож болно. Хэрэв энэ тань мэдэхгүй үйлдэл бол админы нууц үгийг даруй солино уу.`,
+    },
     accessEnding: {
       subject: 'Зөв үү? Тав уу? — эрх дуусах гэж байна',
       body: (p: { firstName: string; endsAt: string }) =>

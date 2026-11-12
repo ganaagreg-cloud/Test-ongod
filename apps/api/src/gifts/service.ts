@@ -327,6 +327,22 @@ export function createGiftService(deps: {
               note: body.note,
               expiresAt: expiresAt.toISOString(),
             });
+            // ADR-0100: every OWNER is told, so free access never appears unseen. It only informs:
+            // nothing waits for an answer, and the admin needs no password for it.
+            const owners = await tx.user.findMany({
+              where: { role: 'OWNER', status: 'ACTIVE', emailVerifiedAt: { not: null } },
+              select: { email: true, firstName: true },
+            });
+            for (const owner of owners) {
+              await enqueueEmail(tx, owner.email, 'giftIssued', {
+                firstName: owner.firstName,
+                adminName: `${actor.lastName} ${actor.firstName}`.trim() || actor.username,
+                note: body.note,
+                planName: plan.name,
+                days: durationDays,
+                validUntil: ubDate(expiresAt),
+              });
+            }
           });
           const row = await db.gift.findFirstOrThrow({
             where: { issueKey: body.requestId, adminIssued: true },

@@ -576,6 +576,27 @@ describe('admin gifts', () => {
       expect(await jobsOf('email')).toHaveLength(0);
     });
 
+    it('tells every OWNER by email, once per code, without the code in it, and needs no password (ADR-0100)', async () => {
+      const { plan } = await setup();
+      const owner = await makeAdmin(app, { email: 'owner@example.com', role: 'OWNER' });
+      const admin = await makeAdmin(app, { email: 'staff@example.com' });
+      const emails = async () =>
+        (await testDb.job.findMany({ where: { type: 'email.send' } })).map((j) =>
+          JSON.parse(j.payload),
+        );
+      const body = { planId: plan.id, note: 'Номын дэлгүүр', requestId: randomUUID() };
+      // An ADMIN makes it with the same plain request as before: no password field.
+      const res = await issue(admin.accessToken, body);
+      expect(res.statusCode).toBe(201);
+      await issue(admin.accessToken, body); // a retry: no second email
+      const sent = (await emails()).filter((e) => e.template === 'giftIssued');
+      expect(sent).toHaveLength(1);
+      expect(sent[0].to).toBe('owner@example.com');
+      expect(sent[0].params).toMatchObject({ note: 'Номын дэлгүүр', planName: plan.name });
+      expect(JSON.stringify(sent[0])).not.toContain(res.json().gift.code);
+      expect(owner.userId).toBeTruthy();
+    });
+
     it('a retry with the same request key returns the same code, also in parallel', async () => {
       const { plan } = await setup();
       const admin = await makeAdmin(app);

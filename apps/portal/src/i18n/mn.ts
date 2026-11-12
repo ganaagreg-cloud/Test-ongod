@@ -257,7 +257,7 @@ export const mn = {
     title: 'Бүртгүүлэх',
     lastName: 'Овог',
     firstName: 'Нэр',
-    phone: 'Утасны дугаар',
+    phone: 'Утасны дугаар (заавал биш)',
     email: 'Имэйл',
     password: 'Нууц үг',
     passwordHint: 'Хамгийн багадаа 8 тэмдэгт.',

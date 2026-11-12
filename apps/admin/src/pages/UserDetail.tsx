@@ -66,7 +66,7 @@ export function UserDetailPage() {
                   {user.emailVerified ? t.emailVerified : t.notVerified}
                 </Badge>
               </Fact>
-              <Fact label={mn.users.columns.phone}>{user.phone}</Fact>
+              <Fact label={mn.users.columns.phone}>{user.phone || mn.common.none}</Fact>
               <Fact label={t.role}>{mn.roles[user.role]}</Fact>
               <Fact label={t.accountStatus}>
                 <UserStatusBadge status={user.status} />
