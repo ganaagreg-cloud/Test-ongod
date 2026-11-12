@@ -15,10 +15,11 @@ type Field = 'lastName' | 'firstName' | 'phone';
 
 /**
  * Тохиргоо (DESIGN): personal information (name, phone; ADR-0039), username (read-only), email
- * and password changes, devices, "Гарах" and "Бүртгэл устгах" (two confirmations, SPEC H).
+ * and password changes, devices and "Бүртгэл устгах" (two confirmations, SPEC H). "Гарах" is on
+ * Профайл, under the notification switch (ADR-0093).
  */
 export default function Settings() {
-  const { user, updateUser, logout, deleteAccount } = useAuth();
+  const { user, updateUser, deleteAccount } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const save = useSubmit();
@@ -117,13 +118,6 @@ export default function Settings() {
         <Text style={styles.hint}>{mn.settings.usernameHint}</Text>
       </View>
 
-      <Button
-        label={mn.settings.logout}
-        variant="secondary"
-        icon="logout"
-        fullWidth
-        onPress={() => void logout()}
-      />
       <Button
         label={mn.settings.deleteAccount}
         variant="destructive"

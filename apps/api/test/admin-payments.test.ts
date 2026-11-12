@@ -491,6 +491,52 @@ describe('users, dashboard, audit, export', () => {
     ]);
   });
 
+  it('dashboard top 10: most viewed by members who started, most commented by visible comments (ADR-0095)', async () => {
+    const category = await makeCategory();
+    const titles = Array.from({ length: 12 }, (_, i) => `Дугаар ${i + 1}`);
+    const episodes = [];
+    for (const title of titles) episodes.push(await makeEpisode(category.id, { title }));
+    const draft = await makeEpisode(category.id, { title: 'Ноорог', status: 'DRAFT' });
+    const users: Signed[] = [];
+    for (let i = 0; i < 4; i++) users.push(await makeMember(app, `v${i}@example.com`));
+
+    // Episode i is started by (i % 4) + 1 members; the first member finishes what they start.
+    for (const [i, episode] of episodes.entries()) {
+      for (const [n, user] of users.slice(0, (i % 4) + 1).entries()) {
+        await testDb.playbackProgress.create({
+          data: { userId: user.userId, episodeId: episode.id, positionSec: 10, completed: n === 0 },
+        });
+      }
+    }
+    // A draft is never in the list, however many opened it.
+    for (const user of users) {
+      await testDb.playbackProgress.create({
+        data: { userId: user.userId, episodeId: draft.id, positionSec: 1 },
+      });
+    }
+    const comment = (episodeId: string, status: 'VISIBLE' | 'HIDDEN' | 'DELETED' = 'VISIBLE') =>
+      testDb.comment.create({
+        data: { episodeId, authorId: users[0]!.userId, body: 'Сайхан', status },
+      });
+    await comment(episodes[0]!.id);
+    await comment(episodes[0]!.id);
+    await comment(episodes[0]!.id, 'HIDDEN');
+    await comment(episodes[1]!.id);
+    await comment(episodes[2]!.id, 'DELETED');
+
+    const body = (await get('/v1/admin/dashboard')).json();
+    expect(body.topViewed).toHaveLength(10);
+    expect(body.topViewed[0]).toMatchObject({ count: 4, completed: 1 });
+    expect(body.topViewed.map((e: { count: number }) => e.count)).toEqual([
+      4, 4, 4, 3, 3, 3, 2, 2, 2, 1,
+    ]);
+    expect(body.topViewed.every((e: { title: string }) => titles.includes(e.title))).toBe(true);
+    expect(body.topCommented).toEqual([
+      { id: episodes[0]!.id, title: 'Дугаар 1', count: 2 },
+      { id: episodes[1]!.id, title: 'Дугаар 2', count: 1 },
+    ]);
+  });
+
   it('dashboard money: this and last Ulaanbaatar month, only money that came in (ADR-0056)', async () => {
     const plan = await makePlan();
     const member = await makeMember(app);

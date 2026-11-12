@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { colors } from '@ongod/tokens';
+import { useCaptureGuard } from '../../src/capture/useCaptureGuard';
 import { usePush } from '../../src/push/push';
 
 /**
@@ -9,6 +10,8 @@ import { usePush } from '../../src/push/push';
 export default function AppLayout() {
   // Push token, token changes and taps on a push (ADR-0055).
   usePush();
+  // No sound while the screen is recorded or mirrored (ADR-0094).
+  useCaptureGuard();
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="(tabs)" />

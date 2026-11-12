@@ -49,7 +49,7 @@ describe('GET /v1/me', () => {
         id: s.userId,
         username: EMAIL,
         email: EMAIL,
-        emailVerified: false,
+        emailVerified: true,
         firstName: 'Эрдэнэ',
         lastName: 'Бат',
         phone: '99112233',
@@ -435,6 +435,18 @@ describe('ADR-0055: PUT /v1/me/push-token', () => {
     const off = await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: null });
     expect(off.statusCode).toBe(204);
     expect(await tokenOf(a.userId, a.deviceId)).toBeNull();
+  });
+
+  it('has its own limit: a phone that repeats the call is stopped without blocking other routes', async () => {
+    const app = await authApp();
+    const a = await signedIn(app);
+    let last = 0;
+    for (let i = 0; i < 21; i++) {
+      last = (await send(app, 'PUT', '/v1/me/push-token', a.accessToken, { token: TOKEN }))
+        .statusCode;
+    }
+    expect(last).toBe(429);
+    expect((await send(app, 'GET', '/v1/me', a.accessToken)).statusCode).toBe(200);
   });
 
   it('refuses anything that is not an Expo push token', async () => {

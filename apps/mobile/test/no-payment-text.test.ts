@@ -33,8 +33,12 @@ const stripComments = (code: string) =>
     .split(ACTIVATE_TEXT)
     .join('');
 
-/** ADR-0083: the flagged QPay test flow lives only here; see the tests at the bottom. */
-const FLAGGED = ['src/testpay/', 'app/(app)/pay.tsx'];
+/**
+ * The only places where payment words may appear: the flagged QPay test flow (ADR-0083) and the
+ * in-app payment and gift screens (ADR-0076, ADR-0090). Both exist for the user only while the
+ * switch is on; see the tests at the bottom.
+ */
+const FLAGGED = ['src/testpay/', 'src/inpay/', 'app/(app)/pay.tsx', 'app/(app)/gift/'];
 const isFlagged = (file: string) => FLAGGED.some((f) => file.replaceAll('\\', '/').includes(f));
 const files = [...sourceFiles(join(root, 'src')), ...sourceFiles(join(root, 'app'))].filter(
   (file) => !isFlagged(file),
@@ -109,14 +113,64 @@ test('the check does catch payment text', () => {
   }
 });
 
-// ADR-0083: the flagged files may only reach the user when the flag is on.
-test('payment test flow is off unless the flag is 1, and never in the production profile', () => {
-  const env = readFileSync(join(root, 'src/config/env.ts'), 'utf8');
-  assert.match(env, /EXPO_PUBLIC_MOBILE_PAYMENTS === '1'/);
-  const eas = JSON.parse(readFileSync(join(root, 'eas.json'), 'utf8'));
+// ADR-0076, ADR-0083, ADR-0090: the flagged files may only reach the user while the switch is on.
+const read = (path: string) => readFileSync(join(root, path), 'utf8');
+
+test('the switch is off unless the server says so or a test build sets the flag', () => {
+  assert.match(read('src/config/env.ts'), /EXPO_PUBLIC_MOBILE_PAYMENTS === '1'/);
+  const eas = JSON.parse(read('eas.json'));
   assert.equal(eas.build.production.env?.EXPO_PUBLIC_MOBILE_PAYMENTS, undefined);
-  const sheet = readFileSync(join(root, 'src/screens/NoAccessSheet.tsx'), 'utf8');
-  assert.match(sheet, /env\.mobilePayments \? \(/);
-  const route = readFileSync(join(root, 'app/(app)/pay.tsx'), 'utf8');
-  assert.match(route, /env\.mobilePayments \?/);
+  // The server's answer defaults to off, in the schema and in the hook.
+  assert.match(
+    read('src/config/useAppConfig.ts'),
+    /inAppPayment: query\.data\?\.inAppPayment \?\? false/,
+  );
+  assert.match(
+    read('src/inpay/useInAppPayment.ts'),
+    /return inAppPayment \|\| env\.mobilePayments;/,
+  );
+});
+
+test('every payment and gift route redirects away while the switch is off', () => {
+  const routes = ['app/(app)/pay.tsx', ...sourceFiles(join(root, 'app/(app)/gift'))].map((file) =>
+    file.replace(root, '').replaceAll('\\', '/'),
+  );
+  assert.ok(routes.length >= 3, `only ${routes.length} routes`);
+  for (const route of routes) {
+    assert.match(read(route), /return useInAppPayment\(\) \? <\w+[^>]*\/> : <Redirect /, route);
+  }
+});
+
+test('screens outside the flagged folders show payment or gift entries only behind the switch', () => {
+  const users = files
+    .filter((file) => /inpayMn|payMn|['"`]\/gift|['"`]\/pay['"`]/.test(readFileSync(file, 'utf8')))
+    .map((file) => file.replace(root, '').replaceAll('\\', '/'))
+    .sort();
+  assert.deepEqual(users, [
+    'app/(app)/(tabs)/profile.tsx',
+    'app/index.tsx',
+    'src/screens/NoAccessSheet.tsx',
+  ]);
+  for (const file of users) {
+    const code = read(file);
+    assert.match(code, /const paymentsOn = useInAppPayment\(\);/, file);
+    // Every use of a payment text or route sits inside a `paymentsOn ? (...)` branch.
+    const guarded = code
+      .split(/paymentsOn \? \(/)
+      .slice(1)
+      .join('');
+    const uses = code.match(/inpayMn\.|payMn\.|['"`]\/gift|['"`]\/pay['"`]/g) ?? [];
+    const guardedUses = guarded.match(/inpayMn\.|payMn\.|['"`]\/gift|['"`]\/pay['"`]/g) ?? [];
+    assert.ok(uses.length > 0, file);
+    assert.equal(guardedUses.length, uses.length, `${file}: an entry outside the switch`);
+  }
+});
+
+test('the server config schema keeps the switch off for an older server', async () => {
+  const { appConfigResponseSchema } = await import('@ongod/shared');
+  const parsed = appConfigResponseSchema.parse({
+    minVersion: { ios: '0.0.0', android: '0.0.0' },
+    socialLogin: false,
+  });
+  assert.equal(parsed.inAppPayment, false);
 });

@@ -58,7 +58,8 @@ export async function makeMember(
   await testDb.user.update({
     where: { id: signed.userId },
     data: {
-      ...(opts.verified === false ? {} : { emailVerifiedAt: new Date() }),
+      // signedIn() confirms the email to log in; `verified: false` takes it away again.
+      emailVerifiedAt: opts.verified === false ? null : new Date(),
       ...(opts.names ?? {}),
     },
   });

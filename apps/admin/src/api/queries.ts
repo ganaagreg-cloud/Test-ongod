@@ -28,6 +28,7 @@ import {
   type BulkAction,
   type AdminCommentFilter,
   type GiftStatus,
+  type IssueGiftRequest,
   type CreatePlanRequest,
   type UpdatePlanRequest,
   type CreateEpisodeRequest,
@@ -132,13 +133,23 @@ export function useCommentActions() {
 
 // ---- Gifts (SPEC J, ADR-0060) ----
 
-export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: number }) =>
+export const giftsQuery = (filter: { status?: GiftStatus; q?: string; page: number }) =>
   queryOptions({
     queryKey: ['gifts', filter],
     queryFn: ({ signal }) =>
       api(`/admin/gifts${qs(filter)}`, { schema: adminGiftsPageSchema, signal }),
     placeholderData: keepPreviousData,
   });
+
+/** One free one-time code (ADR-0091, ADR-0096). `requestId` makes a retry return the same code. */
+export function useIssueGift() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (body: IssueGiftRequest) =>
+      api('/admin/gifts', { method: 'POST', body, schema: adminGiftResponseSchema }),
+    onSuccess: () => invalidate('gifts', 'audit'),
+  });
+}
 
 export function useVoidGift() {
   const invalidate = useInvalidate();

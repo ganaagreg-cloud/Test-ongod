@@ -10,7 +10,7 @@ import {
   type PushMessage,
   type PushSender,
 } from '../src/push';
-import { testApp, testDb } from './helpers';
+import { CRON_SECRET, testApp, testDb } from './helpers';
 import { makeMember } from './admin-helpers';
 
 const quiet = pino({ level: 'silent' });
@@ -247,5 +247,74 @@ describe('Expo sender', () => {
     const fetchFn = (async () => new Response('nope', { status: 500 })) as unknown as typeof fetch;
     const sender = createExpoPushSender({ EXPO_ACCESS_TOKEN: undefined }, fetchFn);
     await expect(sender.send([{ to: TOKEN_A, title: 't', body: 'b' }])).rejects.toThrow('HTTP 500');
+  });
+});
+
+describe('notifications: the bell on Нүүр (ADR-0099)', () => {
+  it('keeps every push as a notification, shows it to its member only, and marks it read once', async () => {
+    const app = await testApp();
+    const a = await makeMember(app, 'a@example.com');
+    const b = await makeMember(app, 'b@example.com');
+    await enqueuePush(testDb, {
+      userId: a.userId,
+      title: 'Шинэ анги',
+      body: 'Нэг',
+      data: { episodeId: 'ep1' },
+    });
+    await enqueuePush(testDb, {
+      userId: a.userId,
+      title: 'Эрх идэвхжлээ',
+      body: 'Хоёр',
+      data: { type: 'access_granted' },
+    });
+    await enqueuePush(testDb, { userId: b.userId, title: 'Бусад', body: 'Гурав' });
+
+    const get = (token: string) =>
+      app.inject({
+        method: 'GET',
+        url: '/v1/me/notifications',
+        headers: { authorization: `Bearer ${token}` },
+      });
+    expect((await app.inject({ method: 'GET', url: '/v1/me/notifications' })).statusCode).toBe(401);
+    const mine = (await get(a.accessToken)).json();
+    expect(mine.unread).toBe(2);
+    expect(mine.items.map((n: { body: string }) => n.body).sort()).toEqual(['Нэг', 'Хоёр']);
+    expect(mine.items.find((n: { body: string }) => n.body === 'Нэг')).toMatchObject({
+      episodeId: 'ep1',
+      read: false,
+    });
+    expect(mine.items.find((n: { body: string }) => n.body === 'Хоёр').episodeId).toBeNull();
+    expect((await get(b.accessToken)).json().items).toHaveLength(1);
+
+    const read = () =>
+      app.inject({
+        method: 'POST',
+        url: '/v1/me/notifications/read',
+        headers: { authorization: `Bearer ${a.accessToken}` },
+      });
+    expect((await read()).statusCode).toBe(204);
+    expect((await read()).statusCode).toBe(204);
+    const after = (await get(a.accessToken)).json();
+    expect(after.unread).toBe(0);
+    expect(after.items.every((n: { read: boolean }) => n.read)).toBe(true);
+    // Another member's notifications were not touched.
+    expect((await get(b.accessToken)).json().unread).toBe(1);
+  });
+
+  it('the cron removes notifications older than 90 days', async () => {
+    const app = await testApp();
+    const a = await makeMember(app, 'a@example.com');
+    const old = new Date(Date.now() - 91 * 86_400_000);
+    await testDb.notification.create({
+      data: { userId: a.userId, title: 'Хуучин', body: 'x', createdAt: old },
+    });
+    await testDb.notification.create({ data: { userId: a.userId, title: 'Шинэ', body: 'y' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/cron/tick',
+      headers: { 'x-cron-secret': CRON_SECRET },
+    });
+    expect(res.json().tasks.purgeOldNotifications).toEqual({ affected: 1 });
+    expect(await testDb.notification.count()).toBe(1);
   });
 });

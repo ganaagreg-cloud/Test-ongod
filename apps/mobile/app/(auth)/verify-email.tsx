@@ -3,9 +3,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, nativeTextStyle, spacing } from '@ongod/tokens';
 import { api } from '../../src/api';
+import { useAuth } from '../../src/auth/AuthContext';
+import { takeSignIn } from '../../src/auth/pendingSignIn';
 import { checks } from '../../src/auth/validation';
 import { AuthHeader } from '../../src/components/AuthHeader';
 import { mn } from '../../src/i18n/mn';
+import { markStartPrompt } from '../../src/lib/startPrompt';
 import { useSubmit } from '../../src/lib/useSubmit';
 import { Button, CodeInput, Screen, useToast } from '../../src/ui';
 
@@ -20,6 +23,7 @@ const styles = StyleSheet.create({
 export default function VerifyEmail() {
   const router = useRouter();
   const toast = useToast();
+  const { login } = useAuth();
   const { email = '' } = useLocalSearchParams<{ email?: string }>();
   const { pending, run } = useSubmit();
   const resend = useSubmit();
@@ -40,6 +44,19 @@ export default function VerifyEmail() {
     if (problem) return;
     await run(async () => {
       await api.verifyEmail({ email, code: value });
+      // The next start of the signed-in area may offer the gift-code step once (ADR-0090).
+      await markStartPrompt().catch(() => undefined);
+      // Straight in when this phone just made the account (ADR-0092); otherwise the login screen.
+      const password = takeSignIn(email);
+      if (password !== null) {
+        try {
+          // 'ok': the gate switches to the signed-in screens by itself.
+          if ((await login(email, password)) === 'deviceLimit') router.push('/device-limit');
+          return;
+        } catch {
+          // Fall back to typing the password on the login screen.
+        }
+      }
       router.replace({ pathname: '/login', params: { email, notice: 'verified' } });
     });
   }

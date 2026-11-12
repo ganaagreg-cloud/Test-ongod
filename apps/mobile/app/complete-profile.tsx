@@ -3,21 +3,21 @@ import { useAuth } from '../src/auth/AuthContext';
 import { checks, validate } from '../src/auth/validation';
 import { AuthHeader } from '../src/components/AuthHeader';
 import { mn } from '../src/i18n/mn';
+import { markStartPrompt } from '../src/lib/startPrompt';
 import { useSubmit } from '../src/lib/useSubmit';
 import { Button, Input, Screen } from '../src/ui';
 
-type Field = 'username' | 'password' | 'lastName' | 'firstName' | 'phone';
+type Field = 'password' | 'lastName' | 'firstName' | 'phone';
 
 /**
  * SPEC C: after the first Google or Apple sign-in the account exists but is locked
- * (PROFILE_INCOMPLETE) until username, password, name and phone are set. The username starts as
- * the email, as the spec says; Apple's name (first sign-in only) is prefilled.
+ * (PROFILE_INCOMPLETE) until password, name and phone are set. The username is the email and is
+ * not asked (ADR-0092); Apple's name (first sign-in only) is prefilled.
  */
 export default function CompleteProfile() {
   const { user, prefill, completeProfile, logout } = useAuth();
   const { pending, run } = useSubmit();
   const [values, setValues] = useState<Record<Field, string>>({
-    username: user?.email ?? '',
     password: '',
     lastName: prefill?.lastName ?? '',
     firstName: prefill?.firstName ?? '',
@@ -28,7 +28,6 @@ export default function CompleteProfile() {
 
   async function submit() {
     const found = validate(values, {
-      username: checks.username,
       password: checks.password,
       lastName: checks.name,
       firstName: checks.name,
@@ -37,29 +36,23 @@ export default function CompleteProfile() {
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     // On success the gate switches to the signed-in screens by itself.
-    await run(() =>
-      completeProfile({
-        username: values.username.trim(),
+    await run(async () => {
+      // The signed-in area may offer the gift-code step once after this (ADR-0090).
+      await markStartPrompt().catch(() => undefined);
+      await completeProfile({
+        // Not asked (ADR-0092): the username is the email, as SPEC C prefilled it before.
+        username: user?.email ?? '',
         password: values.password,
         lastName: values.lastName.trim(),
         firstName: values.firstName.trim(),
         phone: values.phone.trim(),
-      }),
-    );
+      });
+    });
   }
 
   return (
     <Screen>
       <AuthHeader title={mn.completeProfile.title} text={mn.completeProfile.text} />
-      <Input
-        label={mn.completeProfile.username}
-        value={values.username}
-        onChangeText={set('username')}
-        error={errors.username}
-        autoCapitalize="none"
-        autoCorrect={false}
-        textContentType="username"
-      />
       <Input
         label={mn.completeProfile.lastName}
         value={values.lastName}

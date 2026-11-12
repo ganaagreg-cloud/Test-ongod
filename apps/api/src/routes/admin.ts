@@ -5,6 +5,7 @@ import {
   muteUserResponseSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
+  issueGiftRequestSchema,
   listGiftsQuerySchema,
   voidGiftRequestSchema,
   adminIdParamsSchema,
@@ -119,6 +120,16 @@ export async function adminRoutes(
     admin.get('/admin/gifts', async (req) =>
       adminGiftsPageSchema.parse(await gifts.adminList(listGiftsQuerySchema.parse(req.query))),
     );
+
+    // One free one-time code (ADR-0091, ADR-0096). Any admin, like a manual grant; audited.
+    admin.post('/admin/gifts', async (req, reply) => {
+      const body = issueGiftRequestSchema.parse(req.body);
+      return reply
+        .code(201)
+        .send(
+          adminGiftResponseSchema.parse({ gift: await gifts.adminIssue(authOf(req).user, body) }),
+        );
+    });
 
     admin.post('/admin/gifts/:id/void', async (req) => {
       const { id } = adminIdParamsSchema.parse(req.params);

@@ -110,3 +110,19 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** not quoted.
 - **Status:** (1) **done in code on 2026-11-11** ([[ADR-0088-mobile-intro-pages|ADR-0088]]), texts are a draft for the client to approve, not tested on a device. (2) **not started**: needs an ADR, a SPEC change approved by Ganaa, public catalog routes with access-rule tests, and a signed-out Home and Library. Store acceptance of a login wall vs guest browsing is an ASSUMPTION / TO-VERIFY (no research note).
 - **Notes:** guest browsing questions for the client: what a guest can open, and whether free episodes play without an account.
+
+### 2026-11-12: Five client requests (legal pages, dashboard top 10, recording sound, logout place)
+
+- **Client asked** (relayed by Ganaa, 2026-11-12): (1) a back button on Нууцлалын бодлого and Үйлчилгээний нөхцөл, people get lost; (2) the 10 most viewed and the 10 most commented episodes on the admin dashboard; (3) a screen recording is black but still records the voice, block the sound too; (4) "Гарах" on the profile page under the notification row; (5) show the legal pages inside the app instead of jumping to Safari.
+- **In scope:** (1), (4), (5) small UI changes to agreed screens ([[DESIGN]] Профайл, Тохиргоо; [[ADR-0053-app-only-legal-pages|ADR-0053]]): yes. (2) no, new dashboard content beyond [[ADR-0056-admin-dashboard-overview|ADR-0056]]. (3) no, [[ADR-0085-block-screen-capture-in-player|ADR-0085]] covered the picture only and listed the rest as open ([[open-questions]] #20); it needs native code.
+- **Price:** not quoted.
+- **Status:** **done in code on 2026-11-12**: (1)+(5)+(4) [[ADR-0093-legal-pages-inside-the-app-logout-on-profile|ADR-0093]], (2) [[ADR-0095-dashboard-top-10-viewed-and-commented|ADR-0095]], (3) [[ADR-0094-no-sound-in-screen-recordings|ADR-0094]]. (3), (4) and (5) need a new app build; (3) is not compiled or tested on a phone yet.
+- **Notes:** "views" are members who started an episode, counted once each. Mirroring the screen to a TV (AirPlay mirroring) now pauses playback too. A second phone or a microphone can still record the sound; no app can stop that.
+
+### 2026-11-12: Gift codes in the app, admin-made codes, gift buying in the app, shorter sign-up
+
+- **Client asked** (Ganaa, 2026-11-12): (a) a place in the app to enter a gift (promo) code, asked when starting; (b) the admin panel creates gift codes; (c) members buy a gift for someone else in the app; (d) registration in several steps, without the username field.
+- **In scope:** (a) and (c) no, and they **conflicted with accepted rules** ([[SPEC]] J and [[ADR-0060-gift-access|ADR-0060]]: gifts are portal only, the apps show nothing about them; Apple 3.1.1, [[R-apple-unlock-codes-3-1-1]]). (b) no, new. (d) yes for the username (optional in [[SPEC]] A); the steps are new UI.
+- **Price:** not quoted.
+- **Status:** **decided by Ganaa on 2026-11-12 and done in code**: (a)+(c) behind the server switch `inAppPayment`, off by default and for store review ([[ADR-0090-gift-codes-and-gift-buying-in-app-behind-switch|ADR-0090]]); (b) one-time codes in batches of up to 50 ([[ADR-0091-admin-issued-gift-codes|ADR-0091]]); (d) [[ADR-0092-register-in-steps-without-username|ADR-0092]]. SPEC and DESIGN edits are prepared in the ADRs and wait for Ganaa's approval.
+- **Notes:** the store risk of (a) and (c) is the owner's, as in [[ADR-0076-in-app-payment-with-bank-deeplinks|ADR-0076]]. The payment hand-off to a bank app is not tested on a phone.

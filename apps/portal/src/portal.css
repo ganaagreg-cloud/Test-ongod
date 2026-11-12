@@ -856,6 +856,32 @@
 }
 
 /* ---------- Legal text ---------- */
+/* "Буцах" on the legal pages: a quiet pill above the title. */
+.portal-back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-xs);
+  min-height: var(--layout-touch-target);
+  padding: 0 var(--space-md) 0 var(--space-sm);
+  border: var(--layout-border-width) solid var(--color-hairline-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: var(--text-small-weight) var(--text-small-size) / var(--text-small-line)
+    var(--text-small-font);
+  cursor: pointer;
+}
+
+.portal-back:hover {
+  background: var(--color-accent-soft);
+}
+
+.portal-back:focus-visible {
+  outline: var(--layout-focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--layout-focus-ring-width);
+}
+
 .portal-legal section {
   display: flex;
   flex-direction: column;

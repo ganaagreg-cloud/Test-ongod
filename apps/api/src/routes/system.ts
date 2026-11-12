@@ -30,7 +30,7 @@ export async function healthRoutes(app: FastifyInstance, opts: { db: Db }) {
 /** GET /v1/app-config: public config the mobile app reads on start (SPEC I). */
 export async function appConfigRoutes(
   app: FastifyInstance,
-  opts: { db: Db; socialLogin: boolean; supportEmail: string | null },
+  opts: { db: Db; socialLogin: boolean; supportEmail: string | null; inAppPayment: boolean },
 ) {
   app.get('/app-config', async (_req, reply): Promise<AppConfigResponse> => {
     const rows = await opts.db.appConfig.findMany({
@@ -47,6 +47,7 @@ export async function appConfigRoutes(
       },
       socialLogin: opts.socialLogin,
       supportEmail: opts.supportEmail,
+      inAppPayment: opts.inAppPayment,
     });
   });
 }

@@ -17,6 +17,7 @@ import {
   register,
   send,
   signedIn,
+  loginUnverified,
 } from './auth-helpers';
 import { testDb } from './helpers';
 
@@ -268,12 +269,30 @@ describe('SPEC B: login', () => {
     }
   });
 
-  it('lets an unverified user log in', async () => {
+  it('refuses an unverified user after the right password, with the email for the code step (ADR-0097)', async () => {
     const app = await authApp();
-    await register(app);
-    const res = await login(app, EMAIL);
-    expect(res.statusCode).toBe(200);
-    expect(res.json().user.emailVerified).toBe(false);
+    await register(app, { username: 'bat.erdene' });
+    const res = await loginUnverified(app, 'bat.erdene');
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toMatchObject({
+      code: 'EMAIL_NOT_VERIFIED',
+      details: { email: EMAIL },
+    });
+    expect(await testDb.session.count()).toBe(0);
+    // A wrong password says nothing about the account.
+    const wrong = await post(app, '/v1/auth/login', {
+      identifier: EMAIL,
+      password: 'wrong-password-1',
+      ...device(1),
+    });
+    expect(wrong.statusCode).toBe(401);
+
+    // After the emailed code the same login works.
+    const code = await lastCode(EMAIL);
+    expect((await post(app, '/v1/auth/verify-email', { email: EMAIL, code })).statusCode).toBe(204);
+    const ok = await loginUnverified(app, EMAIL);
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().user.emailVerified).toBe(true);
   });
 
   it('returns a 15 min HS256 access token and stores only the refresh token hash', async () => {
@@ -787,6 +806,7 @@ describe('rate limits', () => {
   it('a stranger cannot lock out the victim (ADR-0045: identifier bucket is per identifier|ip)', async () => {
     const app = await authApp();
     await register(app);
+    await testDb.user.update({ where: { email: EMAIL }, data: { emailVerifiedAt: new Date() } });
     const stranger = [];
     for (let i = 0; i < 15; i++)
       stranger.push((await loginFrom(app, '10.6.6.6', EMAIL)).statusCode);

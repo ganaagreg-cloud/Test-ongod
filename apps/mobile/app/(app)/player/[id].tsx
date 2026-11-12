@@ -134,7 +134,9 @@ export default function PlayerScreen() {
           ? mn.player.notReady
           : failure.reason === 'videoUnsupported'
             ? mn.player.videoUnsupported
-            : (failure.message ?? mn.player.playError);
+            : failure.reason === 'capture'
+              ? mn.capture.blocked
+              : (failure.message ?? mn.player.playError);
       toast.show(text, { tone: 'danger' });
     },
     [toast],

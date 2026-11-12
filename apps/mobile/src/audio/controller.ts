@@ -42,6 +42,8 @@ export interface PlayerState extends EngineState {
   autoplayBlocked: boolean;
   /** Set when asking for the play URL failed (e.g. NO_ACCESS): the screen shows the no-access sheet. */
   error: { code: string | undefined; message: string } | null;
+  /** The screen is being recorded or mirrored: nothing plays until it stops (ADR-0094). */
+  captureBlocked: boolean;
 }
 
 export interface ControllerDeps {
@@ -61,6 +63,8 @@ export const URL_REFRESH_MARGIN_MS = 60_000;
 export const SKIP_BACK_SEC = 15;
 export const SKIP_FORWARD_SEC = 15;
 
+/** Error code when play is asked while the screen is being recorded or mirrored (ADR-0094). */
+export const SCREEN_CAPTURE = 'SCREEN_CAPTURE';
 /** Error code when a video episode reaches a player without a video engine. */
 export const VIDEO_UNSUPPORTED = 'VIDEO_UNSUPPORTED';
 /** API answers that mean "you may not play this" (not a network error): playback stops. */
@@ -110,6 +114,9 @@ export function createPlayerController(deps: ControllerDeps) {
     return true;
   }
   let error: PlayerState['error'] = null;
+  /** ADR-0094: true while the screen is recorded or mirrored. Sound must not reach a recording. */
+  let captureBlocked = false;
+  const captureError = () => Object.assign(new Error(mn.capture.blocked), { code: SCREEN_CAPTURE });
   let openToken = 0;
   let lastStatus = engine.getState().status;
   const listeners = new Set<(state: PlayerState) => void>();
@@ -130,6 +137,7 @@ export function createPlayerController(deps: ControllerDeps) {
     sleep: sleep.getState(),
     autoplayBlocked: sleepFired || sleep.getState().mode !== null,
     error,
+    captureBlocked,
   });
   const emit = () => {
     const snapshot = state();
@@ -140,6 +148,11 @@ export function createPlayerController(deps: ControllerDeps) {
     source.onChange((s) => {
       // The idle engine's changes (its unload after a switch) are not the current episode's.
       if (source !== engine) return;
+      // The lock screen or a headset button can start the engine without the app: stop it again.
+      if (s.status === 'playing' && captureBlocked) {
+        source.pause();
+        return;
+      }
       if (s.status === 'playing' && accessEndsAtMs !== null && now() >= accessEndsAtMs) {
         checkAccessDeadline();
         return;
@@ -255,14 +268,32 @@ export function createPlayerController(deps: ControllerDeps) {
       const start = next.startAtSec ?? 0;
       saver.track(next.id, 0, start);
       if (!(await loadFresh(start, token))) return;
+      // Loaded and ready, but silent while the screen is recorded (ADR-0094).
+      if (captureBlocked) throw captureError();
       engine.play();
     },
 
     async play(): Promise<void> {
       if (!episode) return;
+      if (captureBlocked) throw captureError();
       await ensureFresh(engine.getState().positionSec);
       if (checkAccessDeadline()) return;
+      if (captureBlocked) throw captureError();
       engine.play();
+    },
+
+    /**
+     * ADR-0094: the screen started or stopped being recorded or mirrored. While it is, playback is
+     * paused and cannot start; when it stops the member presses play again (nothing resumes alone).
+     */
+    setCaptureBlocked(blocked: boolean): void {
+      if (blocked === captureBlocked) return;
+      captureBlocked = blocked;
+      if (blocked && engine.getState().status === 'playing') {
+        engine.pause();
+        void saver.flush('pause');
+      }
+      emit();
     },
     pause(): void {
       engine.pause();

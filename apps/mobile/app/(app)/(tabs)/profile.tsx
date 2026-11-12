@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { colors, layout, nativeFontFamily, nativeTextStyle, radius, spacing } from '@ongod/tokens';
@@ -7,7 +7,10 @@ import { useAuth } from '../../../src/auth/AuthContext';
 import { env } from '../../../src/config/env';
 import { useStats } from '../../../src/data/queries';
 import { mn } from '../../../src/i18n/mn';
+import { inpayMn } from '../../../src/inpay/mn';
+import { useInAppPayment } from '../../../src/inpay/useInAppPayment';
 import { accessState, listenedHours } from '../../../src/lib/episode';
+import { openInApp } from '../../../src/lib/openInApp';
 import { portalLink } from '../../../src/lib/portalLink';
 import { useBottomSpace } from '../../../src/screens/layout';
 import { AccessCard } from '../../../src/screens/profile/AccessCard';
@@ -18,12 +21,19 @@ import {
   Enter,
   ListItem,
   NumberTicker,
+  Sheet,
   SurfaceProvider,
 } from '../../../src/ui';
 
-/** Профайл (dark): name, access card, numbers, menu (DESIGN "Профайл", Profile.dc.html). */
+/**
+ * Профайл (dark): name, access card, numbers, menu, then "Гарах" under the notification switch
+ * (DESIGN "Профайл", ADR-0093). The gift rows exist only while the switch `inAppPayment` is on
+ * (ADR-0090).
+ */
 export default function Profile() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
+  const paymentsOn = useInAppPayment();
+  const [confirmLogout, setConfirmLogout] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottom = useBottomSpace();
@@ -41,6 +51,8 @@ export default function Profile() {
   if (!user) return null;
   const access = accessState(user.accessUntil, new Date());
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
+  // New accounts have no username of their own (ADR-0092): it equals the email, shown plainly.
+  const handle = user.username === user.email ? user.email : `@${user.username}`;
   const termsUrl = portalLink(env.portalUrl, '/app/terms');
   const privacyUrl = portalLink(env.portalUrl, '/app/privacy');
 
@@ -58,7 +70,9 @@ export default function Profile() {
             <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>
               {fullName}
             </Text>
-            <Text style={styles.username}>@{user.username}</Text>
+            <Text style={styles.username} numberOfLines={1}>
+              {handle}
+            </Text>
           </Enter>
 
           <Enter index={1}>
@@ -92,21 +106,42 @@ export default function Profile() {
               icon="profile"
               onPress={() => router.push('/settings/blocked')}
             />
+            {paymentsOn ? (
+              <ListItem
+                title={inpayMn.redeem.row}
+                icon="gift"
+                onPress={() => router.push('/gift/redeem')}
+              />
+            ) : null}
+            {paymentsOn ? (
+              <ListItem title={inpayMn.gift.row} icon="gift" onPress={() => router.push('/gift')} />
+            ) : null}
+            <ListItem title={mn.profile.help} icon="info" onPress={() => router.push('/help')} />
             {termsUrl ? (
               <ListItem
                 title={mn.legal.terms}
                 icon="doc"
-                onPress={() => void Linking.openURL(termsUrl)}
+                onPress={() => void openInApp(termsUrl)}
               />
             ) : null}
             {privacyUrl ? (
               <ListItem
                 title={mn.legal.privacy}
                 icon="doc"
-                onPress={() => void Linking.openURL(privacyUrl)}
+                onPress={() => void openInApp(privacyUrl)}
               />
             ) : null}
             <PushSwitch />
+          </Enter>
+
+          <Enter index={4}>
+            <Button
+              label={mn.profile.logout}
+              variant="secondary"
+              icon="logout"
+              fullWidth
+              onPress={() => setConfirmLogout(true)}
+            />
           </Enter>
 
           {/* DEV ONLY: Expo Go cannot type a route, so the device-gate benches are one tap away
@@ -122,6 +157,29 @@ export default function Profile() {
             </View>
           ) : null}
         </ScrollView>
+        <Sheet
+          visible={confirmLogout}
+          onClose={() => setConfirmLogout(false)}
+          title={mn.profile.logoutTitle}
+          closeLabel={mn.close}
+        >
+          <Text style={styles.sheetText}>{mn.profile.logoutText}</Text>
+          <Button
+            label={mn.profile.logout}
+            icon="logout"
+            fullWidth
+            onPress={() => {
+              setConfirmLogout(false);
+              void logout();
+            }}
+          />
+          <Button
+            label={mn.common.cancel}
+            variant="ghost"
+            fullWidth
+            onPress={() => setConfirmLogout(false)}
+          />
+        </Sheet>
       </View>
     </SurfaceProvider>
   );
@@ -155,5 +213,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     overflow: 'hidden',
   },
+  sheetText: { color: colors.textSecondary, ...nativeTextStyle('body') },
   dev: { flexDirection: 'row', gap: spacing.sm },
 });

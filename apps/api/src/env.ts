@@ -71,6 +71,11 @@ export const envSchema = z
     CRON_SECRET: z.string().min(32),
 
     SOCIAL_LOGIN: bool.default(false),
+    /**
+     * ADR-0076, ADR-0090: the server switch the apps read as `inAppPayment`. Off = the apps show no
+     * prices, plans, gift codes or payment buttons (the store-review setting).
+     */
+    IN_APP_PAYMENT: bool.default(false),
     /** Google OAuth client IDs (web, iOS and Android) accepted as the ID token audience. */
     GOOGLE_CLIENT_IDS: csv,
     /** Apple audiences: the iOS bundle ID and, for web, the Services ID. */

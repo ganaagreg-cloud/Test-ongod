@@ -21,21 +21,24 @@ export function AuthHeader({
   title,
   text,
   icon,
+  onBack,
 }: {
   title: string;
   text?: string | undefined;
   /** An icon tile instead of the mountain line (e.g. `mail` on the email-code screen). */
   icon?: IconName;
+  /** A back step inside the screen (the register steps): shown even without a screen to go back to. */
+  onBack?: (() => void) | undefined;
 }) {
   const router = useRouter();
   const { colors } = useSurface();
   return (
     <View style={styles.box}>
-      {router.canGoBack() ? (
+      {onBack || router.canGoBack() ? (
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel={mn.back}
-          onPress={() => router.back()}
+          onPress={onBack ?? (() => router.back())}
           scale={motion.pressScaleRound}
           style={[styles.back, { backgroundColor: withAlpha(themes.dark.textPrimary, 0.06) }]}
         >

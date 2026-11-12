@@ -1,4 +1,5 @@
-import { Notice } from '@ongod/ui-web';
+import { useNavigate } from 'react-router';
+import { Icon, Notice } from '@ongod/ui-web';
 import { mn } from '../i18n/mn';
 import { usePage } from '../lib/usePage';
 
@@ -17,6 +18,7 @@ function LegalPage({ doc, app = false }: { doc: Document; app?: boolean }) {
   usePage({ title: doc.metaTitle, description: doc.metaDescription, noindex: app });
   return (
     <div className="portal-page portal-narrow portal-legal">
+      {app ? null : <BackButton />}
       <h1>{doc.title}</h1>
       {/* TODO(owner): remove this banner once the text below is approved. */}
       <Notice tone="warning">{mn.legal.todoBanner}</Notice>
@@ -30,6 +32,25 @@ function LegalPage({ doc, app = false }: { doc: Document; app?: boolean }) {
           </section>
         ))}
     </div>
+  );
+}
+
+/**
+ * "Буцах" on the public legal pages: back to where the reader came from, or to the start page
+ * when the page was opened directly. A button, not a link, and not on the app copies: those open
+ * inside the app's own browser sheet, which has its close button (ADR-0053, ADR-0093).
+ */
+function BackButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="portal-back"
+      onClick={() => (window.history.length > 1 ? void navigate(-1) : void navigate('/'))}
+    >
+      <Icon name="chevronLeft" size="small" />
+      {mn.common.back}
+    </button>
   );
 }
 

@@ -41,6 +41,7 @@ export const keys = {
   episodeAll: ['episode'] as const,
   saved: ['saved'] as const,
   stats: ['me', 'stats'] as const,
+  notifications: ['me', 'notifications'] as const,
   devices: ['me', 'devices'] as const,
   comments: (episodeId: string) => ['comments', episodeId] as const,
   commentsAll: ['comments'] as const,
@@ -91,6 +92,14 @@ export const useSavedList = () =>
   });
 
 export const useStats = () => useQuery({ queryKey: keys.stats, queryFn: () => api.stats() });
+
+/** The bell on Нүүр (ADR-0099). Fresh for 30 s; Нүүр asks again whenever it comes into view. */
+export const useNotifications = () =>
+  useQuery({
+    queryKey: keys.notifications,
+    queryFn: () => api.notifications(),
+    staleTime: 30_000,
+  });
 
 export const useDevices = () => useQuery({ queryKey: keys.devices, queryFn: () => api.devices() });
 

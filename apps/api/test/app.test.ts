@@ -57,7 +57,14 @@ describe('GET /v1/app-config', () => {
       minVersion: { ios: '1.2.0', android: '1.1.0' },
       socialLogin: false,
       supportEmail: null,
+      inAppPayment: false,
     });
+  });
+
+  it('carries the in-app payment switch only when IN_APP_PAYMENT is on (ADR-0090)', async () => {
+    const app = await testApp({ env: testEnv({ IN_APP_PAYMENT: 'true' }) });
+    const res = await app.inject({ method: 'GET', url: '/v1/app-config' });
+    expect(res.json().inAppPayment).toBe(true);
   });
 
   it('falls back to 0.0.0 when no minimum version is configured', async () => {

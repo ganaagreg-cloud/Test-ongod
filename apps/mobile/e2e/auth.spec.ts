@@ -58,7 +58,6 @@ async function nextCode(to: string, before: number): Promise<string> {
 
 const stamp = Date.now();
 const user = {
-  username: `e2e.mobile.${stamp}`,
   email: `e2e.mobile.${stamp}@example.com`,
   lastName: 'Тест',
   firstName: 'Утас',
@@ -90,11 +89,36 @@ async function openLogin(page: Page) {
 const home = (page: Page, firstName: string) =>
   page.getByRole('heading', { name: firstName, exact: true });
 
-/** Профайл -> Тохиргоо -> Гарах. */
+/** Профайл -> Гарах (under the notification switch, ADR-0093) -> confirm in the sheet. */
 async function logOut(page: Page) {
   await page.getByRole('tab', { name: mn.tabs.profile }).click();
-  await page.getByRole('button', { name: mn.profile.settings }).click();
-  await page.getByRole('button', { name: mn.settings.logout }).click();
+  await page.getByRole('button', { name: mn.profile.logout, exact: true }).click();
+  await expect(page.getByText(mn.profile.logoutTitle)).toBeVisible();
+  await page.getByRole('button', { name: mn.profile.logout, exact: true }).last().click();
+}
+
+/** The "Үргэлжлүүлэх" button of a register step (ADR-0092). */
+const nextStep = (page: Page) =>
+  page.getByRole('button', { name: mn.register.next, exact: true }).click();
+
+/** Fills the three register steps and sends the form. */
+async function fillRegister(
+  page: Page,
+  who: { lastName: string; firstName: string; phone: string; email: string },
+  password: string,
+) {
+  await expect(page.getByText(mn.register.step(1, 3))).toBeVisible();
+  await page.getByLabel(mn.register.lastName, { exact: true }).fill(who.lastName);
+  await page.getByLabel(mn.register.firstName, { exact: true }).fill(who.firstName);
+  await nextStep(page);
+  await expect(page.getByText(mn.register.step(2, 3))).toBeVisible();
+  await page.getByLabel(mn.register.email, { exact: true }).fill(who.email);
+  await page.getByLabel(mn.register.phone, { exact: true }).fill(who.phone);
+  await nextStep(page);
+  await expect(page.getByText(mn.register.step(3, 3))).toBeVisible();
+  await page.getByLabel(mn.register.password, { exact: true }).fill(password);
+  await page.getByLabel(mn.register.passwordAgain, { exact: true }).fill(password);
+  await page.getByRole('button', { name: mn.register.submit, exact: true }).click();
 }
 
 async function logIn(page: Page, identifier: string, password: string) {
@@ -139,31 +163,44 @@ test('register: fields are checked before anything is sent', async ({ page }) =>
   });
   await openLogin(page);
   await page.getByRole('button', { name: mn.login.register }).click();
+  // Step 1: an empty name does not let the form move on. There is no username field (ADR-0092).
+  await nextStep(page);
+  await expect(page.getByText(mn.errors.required)).toHaveCount(2);
+  await expect(page.getByText(mn.register.step(1, 3))).toBeVisible();
+  await page.getByLabel(mn.register.lastName, { exact: true }).fill('Бат');
+  await page.getByLabel(mn.register.firstName, { exact: true }).fill('Саран');
+  await nextStep(page);
+
+  // Step 2: a bad email and phone stay on the step, each under its field.
   await page.getByLabel(mn.register.email, { exact: true }).fill('not-an-email');
   await page.getByLabel(mn.register.phone, { exact: true }).fill('abc');
-  await page.getByLabel(mn.register.password, { exact: true }).fill('short');
-  await page.getByLabel(mn.register.username, { exact: true }).fill('ab');
-  await page.getByRole('button', { name: mn.register.submit, exact: true }).click();
+  await nextStep(page);
   await expect(page.getByText(mn.errors.email)).toBeVisible();
   await expect(page.getByText(mn.errors.phone)).toBeVisible();
-  await expect(page.getByText(mn.errors.password)).toBeVisible();
-  await expect(page.getByText(mn.errors.username)).toBeVisible();
-  expect(sent).toBe(0);
   await settle(page);
   await page.screenshot({ path: shot('register-errors') });
+  await page.getByLabel(mn.register.email, { exact: true }).fill('fine@example.com');
+  await page.getByLabel(mn.register.phone, { exact: true }).fill('99112233');
+  await nextStep(page);
+
+  // Step 3: a short password, and two passwords that differ.
+  await page.getByLabel(mn.register.password, { exact: true }).fill('short');
+  await page.getByLabel(mn.register.passwordAgain, { exact: true }).fill('other');
+  await page.getByRole('button', { name: mn.register.submit, exact: true }).click();
+  await expect(page.getByText(mn.errors.password)).toBeVisible();
+  await expect(page.getByText(mn.register.passwordMismatch)).toBeVisible();
+  expect(sent).toBe(0);
+
+  // The back arrow goes one step back and keeps what was typed.
+  await page.getByRole('button', { name: mn.back, exact: true }).click();
+  await expect(page.getByLabel(mn.register.email, { exact: true })).toHaveValue('fine@example.com');
 });
 
 test('register, email code, login: the whole sign-up', async ({ page }) => {
   await openLogin(page);
   await page.getByRole('button', { name: mn.login.register }).click();
-  await page.getByLabel(mn.register.lastName, { exact: true }).fill(user.lastName);
-  await page.getByLabel(mn.register.firstName, { exact: true }).fill(user.firstName);
-  await page.getByLabel(mn.register.phone, { exact: true }).fill(user.phone);
-  await page.getByLabel(mn.register.email, { exact: true }).fill(user.email);
-  await page.getByLabel(mn.register.username, { exact: true }).fill(user.username);
-  await page.getByLabel(mn.register.password, { exact: true }).fill(PASSWORD);
   const before = await mailCount(user.email);
-  await page.getByRole('button', { name: mn.register.submit, exact: true }).click();
+  await fillRegister(page, user, PASSWORD);
 
   // email code screen
   await expect(page.getByText(mn.verify.title)).toBeVisible();
@@ -181,12 +218,8 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
   await expect(page.getByText('Код буруу байна.')).toBeVisible();
   await expect(page.getByText(mn.verify.title)).toBeVisible();
 
-  // the right code (the 6th digit sends it) leads to the login form with a confirmation
+  // the right code (the 6th digit sends it) signs the new member in: no second password (ADR-0092)
   await page.getByLabel(mn.verify.code, { exact: true }).fill(await nextCode(user.email, before));
-  await expect(page.getByText(mn.login.verified)).toBeVisible();
-  await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveValue(user.email);
-
-  await logIn(page, user.email, PASSWORD);
   await expect(home(page, user.firstName)).toBeVisible();
   await expectNoPaymentText(page);
 
@@ -204,12 +237,9 @@ test('register, email code, login: the whole sign-up', async ({ page }) => {
 test('registering the same email again puts the error under the email field', async ({ page }) => {
   await openLogin(page);
   await page.getByRole('button', { name: mn.login.register }).click();
-  await page.getByLabel(mn.register.lastName, { exact: true }).fill(user.lastName);
-  await page.getByLabel(mn.register.firstName, { exact: true }).fill(user.firstName);
-  await page.getByLabel(mn.register.phone, { exact: true }).fill(user.phone);
-  await page.getByLabel(mn.register.email, { exact: true }).fill(user.email);
-  await page.getByLabel(mn.register.password, { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: mn.register.submit, exact: true }).click();
+  await fillRegister(page, user, PASSWORD);
+  // back on the contact step, with the server's text under the email
+  await expect(page.getByText(mn.register.step(2, 3))).toBeVisible();
   await expect(page.getByText('Энэ имэйл хаяг бүртгэлтэй байна.')).toBeVisible();
   await expect(page.getByText(mn.verify.title)).toBeHidden();
 });
@@ -237,7 +267,7 @@ test('forgot password: code by email, new password, then log in with it', async 
   // the flow came back to the login that was already open: there is only one login form
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveCount(1);
   await expect(page.getByLabel(mn.login.identifier, { exact: true })).toHaveValue(user.email);
-  await logIn(page, user.username, NEW_PASSWORD);
+  await logIn(page, user.email, NEW_PASSWORD);
   await expect(home(page, user.firstName)).toBeVisible();
 });
 
@@ -372,10 +402,7 @@ test('complete profile: a locked social account must fill the form (answers mock
   await openLogin(page);
   await logIn(page, 'social.person@example.com', 'x'.repeat(8));
   await expect(page.getByText(mn.completeProfile.title)).toBeVisible();
-  // the username starts as the email (SPEC C)
-  await expect(page.getByLabel(mn.completeProfile.username, { exact: true })).toHaveValue(
-    'social.person@example.com',
-  );
+  // the username is not asked: it is sent as the email (SPEC C, ADR-0092)
   await settle(page);
   await page.screenshot({ path: shot('complete-profile') });
 

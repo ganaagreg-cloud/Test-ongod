@@ -14,9 +14,11 @@ import {
   updateCommentRequestSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
+  issueGiftRequestSchema,
   createGiftRequestSchema,
   giftResponseSchema,
   giftsResponseSchema,
+  notificationsResponseSchema,
   listGiftsQuerySchema,
   redeemGiftRequestSchema,
   redeemGiftResponseSchema,
@@ -278,6 +280,16 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
   'GET /v1/me/stats': user('me', 'Profile numbers: episodes finished, listening time (ADR-0039)', {
     responses: { 200: meStatsResponseSchema },
   }),
+  'GET /v1/me/notifications': user(
+    'app',
+    'The bell on Нүүр: own notifications, newest first (ADR-0099)',
+    {
+      responses: { 200: notificationsResponseSchema },
+    },
+  ),
+  'POST /v1/me/notifications/read': user('app', 'Mark all own notifications read', {
+    responses: { 204: noContent },
+  }),
   'POST /v1/me/change-password': user('me', 'H. Change password', {
     body: changePasswordRequestSchema,
     responses: { 204: noContent },
@@ -513,6 +525,10 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     query: listGiftsQuerySchema,
     responses: { 200: adminGiftsPageSchema },
   }),
+  'POST /v1/admin/gifts': admin(
+    'J. Make one free one-time gift code (ADR-0091, ADR-0096); a retry with the same requestId returns the same code',
+    { body: issueGiftRequestSchema, responses: { 201: adminGiftResponseSchema } },
+  ),
   'POST /v1/admin/gifts/:id/void': admin(
     'J. Void a paid, unredeemed gift (refund outside the app)',
     {

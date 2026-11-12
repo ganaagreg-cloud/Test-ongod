@@ -2,13 +2,22 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, nativeTextStyle, spacing } from '@ongod/tokens';
+import { api, ApiError } from '../../src/api';
 import { useAuth } from '../../src/auth/AuthContext';
+import { holdSignIn } from '../../src/auth/pendingSignIn';
 import { checks, validate } from '../../src/auth/validation';
 import { AuthHeader } from '../../src/components/AuthHeader';
 import { SocialButtons } from '../../src/components/SocialButtons';
 import { mn } from '../../src/i18n/mn';
 import { useSubmit } from '../../src/lib/useSubmit';
 import { Button, Input, Screen, TextLink, useToast } from '../../src/ui';
+
+/** The email of an account whose login was refused because it is not confirmed yet, else null. */
+function unverifiedEmailOf(error: unknown): string | null {
+  if (!(error instanceof ApiError) || error.code !== 'EMAIL_NOT_VERIFIED') return null;
+  const email = (error.details as { email?: unknown } | undefined)?.email;
+  return typeof email === 'string' ? email : null;
+}
 
 /**
  * After the email code or a password reset the flow comes back to this screen with the email
@@ -47,8 +56,18 @@ function LoginForm({ email, notice }: { email: string | undefined; notice: strin
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     await run(async () => {
-      // 'ok': the gate switches to the signed-in screens by itself. 'deviceLimit': pick one to remove.
-      if ((await login(identifier, password)) === 'deviceLimit') router.push('/device-limit');
+      try {
+        // 'ok': the gate switches to the signed-in screens by itself. 'deviceLimit': pick one to remove.
+        if ((await login(identifier, password)) === 'deviceLimit') router.push('/device-limit');
+      } catch (error) {
+        // ADR-0097: no way in before the email is confirmed. Send a fresh code (the 60 s wait may
+        // refuse it: the earlier code still works) and go to the code step; the right code signs in.
+        const email = unverifiedEmailOf(error);
+        if (!email) throw error;
+        await api.resendCode(email).catch(() => undefined);
+        holdSignIn(email, password);
+        router.push({ pathname: '/verify-email', params: { email } });
+      }
     });
   }
 

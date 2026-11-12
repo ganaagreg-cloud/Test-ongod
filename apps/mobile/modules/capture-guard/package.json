@@ -1,0 +1,7 @@
+{
+  "name": "capture-guard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tells the app when the screen is being recorded or mirrored (iOS) and forbids other apps to record this app's sound (Android). ADR-0094.",
+  "license": "UNLICENSED"
+}

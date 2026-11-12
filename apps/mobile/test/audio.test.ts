@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import { createEndpoints } from '../src/api/endpoints';
 import {
+  SCREEN_CAPTURE,
   SKIP_BACK_SEC,
   SKIP_FORWARD_SEC,
   URL_REFRESH_MARGIN_MS,
@@ -407,6 +408,72 @@ function setup(options: { fetchPlay?: (id: string) => Promise<PlayInfo> } = {}) 
   });
   return { clock, fake, saved, fetched, controller };
 }
+
+// ---- screen recording (ADR-0094) ----
+
+test('capture: playback pauses when the screen starts being recorded, and saves the position', async () => {
+  const { controller, fake, saved } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  fake.push({ positionSec: 42 });
+  controller.setCaptureBlocked(true);
+  assert.equal(controller.getState().status, 'paused');
+  assert.equal(controller.getState().captureBlocked, true);
+  await flush();
+  assert.deepEqual(saved.at(-1), ['ep1', { positionSec: 42, completed: false }]);
+});
+
+test('capture: nothing starts while the screen is recorded: play, toggle and open are refused', async () => {
+  const { controller, fake } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  controller.setCaptureBlocked(true);
+  fake.calls.length = 0;
+
+  await assert.rejects(controller.play(), { code: SCREEN_CAPTURE });
+  await assert.rejects(controller.toggle(), { code: SCREEN_CAPTURE });
+  await assert.rejects(controller.open({ id: 'ep2', title: 'y' }), { code: SCREEN_CAPTURE });
+  // The second episode is loaded and ready, but it never played.
+  assert.ok(!fake.calls.includes('play'), fake.calls.join(','));
+  assert.notEqual(controller.getState().status, 'playing');
+});
+
+test('capture: a start from the lock screen or a headset is stopped again', async () => {
+  const { controller, fake } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  controller.setCaptureBlocked(true);
+  fake.engine.play(); // the native side, not the app
+  assert.equal(controller.getState().status, 'paused');
+});
+
+test('capture: when recording stops nothing resumes by itself; the member presses play', async () => {
+  const { controller } = setup();
+  await controller.open({ id: 'ep1', title: 'x' });
+  controller.setCaptureBlocked(true);
+  controller.setCaptureBlocked(false);
+  assert.equal(controller.getState().captureBlocked, false);
+  assert.equal(controller.getState().status, 'paused');
+  await controller.play();
+  assert.equal(controller.getState().status, 'playing');
+});
+
+test('capture: the video engine is blocked the same way', async () => {
+  const clock = fakeClock();
+  const audio = fakeEngine();
+  const video = fakeEngine();
+  const controller = createPlayerController({
+    engine: audio.engine,
+    videoEngine: video.engine,
+    fetchPlay: async () => play({ kind: 'VIDEO' }, clock),
+    saveProgress: async () => undefined,
+    now: clock.now,
+    sleepDeps: clock.deps,
+  });
+  await controller.open({ id: 'v1', title: 'x' });
+  assert.equal(controller.getState().status, 'playing');
+  controller.setCaptureBlocked(true);
+  assert.equal(controller.getState().status, 'paused');
+  video.engine.play();
+  assert.equal(controller.getState().status, 'paused');
+});
 
 test('controller: open() asks for the signed URL, resumes where it was and starts playing', async () => {
   const { controller, fake, fetched } = setup();

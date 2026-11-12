@@ -211,6 +211,24 @@ export const dashboardResponseSchema = z.object({
     ),
   }),
   expiringSoon: z.array(dashboardMemberSchema.extend({ accessUntil: z.iso.datetime() })),
+  /**
+   * The 10 published episodes most members opened (ADR-0095). `count` = members who started it
+   * (one per member, however often they replay); `completed` = members who finished it.
+   */
+  topViewed: z
+    .array(
+      z.object({
+        id: idSchema,
+        title: z.string(),
+        count: z.number().int(),
+        completed: z.number().int(),
+      }),
+    )
+    .default([]),
+  /** The 10 episodes with the most visible comments (ADR-0095). */
+  topCommented: z
+    .array(z.object({ id: idSchema, title: z.string(), count: z.number().int() }))
+    .default([]),
 });
 export type DashboardDto = z.infer<typeof dashboardResponseSchema>;
 
@@ -248,14 +266,31 @@ export const adminGiftSchema = z.object({
   expiresAt: z.iso.datetime().nullable(),
   redeemedAt: z.iso.datetime().nullable(),
   voidReason: z.string().nullable(),
+  /** A free code an admin made (ADR-0091): `buyer` is that admin and `amountMnt` is 0. */
+  adminIssued: z.boolean(),
+  note: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type AdminGiftDto = z.infer<typeof adminGiftSchema>;
 export const adminGiftResponseSchema = z.object({ gift: adminGiftSchema });
 
+/** POST /v1/admin/gifts: one free one-time code made by an admin (ADR-0091, one per request: ADR-0096). */
+export const issueGiftRequestSchema = z.object({
+  planId: idSchema,
+  /** Overrides the plan's days (as in a manual grant). */
+  days: z.number().int().min(1).max(3660).optional(),
+  /** Who the code is for; shown on the Бэлэг page and kept in the audit log. */
+  note: z.string().trim().min(1).max(200),
+  /** How long the code can be redeemed. Default: the same 365 days as a bought gift. */
+  validDays: z.number().int().min(1).max(730).optional(),
+  /** One key per request: a retry with the same key returns the first code, not a second one. */
+  requestId: z.uuid(),
+});
+export type IssueGiftRequest = z.infer<typeof issueGiftRequestSchema>;
+
 export const listGiftsQuerySchema = z.object({
-  /** Default: PAID, the gifts waiting to be redeemed. */
-  status: giftStatusSchema.default('PAID'),
+  /** Empty = every status, newest first (ADR-0096). */
+  status: z.preprocess(emptyToUndefined, giftStatusSchema.optional()),
   /** Code, buyer or recipient: username, email, phone or name. */
   q: searchQuery,
   ...pageQuery,

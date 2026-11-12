@@ -92,7 +92,19 @@ export async function login(
   extra: Record<string, unknown> = {},
   password = PASSWORD,
 ) {
+  // Login needs a confirmed email (ADR-0097). The helper confirms it, so tests about sessions
+  // and devices need not go through the code step; `loginUnverified` skips this.
+  const id = identifier.trim().toLowerCase();
+  await testDb.user.updateMany({
+    where: { OR: [{ email: id }, { username: id }], emailVerifiedAt: null },
+    data: { emailVerifiedAt: new Date() },
+  });
   return post(app, '/v1/auth/login', { identifier, password, ...dev, ...extra });
+}
+
+/** A login attempt that leaves the email unconfirmed. */
+export async function loginUnverified(app: FastifyInstance, identifier: string, dev = device(1)) {
+  return post(app, '/v1/auth/login', { identifier, password: PASSWORD, ...dev });
 }
 
 export interface Signed {
@@ -111,6 +123,8 @@ export async function signedIn(
   const dev = opts.device ?? device(1);
   const reg = await register(app, { email, ...(opts.username ? { username: opts.username } : {}) });
   if (reg.statusCode !== 201) throw new Error(`register failed: ${reg.body}`);
+  // Login needs a confirmed email (ADR-0097); the code step has its own tests.
+  await testDb.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
   const res = await login(app, email, dev);
   if (res.statusCode !== 200) throw new Error(`login failed: ${res.body}`);
   const body = res.json();

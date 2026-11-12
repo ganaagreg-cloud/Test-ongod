@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { expireGifts, syncWaitingGifts } from '../src/cron/tasks';
@@ -450,6 +450,7 @@ describe('mock checkout for a gift (development, no Wire keys)', () => {
 describe('admin gifts', () => {
   const ROUTES: Array<['GET' | 'POST', string, unknown?]> = [
     ['GET', '/v1/admin/gifts'],
+    ['POST', '/v1/admin/gifts', { planId: 'p', note: 'n', requestId: randomUUID() }],
     ['POST', '/v1/admin/gifts/x/void', { reason: 'refund' }],
   ];
 
@@ -467,7 +468,7 @@ describe('admin gifts', () => {
     const friend = await makeMember(app, 'friend@example.com', { username: 'friendly' });
     const admin = await makeAdmin(app);
 
-    const waiting = await call(app, 'GET', '/v1/admin/gifts', admin.accessToken);
+    const waiting = await call(app, 'GET', '/v1/admin/gifts?status=PAID', admin.accessToken);
     expect(waiting.json()).toMatchObject({
       total: 1,
       unredeemedMnt: 120_000,
@@ -535,5 +536,117 @@ describe('admin gifts', () => {
     });
     expect(res.statusCode).toBe(409);
     expect((await testDb.gift.findUniqueOrThrow({ where: { id } })).status).toBe('REDEEMED');
+  });
+
+  describe('a free code made by an admin (ADR-0091, ADR-0096)', () => {
+    const issue = (token: string, body: Record<string, unknown>) =>
+      call(app, 'POST', '/v1/admin/gifts', token, body);
+
+    it('makes one one-time code at 0 ₮ per request, audited, and validates the request', async () => {
+      const { plan } = await setup();
+      const admin = await makeAdmin(app);
+      const ok = { planId: plan.id, note: 'Түншийн урамшуулал', requestId: randomUUID() };
+      for (const bad of [
+        { ...ok, note: ' ' },
+        { ...ok, requestId: 'x' },
+        { ...ok, days: 0 },
+        { ...ok, validDays: 0 },
+      ]) {
+        expect((await issue(admin.accessToken, bad)).statusCode, JSON.stringify(bad)).toBe(400);
+      }
+      expect((await issue(admin.accessToken, { ...ok, planId: 'nope' })).statusCode).toBe(404);
+
+      const res = await issue(admin.accessToken, ok);
+      expect(res.statusCode).toBe(201);
+      const gift = res.json().gift;
+      expect(gift.code).toMatch(CODE);
+      expect(gift).toMatchObject({
+        status: 'PAID',
+        amountMnt: 0,
+        durationDays: plan.durationDays,
+        adminIssued: true,
+        note: 'Түншийн урамшуулал',
+        buyer: { id: admin.userId },
+      });
+      expect(await testDb.gift.count()).toBe(1);
+      expect(await testDb.auditLog.count({ where: { action: 'gift.issue' } })).toBe(1);
+      // No money, so nothing is "held" and no email goes out.
+      const list = await call(app, 'GET', '/v1/admin/gifts', admin.accessToken);
+      expect(list.json()).toMatchObject({ total: 1, unredeemedMnt: 0 });
+      expect(await jobsOf('email')).toHaveLength(0);
+    });
+
+    it('a retry with the same request key returns the same code, also in parallel', async () => {
+      const { plan } = await setup();
+      const admin = await makeAdmin(app);
+      const body = { planId: plan.id, note: 'Дахин', requestId: randomUUID() };
+      const [a, b] = await Promise.all([
+        issue(admin.accessToken, body),
+        issue(admin.accessToken, body),
+      ]);
+      const c = await issue(admin.accessToken, body);
+      expect(b.json().gift.code).toBe(a.json().gift.code);
+      expect(c.json().gift.code).toBe(a.json().gift.code);
+      expect(await testDb.gift.count()).toBe(1);
+      expect(await testDb.auditLog.count({ where: { action: 'gift.issue' } })).toBe(1);
+    });
+
+    it('redeeming it gives the days as a 0 ₮ manual grant, once; the list then shows who used it', async () => {
+      const { plan } = await setup();
+      const admin = await makeAdmin(app);
+      const res = await issue(admin.accessToken, {
+        planId: plan.id,
+        days: 30,
+        note: 'Туршилт',
+        validDays: 10,
+        requestId: randomUUID(),
+      });
+      const gift = res.json().gift as { id: string; code: string; expiresAt: string };
+      expect(new Date(gift.expiresAt).getTime() - Date.now()).toBeLessThan(10 * 86_400_000 + 1000);
+
+      const friend = await makeMember(app, 'friend@example.com', { username: 'friendly' });
+      const done = await redeem(gift.code, friend.accessToken);
+      expect(done.statusCode).toBe(200);
+      const until = new Date(done.json().accessUntil).getTime();
+      expect(Math.round((until - Date.now()) / 86_400_000)).toBe(30);
+      const payment = await testDb.payment.findFirstOrThrow({
+        where: { subscription: { userId: friend.userId } },
+      });
+      expect(payment).toMatchObject({ method: 'MANUAL_GRANT', amountMnt: 0 });
+      expect((await redeem(gift.code, friend.accessToken)).statusCode).toBe(404);
+
+      // Without a status filter the list shows every code, used ones with the member and the time.
+      const all = await call(app, 'GET', '/v1/admin/gifts', admin.accessToken);
+      expect(all.json().items).toHaveLength(1);
+      expect(all.json().items[0]).toMatchObject({
+        status: 'REDEEMED',
+        note: 'Туршилт',
+        redeemedBy: { username: 'friendly' },
+      });
+      expect(all.json().items[0].redeemedAt).not.toBeNull();
+
+      // The dashboard's income does not move, and the admin's own "my gifts" stays empty.
+      const dash = await call(app, 'GET', '/v1/admin/dashboard', admin.accessToken);
+      expect(dash.json().revenue.thisMonthMnt).toBe(0);
+      const mine = await call(app, 'GET', '/v1/gifts', admin.accessToken);
+      expect(mine.json().gifts).toEqual([]);
+    });
+
+    it('an issued code can be voided like a bought one', async () => {
+      const { plan } = await setup();
+      const admin = await makeAdmin(app);
+      const res = await issue(admin.accessToken, {
+        planId: plan.id,
+        note: 'Алдаа',
+        requestId: randomUUID(),
+      });
+      const gift = res.json().gift as { id: string; code: string };
+      const voided = await call(app, 'POST', `/v1/admin/gifts/${gift.id}/void`, admin.accessToken, {
+        reason: 'Буруу үүсгэсэн',
+      });
+      expect(voided.json().gift.status).toBe('VOID');
+      const friend = await makeMember(app, 'friend@example.com');
+      expect((await redeem(gift.code, friend.accessToken)).statusCode).toBe(404);
+    });
   });
 });

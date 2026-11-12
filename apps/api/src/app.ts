@@ -51,6 +51,7 @@ import { adminContentRoutes } from './routes/admin-content';
 import { authRoutes } from './routes/auth';
 import { catalogRoutes } from './routes/catalog';
 import { cronRoutes } from './routes/cron';
+import { createNotificationService } from './notifications/service';
 import { meRoutes } from './routes/me';
 import { socialRoutes } from './routes/social';
 import { subscriptionRoutes } from './routes/subscriptions';
@@ -161,7 +162,12 @@ export async function buildApp(deps: AppDeps) {
       });
       await v1.register(authRoutes, { auth, limiter, webSession: createWebSession(env) });
       const requireAuth = createAuthGuard({ db, env });
-      await v1.register(meRoutes, { auth, limiter, requireAuth });
+      await v1.register(meRoutes, {
+        auth,
+        limiter,
+        notifications: createNotificationService({ db }),
+        requireAuth,
+      });
       if (env.SOCIAL_LOGIN) {
         await v1.register(socialRoutes, {
           social: createSocialService({ db, auth }),
@@ -241,6 +247,7 @@ export async function buildApp(deps: AppDeps) {
         db,
         socialLogin: env.SOCIAL_LOGIN,
         supportEmail: env.SUPPORT_EMAIL ?? null,
+        inAppPayment: env.IN_APP_PAYMENT,
       });
       await v1.register(cronRoutes, {
         db,

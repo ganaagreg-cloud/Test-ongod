@@ -376,6 +376,11 @@ export function createAuthService(deps: { db: Db; env: Env }) {
       if (candidates.length === 0) await burnPasswordCheck(input.password);
       if (!user || user.status === 'DELETED') throw new AppError(401, 'INVALID_CREDENTIALS');
       if (user.status === 'DISABLED') throw new AppError(403, 'ACCOUNT_DISABLED');
+      // ADR-0097: no session before the email is confirmed. Said only after the right password,
+      // with the email so the screen can go to the code step (the identifier may be a username).
+      if (!user.emailVerifiedAt) {
+        throw new AppError(403, 'EMAIL_NOT_VERIFIED', undefined, { email: user.email });
+      }
 
       return { tokens: await startSession(user.id, input), user: toUserDto(user) };
     },
