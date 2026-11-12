@@ -4,7 +4,7 @@ import {
   formatGiftCode,
   type AdminGiftDto,
   type GiftDto,
-  type IssueGiftsRequest,
+  type IssueGiftRequest,
   type ListGiftsQuery,
 } from '@ongod/shared';
 import { audit } from '../admin/audit';
@@ -257,7 +257,7 @@ export function createGiftService(deps: {
 
     async adminList(query: ListGiftsQuery) {
       const where: Prisma.GiftWhereInput = {
-        status: query.status,
+        ...(query.status ? { status: query.status } : {}),
         AND: tokens(query.q).map((t) => ({
           OR: [
             { code: { contains: escapeLike(t.toUpperCase()) } },
@@ -287,20 +287,13 @@ export function createGiftService(deps: {
     },
 
     /**
-     * Free one-time codes made by an admin (ADR-0091): `count` gifts that start life PAID with a
-     * code, 0 ₮ and no payment behind them. One transaction, so a batch is all or nothing; the
-     * request key makes a retry return the first batch. The plan may be switched off (as for a
-     * manual grant): the admin decides who gets what.
+     * A free one-time code made by an admin (ADR-0091; one per request, ADR-0096): a gift that
+     * starts life PAID with a code, 0 ₮ and no payment behind it. The request key makes a retry
+     * return the first code. The plan may be switched off (as for a manual grant).
      */
-    async adminIssue(actor: User, body: IssueGiftsRequest): Promise<AdminGiftDto[]> {
+    async adminIssue(actor: User, body: IssueGiftRequest): Promise<AdminGiftDto> {
       const plan = await db.plan.findUnique({ where: { id: body.planId } });
       if (!plan) throw new AppError(404, 'NOT_FOUND');
-      const byKey = () =>
-        db.gift.findMany({
-          where: { issueKey: body.requestId, adminIssued: true },
-          include: adminInclude,
-          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-        });
 
       for (let attempt = 1; ; attempt++) {
         try {
@@ -311,39 +304,37 @@ export function createGiftService(deps: {
             const at = now();
             const expiresAt = new Date(at.getTime() + (body.validDays ?? GIFT_VALID_DAYS) * DAY_MS);
             const durationDays = body.days ?? plan.durationDays;
-            const ids: string[] = [];
-            for (let i = 0; i < body.count; i++) {
-              const gift = await tx.gift.create({
-                data: {
-                  buyerId: actor.id,
-                  planId: plan.id,
-                  status: 'PAID',
-                  amountMnt: 0,
-                  durationDays,
-                  code: generateGiftCode(),
-                  paymentProvider: 'NONE',
-                  paidAt: at,
-                  expiresAt,
-                  adminIssued: true,
-                  note: body.note,
-                  issueKey: body.requestId,
-                  createdAt: at,
-                },
-              });
-              ids.push(gift.id);
-            }
-            await audit(tx, actor.id, 'gift.issue', 'Gift', ids[0]!, {
-              count: ids.length,
-              giftIds: ids,
+            const gift = await tx.gift.create({
+              data: {
+                buyerId: actor.id,
+                planId: plan.id,
+                status: 'PAID',
+                amountMnt: 0,
+                durationDays,
+                code: generateGiftCode(),
+                paymentProvider: 'NONE',
+                paidAt: at,
+                expiresAt,
+                adminIssued: true,
+                note: body.note,
+                issueKey: body.requestId,
+                createdAt: at,
+              },
+            });
+            await audit(tx, actor.id, 'gift.issue', 'Gift', gift.id, {
               planId: plan.id,
               durationDays,
               note: body.note,
               expiresAt: expiresAt.toISOString(),
             });
           });
-          return (await byKey()).map(toAdminDto);
+          const row = await db.gift.findFirstOrThrow({
+            where: { issueKey: body.requestId, adminIssued: true },
+            include: adminInclude,
+          });
+          return toAdminDto(row);
         } catch (err) {
-          // A drawn code already exists (31^12 values, so in practice never): draw the batch again.
+          // The drawn code already exists (31^12 values, so in practice never): draw again.
           if (isUniqueViolation(err) && attempt < CODE_RETRIES) continue;
           throw err;
         }

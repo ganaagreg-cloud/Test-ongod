@@ -274,27 +274,23 @@ export const adminGiftSchema = z.object({
 export type AdminGiftDto = z.infer<typeof adminGiftSchema>;
 export const adminGiftResponseSchema = z.object({ gift: adminGiftSchema });
 
-/** Codes one "create codes" request may make (ADR-0091). */
-export const GIFT_ISSUE_MAX = 50;
-/** POST /v1/admin/gifts: free one-time codes made by an admin (ADR-0091). */
-export const issueGiftsRequestSchema = z.object({
+/** POST /v1/admin/gifts: one free one-time code made by an admin (ADR-0091, one per request: ADR-0096). */
+export const issueGiftRequestSchema = z.object({
   planId: idSchema,
   /** Overrides the plan's days (as in a manual grant). */
   days: z.number().int().min(1).max(3660).optional(),
-  count: z.number().int().min(1).max(GIFT_ISSUE_MAX),
-  /** Who the codes are for; shown on the Бэлэг page and kept in the audit log. */
+  /** Who the code is for; shown on the Бэлэг page and kept in the audit log. */
   note: z.string().trim().min(1).max(200),
-  /** How long the codes can be redeemed. Default: the same 365 days as a bought gift. */
+  /** How long the code can be redeemed. Default: the same 365 days as a bought gift. */
   validDays: z.number().int().min(1).max(730).optional(),
-  /** One key per request: a retry with the same key returns the first batch, not a second one. */
+  /** One key per request: a retry with the same key returns the first code, not a second one. */
   requestId: z.uuid(),
 });
-export type IssueGiftsRequest = z.infer<typeof issueGiftsRequestSchema>;
-export const issueGiftsResponseSchema = z.object({ gifts: z.array(adminGiftSchema) });
+export type IssueGiftRequest = z.infer<typeof issueGiftRequestSchema>;
 
 export const listGiftsQuerySchema = z.object({
-  /** Default: PAID, the gifts waiting to be redeemed. */
-  status: giftStatusSchema.default('PAID'),
+  /** Empty = every status, newest first (ADR-0096). */
+  status: z.preprocess(emptyToUndefined, giftStatusSchema.optional()),
   /** Code, buyer or recipient: username, email, phone or name. */
   q: searchQuery,
   ...pageQuery,

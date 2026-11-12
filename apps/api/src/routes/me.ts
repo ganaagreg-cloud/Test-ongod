@@ -17,6 +17,9 @@ import { toUserDto, type AuthService } from '../auth/service';
 const deviceParams = z.object({ id: z.string().min(1).max(64) });
 
 /** /v1/me/*: the signed-in user (SPEC H). Every route requires a valid access token. */
+/** PUT /v1/me/push-token calls one address may make a minute. */
+export const PUSH_TOKEN_MAX_PER_MINUTE = 20;
+
 export async function meRoutes(
   app: FastifyInstance,
   opts: {
@@ -78,12 +81,19 @@ export async function meRoutes(
   });
 
   // The app's push token for this device, or null to stop push here (ADR-0055).
-  app.put('/me/push-token', async (req, reply) => {
-    const { user, session } = authOf(req);
-    const { token } = pushTokenRequestSchema.parse(req.body);
-    await auth.setPushToken(user.id, session.deviceId, token);
-    return reply.code(204).send();
-  });
+  // Its own small limit (audit 2026-11-12): on 2026-11-11 one phone sent about 70,000 of these
+  // in two hours, used up the shared per-address limit and locked people out of login. A phone
+  // needs a handful a day; past the limit only this route answers 429.
+  app.put(
+    '/me/push-token',
+    { config: { rateLimit: { max: PUSH_TOKEN_MAX_PER_MINUTE, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const { user, session } = authOf(req);
+      const { token } = pushTokenRequestSchema.parse(req.body);
+      await auth.setPushToken(user.id, session.deviceId, token);
+      return reply.code(204).send();
+    },
+  );
 
   app.delete('/me', async (req, reply) => {
     await auth.deleteAccount(authOf(req).user.id);

@@ -112,11 +112,12 @@ tags: [index]
 | ADR-0088 | [[ADR-0088-mobile-intro-pages]]                              | accepted                                                                    |
 | ADR-0089 | [[ADR-0089-csp-allow-bunny-hosts]]                           | accepted                                                                    |
 | ADR-0090 | [[ADR-0090-gift-codes-and-gift-buying-in-app-behind-switch]] | accepted                                                                    |
-| ADR-0091 | [[ADR-0091-admin-issued-gift-codes]]                         | accepted                                                                    |
+| ADR-0091 | [[ADR-0091-admin-issued-gift-codes]]                         | accepted (one code per request: ADR-0096)                                   |
 | ADR-0092 | [[ADR-0092-register-in-steps-without-username]]              | accepted                                                                    |
 | ADR-0093 | [[ADR-0093-legal-pages-inside-the-app-logout-on-profile]]    | accepted                                                                    |
 | ADR-0094 | [[ADR-0094-no-sound-in-screen-recordings]]                   | accepted                                                                    |
 | ADR-0095 | [[ADR-0095-dashboard-top-10-viewed-and-commented]]           | accepted                                                                    |
+| ADR-0096 | [[ADR-0096-one-gift-code-per-request-push-token-limit]]      | accepted                                                                    |
 
 ## Research
 

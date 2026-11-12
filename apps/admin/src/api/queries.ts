@@ -7,7 +7,6 @@ import {
   adminCommentsPageSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
-  issueGiftsResponseSchema,
   adminPlanResponseSchema,
   adminPlansResponseSchema,
   adminPlaylistDetailResponseSchema,
@@ -29,7 +28,7 @@ import {
   type BulkAction,
   type AdminCommentFilter,
   type GiftStatus,
-  type IssueGiftsRequest,
+  type IssueGiftRequest,
   type CreatePlanRequest,
   type UpdatePlanRequest,
   type CreateEpisodeRequest,
@@ -134,7 +133,7 @@ export function useCommentActions() {
 
 // ---- Gifts (SPEC J, ADR-0060) ----
 
-export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: number }) =>
+export const giftsQuery = (filter: { status?: GiftStatus; q?: string; page: number }) =>
   queryOptions({
     queryKey: ['gifts', filter],
     queryFn: ({ signal }) =>
@@ -142,12 +141,12 @@ export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: numbe
     placeholderData: keepPreviousData,
   });
 
-/** Free one-time codes (ADR-0091). `requestId` makes a retried request return the same codes. */
-export function useIssueGifts() {
+/** One free one-time code (ADR-0091, ADR-0096). `requestId` makes a retry return the same code. */
+export function useIssueGift() {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (body: IssueGiftsRequest) =>
-      api('/admin/gifts', { method: 'POST', body, schema: issueGiftsResponseSchema }),
+    mutationFn: (body: IssueGiftRequest) =>
+      api('/admin/gifts', { method: 'POST', body, schema: adminGiftResponseSchema }),
     onSuccess: () => invalidate('gifts', 'audit'),
   });
 }

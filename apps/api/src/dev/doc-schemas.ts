@@ -14,8 +14,7 @@ import {
   updateCommentRequestSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
-  issueGiftsRequestSchema,
-  issueGiftsResponseSchema,
+  issueGiftRequestSchema,
   createGiftRequestSchema,
   giftResponseSchema,
   giftsResponseSchema,
@@ -516,11 +515,8 @@ export const ROUTE_DOCS: Record<string, RouteDoc> = {
     responses: { 200: adminGiftsPageSchema },
   }),
   'POST /v1/admin/gifts': admin(
-    'J. Make free one-time gift codes (1 to 50 per request, ADR-0091); a retry with the same requestId returns the first batch',
-    {
-      body: issueGiftsRequestSchema,
-      responses: { 201: issueGiftsResponseSchema },
-    },
+    'J. Make one free one-time gift code (ADR-0091, ADR-0096); a retry with the same requestId returns the same code',
+    { body: issueGiftRequestSchema, responses: { 201: adminGiftResponseSchema } },
   ),
   'POST /v1/admin/gifts/:id/void': admin(
     'J. Void a paid, unredeemed gift (refund outside the app)',
