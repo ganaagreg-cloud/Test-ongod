@@ -37,7 +37,8 @@ export type IconName =
   | 'filter'
   | 'trash'
   | 'edit'
-  | 'eye';
+  | 'eye'
+  | 'gift';
 
 /** Path data per icon; `filled` icons are painted solid instead of stroked. */
 export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: true }> = {
@@ -94,6 +95,16 @@ export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: tr
   filter: { paths: ['M4 6h16', 'M7 12h10', 'M10 18h4'] },
   trash: { paths: ['M5 7h14', 'M10 7V4.5h4V7', 'M6.5 7l1 13h9l1-13'] },
   edit: { paths: ['M4 20h4L19 9l-4-4L4 16z', 'M13 7l4 4'] },
+  // A wrapped box with a bow (gift codes, ADR-0090).
+  gift: {
+    paths: [
+      'M4 8.5h16V12H4z',
+      'M5.5 12v8h13v-8',
+      'M12 8.5V20',
+      'M12 8.5C10 8.5 7.5 7.5 7.5 5.8 7.5 4.2 10.5 4 12 8.5z',
+      'M12 8.5c2 0 4.5-1 4.5-2.7C16.5 4.2 13.5 4 12 8.5z',
+    ],
+  },
   eye: {
     paths: [
       'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z',

@@ -4,7 +4,9 @@ import { StatusView } from '../src/components/StatusView';
 import { useAuth } from '../src/auth/AuthContext';
 import { useGate } from '../src/gate';
 import { mn } from '../src/i18n/mn';
+import { useInAppPayment } from '../src/inpay/useInAppPayment';
 import { introSeen } from '../src/lib/intro';
+import { takeStartPrompt } from '../src/lib/startPrompt';
 import { Button } from '../src/ui';
 
 /** Signed out: the three intro pages the first time on this phone, then Welcome (ADR-0088). */
@@ -17,6 +19,26 @@ function SignedOutStart() {
   }, []);
   if (seen === null) return null; // the splash screen is still showing
   return <Redirect href={seen ? '/welcome' : '/intro'} />;
+}
+
+/**
+ * Signed in: Home, except once right after a new sign-up while the server switch `inAppPayment`
+ * is on, when the optional gift-code step comes first (ADR-0090). The mark is used up either way.
+ */
+function SignedInStart() {
+  const paymentsOn = useInAppPayment();
+  const [prompt, setPrompt] = useState<boolean | null>(null);
+  useEffect(() => {
+    void takeStartPrompt()
+      .catch(() => false) // storage unreadable: straight to Home
+      .then(setPrompt);
+  }, []);
+  if (prompt === null) return null;
+  return prompt && paymentsOn ? (
+    <Redirect href={{ pathname: '/gift/redeem', params: { welcome: '1' } }} />
+  ) : (
+    <Redirect href="/home" />
+  );
 }
 
 /**
@@ -48,6 +70,6 @@ export default function Index() {
     case 'pendingProfile':
       return <Redirect href="/complete-profile" />;
     case 'signedIn':
-      return <Redirect href="/home" />;
+      return <SignedInStart />;
   }
 }

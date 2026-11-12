@@ -7,6 +7,7 @@ import {
   adminCommentsPageSchema,
   adminGiftResponseSchema,
   adminGiftsPageSchema,
+  issueGiftsResponseSchema,
   adminPlanResponseSchema,
   adminPlansResponseSchema,
   adminPlaylistDetailResponseSchema,
@@ -28,6 +29,7 @@ import {
   type BulkAction,
   type AdminCommentFilter,
   type GiftStatus,
+  type IssueGiftsRequest,
   type CreatePlanRequest,
   type UpdatePlanRequest,
   type CreateEpisodeRequest,
@@ -139,6 +141,16 @@ export const giftsQuery = (filter: { status: GiftStatus; q?: string; page: numbe
       api(`/admin/gifts${qs(filter)}`, { schema: adminGiftsPageSchema, signal }),
     placeholderData: keepPreviousData,
   });
+
+/** Free one-time codes (ADR-0091). `requestId` makes a retried request return the same codes. */
+export function useIssueGifts() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: (body: IssueGiftsRequest) =>
+      api('/admin/gifts', { method: 'POST', body, schema: issueGiftsResponseSchema }),
+    onSuccess: () => invalidate('gifts', 'audit'),
+  });
+}
 
 export function useVoidGift() {
   const invalidate = useInvalidate();

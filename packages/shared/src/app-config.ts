@@ -14,6 +14,11 @@ export const appConfigResponseSchema = z.object({
   // Defaults to null: an answer without it (an older server) must still parse, or the app would
   // ignore the whole config, including the minimum version.
   supportEmail: z.string().nullable().default(null),
+  /**
+   * The server switch of ADR-0076 / ADR-0090. False (the default, and the store-review setting): the
+   * apps show no prices, plan names, gift codes or payment buttons. Only a flag: still no prices here.
+   */
+  inAppPayment: z.boolean().default(false),
 });
 
 export type AppConfigResponse = z.infer<typeof appConfigResponseSchema>;

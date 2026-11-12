@@ -103,10 +103,19 @@ export const mn = {
     firstName: 'Нэр',
     phone: 'Утасны дугаар',
     email: 'Имэйл',
-    username: 'Нэвтрэх нэр (заавал биш)',
-    usernameHint: 'Хоосон орхивол имэйл хаяг нэвтрэх нэр болно.',
     password: 'Нууц үг',
     passwordHint: 'Хамгийн багадаа 8 тэмдэгт.',
+    passwordAgain: 'Нууц үгээ давтана уу',
+    passwordMismatch: 'Нууц үг таарахгүй байна.',
+    /** The three steps (ADR-0092). */
+    step: (n: number, total: number) => `Алхам ${n}/${total}`,
+    nameTitle: 'Танилцъя',
+    nameText: 'Овог, нэрээ оруулна уу.',
+    contactTitle: 'Холбоо барих',
+    contactText: 'Баталгаажуулах 6 оронтой кодыг имэйлээр илгээнэ.',
+    passwordTitle: 'Нууц үг',
+    passwordText: 'Дараа нь имэйл хаяг, нууц үгээрээ нэвтэрнэ.',
+    next: 'Үргэлжлүүлэх',
     submit: 'Бүртгүүлэх',
     haveAccount: 'Бүртгэлтэй юу?',
     login: 'Нэвтрэх',
@@ -153,7 +162,6 @@ export const mn = {
   completeProfile: {
     title: 'Профайлаа гүйцээнэ үү',
     text: 'Үргэлжлүүлэхийн өмнө мэдээллээ бөглөнө үү.',
-    username: 'Нэвтрэх нэр',
     password: 'Нууц үг',
     passwordHint: 'Имэйлээр нэвтрэхэд хэрэглэнэ. Хамгийн багадаа 8 тэмдэгт.',
     lastName: 'Овог',
@@ -254,6 +262,12 @@ export const mn = {
     play: 'Тоглуулах',
   },
 
+  /** ADR-0094: playback stops while the screen is recorded or mirrored. */
+  capture: {
+    blocked: 'Дэлгэц бичиж эсвэл дамжуулж байх үед тоглуулах боломжгүй.',
+    paused: 'Дэлгэц бичлэг эхэлсэн тул тоглуулалтыг зогсоолоо.',
+  },
+
   library: {
     title: 'Сан',
     search: 'Хайх',
@@ -287,6 +301,9 @@ export const mn = {
     devices: 'Төхөөрөмжүүд',
     blocked: 'Хаасан хэрэглэгчид',
     notifications: 'Мэдэгдэл',
+    logout: 'Гарах',
+    logoutTitle: 'Гарах уу?',
+    logoutText: 'Энэ утаснаас гарна. Дахин нэвтрэхэд имэйл хаяг, нууц үг хэрэгтэй.',
   },
 
   // Сэтгэгдэл (SPEC L, ADR-0061). No payment wording: the box simply is not there without access.

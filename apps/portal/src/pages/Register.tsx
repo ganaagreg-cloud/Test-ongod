@@ -8,14 +8,13 @@ import { ErrorNotice } from '../components/ErrorNotice';
 import { mn } from '../i18n/mn';
 import { usePage } from '../lib/usePage';
 
-type Field = 'lastName' | 'firstName' | 'phone' | 'email' | 'username' | 'password';
+type Field = 'lastName' | 'firstName' | 'phone' | 'email' | 'password';
 
 const FIELD_ERROR: Record<Field, string> = {
   lastName: mn.common.required,
   firstName: mn.common.required,
   phone: mn.register.errors.phone,
   email: mn.register.errors.email,
-  username: mn.register.errors.username,
   password: mn.register.errors.password,
 };
 
@@ -27,7 +26,6 @@ export default function Register() {
     firstName: '',
     phone: '',
     email: '',
-    username: '',
     password: '',
   });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
@@ -42,10 +40,8 @@ export default function Register() {
     setError(undefined);
 
     // The same rules as the API (packages/shared), so a mistake is caught before the request.
-    const parsed = registerRequestSchema.safeParse({
-      ...values,
-      username: values.username.trim() === '' ? undefined : values.username,
-    });
+    // No username is asked (ADR-0092): the server makes it the email (SPEC A).
+    const parsed = registerRequestSchema.safeParse(values);
     if (!parsed.success) {
       const next: Partial<Record<Field, string>> = {};
       for (const issue of parsed.error.issues) {
@@ -64,8 +60,6 @@ export default function Register() {
     } catch (err) {
       if (err instanceof ApiError && err.code === 'EMAIL_TAKEN') {
         setFieldErrors({ email: err.message });
-      } else if (err instanceof ApiError && err.code === 'USERNAME_TAKEN') {
-        setFieldErrors({ username: err.message });
       } else {
         setError(err);
       }
@@ -109,15 +103,6 @@ export default function Register() {
           value={values.email}
           onChange={set('email')}
           error={fieldErrors.email}
-        />
-        <Input
-          label={mn.register.username}
-          autoComplete="username"
-          autoCapitalize="none"
-          value={values.username}
-          onChange={set('username')}
-          hint={mn.register.usernameHint}
-          error={fieldErrors.username}
         />
         <Input
           label={mn.register.password}

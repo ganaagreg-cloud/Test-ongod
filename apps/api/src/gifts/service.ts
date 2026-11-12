@@ -1,8 +1,10 @@
 import {
   GIFT_MAX_UNPAID,
+  GIFT_VALID_DAYS,
   formatGiftCode,
   type AdminGiftDto,
   type GiftDto,
+  type IssueGiftsRequest,
   type ListGiftsQuery,
 } from '@ongod/shared';
 import { audit } from '../admin/audit';
@@ -14,12 +16,13 @@ import { AppError } from '../errors';
 import type { Gift, Plan, User } from '../generated/prisma/client';
 import { mn } from '../i18n/mn';
 import { escapeLike } from '../lib/like';
-import { ubDate } from '../lib/dates';
+import { DAY_MS, ubDate } from '../lib/dates';
 import type { PaymentService } from '../payments/service';
 import { enqueuePush } from '../push';
 import { refreshAccessUntil, latestActiveEnd } from '../subscriptions/access';
 import { toSubscriptionDto } from '../subscriptions/dto';
 import { computePeriod, generateReferenceCode } from '../subscriptions/period';
+import { generateGiftCode } from './code';
 
 type GiftRow = Gift & { plan: Plan };
 const CODE_RETRIES = 5;
@@ -79,6 +82,8 @@ export function createGiftService(deps: {
     expiresAt: iso(g.expiresAt),
     redeemedAt: iso(g.redeemedAt),
     voidReason: g.voidReason,
+    adminIssued: g.adminIssued,
+    note: g.note,
     createdAt: g.createdAt.toISOString(),
   });
 
@@ -135,7 +140,8 @@ export function createGiftService(deps: {
     async listMine(user: User): Promise<GiftDto[]> {
       const find = () =>
         db.gift.findMany({
-          where: { buyerId: user.id },
+          // Codes an admin issued are the admin panel's business, not that admin's own gifts.
+          where: { buyerId: user.id, adminIssued: false },
           include: { plan: true },
           orderBy: { createdAt: 'desc' },
           take: 100,
@@ -197,17 +203,27 @@ export function createGiftService(deps: {
               where: { id: gift.id },
               data: { subscriptionId: subscription.id },
             });
+            // A bought gift carries the buyer's QPay money; an admin's free code is a manual
+            // grant of 0 ₮ (ADR-0091), so it never counts as income.
             await tx.payment.create({
-              data: {
-                subscriptionId: subscription.id,
-                method: 'QPAY',
-                amountMnt: gift.amountMnt,
-                providerRef: gift.wirePaymentIntentId ?? `mock:gift:${gift.id}`,
-              },
+              data: gift.adminIssued
+                ? {
+                    subscriptionId: subscription.id,
+                    method: 'MANUAL_GRANT',
+                    amountMnt: 0,
+                    providerRef: `gift:${gift.id}`,
+                  }
+                : {
+                    subscriptionId: subscription.id,
+                    method: 'QPAY',
+                    amountMnt: gift.amountMnt,
+                    providerRef: gift.wirePaymentIntentId ?? `mock:gift:${gift.id}`,
+                  },
             });
             const accessUntil = await refreshAccessUntil(tx, user.id);
             await audit(tx, user.id, 'gift.redeem', 'Gift', gift.id, {
               buyerId: gift.buyerId,
+              adminIssued: gift.adminIssued,
               subscriptionId: subscription.id,
               amountMnt: gift.amountMnt,
               startsAt: startsAt.toISOString(),
@@ -268,6 +284,70 @@ export function createGiftService(deps: {
         page: query.page,
         limit: query.limit,
       };
+    },
+
+    /**
+     * Free one-time codes made by an admin (ADR-0091): `count` gifts that start life PAID with a
+     * code, 0 ₮ and no payment behind them. One transaction, so a batch is all or nothing; the
+     * request key makes a retry return the first batch. The plan may be switched off (as for a
+     * manual grant): the admin decides who gets what.
+     */
+    async adminIssue(actor: User, body: IssueGiftsRequest): Promise<AdminGiftDto[]> {
+      const plan = await db.plan.findUnique({ where: { id: body.planId } });
+      if (!plan) throw new AppError(404, 'NOT_FOUND');
+      const byKey = () =>
+        db.gift.findMany({
+          where: { issueKey: body.requestId, adminIssued: true },
+          include: adminInclude,
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        });
+
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await db.$transaction(async (tx) => {
+            // First statement: two requests with the same key wait for each other here.
+            await lockUser(tx, actor.id);
+            if ((await tx.gift.count({ where: { issueKey: body.requestId } })) > 0) return;
+            const at = now();
+            const expiresAt = new Date(at.getTime() + (body.validDays ?? GIFT_VALID_DAYS) * DAY_MS);
+            const durationDays = body.days ?? plan.durationDays;
+            const ids: string[] = [];
+            for (let i = 0; i < body.count; i++) {
+              const gift = await tx.gift.create({
+                data: {
+                  buyerId: actor.id,
+                  planId: plan.id,
+                  status: 'PAID',
+                  amountMnt: 0,
+                  durationDays,
+                  code: generateGiftCode(),
+                  paymentProvider: 'NONE',
+                  paidAt: at,
+                  expiresAt,
+                  adminIssued: true,
+                  note: body.note,
+                  issueKey: body.requestId,
+                  createdAt: at,
+                },
+              });
+              ids.push(gift.id);
+            }
+            await audit(tx, actor.id, 'gift.issue', 'Gift', ids[0]!, {
+              count: ids.length,
+              giftIds: ids,
+              planId: plan.id,
+              durationDays,
+              note: body.note,
+              expiresAt: expiresAt.toISOString(),
+            });
+          });
+          return (await byKey()).map(toAdminDto);
+        } catch (err) {
+          // A drawn code already exists (31^12 values, so in practice never): draw the batch again.
+          if (isUniqueViolation(err) && attempt < CODE_RETRIES) continue;
+          throw err;
+        }
+      }
     },
 
     /** PAID -> VOID with a reason (a refund is paid back outside the app). Once: a status precondition. */

@@ -241,6 +241,7 @@ export async function buildApp(deps: AppDeps) {
         db,
         socialLogin: env.SOCIAL_LOGIN,
         supportEmail: env.SUPPORT_EMAIL ?? null,
+        inAppPayment: env.IN_APP_PAYMENT,
       });
       await v1.register(cronRoutes, {
         db,

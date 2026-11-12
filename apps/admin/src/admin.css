@@ -1980,6 +1980,33 @@
     var(--text-caption-font);
 }
 
+/* Rank number in the dashboard's top-10 lists (ADR-0095). */
+.admin-dash-row__rank {
+  flex: none;
+  min-width: var(--space-lg);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dash-row__rank + .admin-dash-row__main {
+  flex: 1;
+}
+
+/* The codes an admin just made (ADR-0091): a scrolling column, easy to select by hand. */
+.admin-code-list {
+  display: grid;
+  gap: var(--space-xs);
+  max-height: calc(var(--layout-touch-target) * 6);
+  margin: 0;
+  padding: var(--space-sm);
+  overflow-y: auto;
+  border: var(--layout-border-width) solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-sunken);
+  list-style: none;
+  user-select: all;
+}
+
 /* The comment text in the moderation list: long comments stay readable but do not fill the screen. */
 .admin-comment-body {
   display: -webkit-box;

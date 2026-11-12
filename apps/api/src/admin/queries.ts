@@ -18,6 +18,8 @@ type Page = { page: number; limit: number };
 
 const subInclude = { plan: true, user: true, decidedBy: true } as const;
 const EXPORT_ROW_LIMIT = 50_000;
+/** Rows in the dashboard's "most viewed" and "most commented" lists (ADR-0095). */
+const TOP_LIST_SIZE = 10;
 const BOM = String.fromCharCode(0xfeff);
 
 /** Every word must match some field, so "бат 9911" finds a name plus a phone fragment. */
@@ -180,6 +182,8 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
         upcoming,
         withProblems,
         expiringSoon,
+        viewed,
+        commented,
       ] = await Promise.all([
         db.user.count({ where: active }),
         db.subscription.count({ where: { status: 'PENDING_PAYMENT' } }),
@@ -238,7 +242,35 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
           take: 5,
           select: { ...member, accessUntil: true },
         }),
+        // ADR-0095: one PlaybackProgress row per member and episode = "members who started it".
+        db.playbackProgress.groupBy({
+          by: ['episodeId'],
+          where: { episode: { status: 'PUBLISHED' } },
+          _count: { userId: true },
+          orderBy: [{ _count: { userId: 'desc' } }, { episodeId: 'asc' }],
+          take: TOP_LIST_SIZE,
+        }),
+        db.comment.groupBy({
+          by: ['episodeId'],
+          where: { status: 'VISIBLE', episode: { status: 'PUBLISHED' } },
+          _count: { id: true },
+          orderBy: [{ _count: { id: 'desc' } }, { episodeId: 'asc' }],
+          take: TOP_LIST_SIZE,
+        }),
       ]);
+
+      // Titles and "finished" counts for the two top lists, in two small queries.
+      const topIds = [...new Set([...viewed, ...commented].map((row) => row.episodeId))];
+      const [titles, finished] = await Promise.all([
+        db.episode.findMany({ where: { id: { in: topIds } }, select: { id: true, title: true } }),
+        db.playbackProgress.groupBy({
+          by: ['episodeId'],
+          where: { episodeId: { in: viewed.map((row) => row.episodeId) }, completed: true },
+          _count: { userId: true },
+        }),
+      ]);
+      const titleOf = new Map(titles.map((e) => [e.id, e.title]));
+      const finishedOf = new Map(finished.map((row) => [row.episodeId, row._count.userId]));
 
       const problems = withProblems
         .flatMap((e) => {
@@ -295,6 +327,17 @@ export function createAdminQueries(deps: { db: Db; now?: (() => Date) | undefine
         expiringSoon: expiringSoon.map((u) => ({
           ...u,
           accessUntil: u.accessUntil!.toISOString(),
+        })),
+        topViewed: viewed.map((row) => ({
+          id: row.episodeId,
+          title: titleOf.get(row.episodeId) ?? '',
+          count: row._count.userId,
+          completed: finishedOf.get(row.episodeId) ?? 0,
+        })),
+        topCommented: commented.map((row) => ({
+          id: row.episodeId,
+          title: titleOf.get(row.episodeId) ?? '',
+          count: row._count.id,
         })),
       };
     },

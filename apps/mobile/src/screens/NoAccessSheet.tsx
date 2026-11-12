@@ -20,10 +20,11 @@ import {
   type ThemeColors,
 } from '@ongod/tokens';
 import { useAuth } from '../auth/AuthContext';
-import { env } from '../config/env';
 import { mn } from '../i18n/mn';
 import { accessState } from '../lib/episode';
 import { formatDate } from '../lib/format';
+import { inpayMn } from '../inpay/mn';
+import { useInAppPayment } from '../inpay/useInAppPayment';
 import { payMn } from '../testpay/mn';
 import { Button, haptic, Icon, Sheet, useSurface, useThemedStyles } from '../ui';
 
@@ -45,6 +46,8 @@ export function NoAccessSheet({
   const { colors } = useSurface();
   const { refreshUser } = useAuth();
   const router = useRouter();
+  // ADR-0076: buttons that lead to paying exist only while the server switch is on.
+  const paymentsOn = useInAppPayment();
   const [phase, setPhase] = useState<Phase>('idle');
   const [until, setUntil] = useState<string | null>(null);
   const shake = useSharedValue(0);
@@ -121,7 +124,7 @@ export function NoAccessSheet({
             fullWidth
             onPress={() => void check()}
           />
-          {env.mobilePayments ? (
+          {paymentsOn ? (
             <Button
               label={payMn.open}
               variant="secondary"
@@ -129,6 +132,18 @@ export function NoAccessSheet({
               onPress={() => {
                 onClose();
                 router.push('/pay');
+              }}
+            />
+          ) : null}
+          {paymentsOn ? (
+            <Button
+              label={inpayMn.redeem.row}
+              variant="ghost"
+              icon="gift"
+              fullWidth
+              onPress={() => {
+                onClose();
+                router.push('/gift/redeem');
               }}
             />
           ) : null}

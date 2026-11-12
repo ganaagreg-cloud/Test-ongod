@@ -150,6 +150,31 @@ function Overview({ data }: { data: DashboardDto }) {
             </Row>
           ))}
         </Card>
+
+        <Card title={t.topViewed} subtitle={t.topViewedHint} to="/episodes" empty={t.noViews}>
+          {data.topViewed.map((e, index) => (
+            <Row key={e.id} to={`/episodes/${e.id}`}>
+              <span className="admin-dash-row__rank">{index + 1}</span>
+              <strong className="admin-dash-row__main">{e.title}</strong>
+              <span className="admin-dash-row__side">
+                <strong>{t.viewers(e.count)}</strong>
+                <small>{t.finished(e.completed)}</small>
+              </span>
+            </Row>
+          ))}
+        </Card>
+
+        <Card title={t.topCommented} to="/comments" empty={t.noComments}>
+          {data.topCommented.map((e, index) => (
+            <Row key={e.id} to={`/episodes/${e.id}`}>
+              <span className="admin-dash-row__rank">{index + 1}</span>
+              <strong className="admin-dash-row__main">{e.title}</strong>
+              <span className="admin-dash-row__side">
+                <strong>{t.commentsCount(e.count)}</strong>
+              </span>
+            </Row>
+          ))}
+        </Card>
       </div>
     </>
   );

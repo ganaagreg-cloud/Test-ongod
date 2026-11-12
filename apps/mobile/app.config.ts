@@ -1,4 +1,5 @@
 ﻿import type { ExpoConfig } from 'expo/config';
+import { withAndroidManifest, type ConfigPlugin } from 'expo/config-plugins';
 
 // Build-time settings come from the environment (CLAUDE.md: nothing account-specific in code):
 //   GOOGLE_IOS_URL_SCHEME  reversed iOS client id, needed by the Google sign-in plugin
@@ -92,4 +93,16 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+/**
+ * ADR-0094: other apps may not record what this app plays (Android 10+). The local module
+ * `modules/capture-guard` sets the stricter runtime policy too; this manifest flag also covers the
+ * moment before the module loads.
+ */
+const withNoAudioCapture: ConfigPlugin = (expoConfig) =>
+  withAndroidManifest(expoConfig, (mod) => {
+    const application = mod.modResults.manifest.application?.[0];
+    if (application) application.$['android:allowAudioPlaybackCapture'] = 'false';
+    return mod;
+  });
+
+export default withNoAudioCapture(config);

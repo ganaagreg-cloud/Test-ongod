@@ -147,7 +147,8 @@ export default function Account() {
                 <dt>
                   {user.lastName} {user.firstName}
                 </dt>
-                <dd>@{user.username}</dd>
+                {/* New accounts have no username of their own (ADR-0092): it is the email below. */}
+                {user.username === user.email ? null : <dd>@{user.username}</dd>}
               </div>
               <div>
                 <dt>{mn.account.email}</dt>

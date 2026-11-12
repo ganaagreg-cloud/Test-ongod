@@ -40,13 +40,12 @@ async function emailedCode(to: string): Promise<string> {
   throw new Error(`no email with a code for ${to}`);
 }
 
-async function register(page: Page, email: string, username: string) {
+async function register(page: Page, email: string) {
   await page.goto('/register');
   await page.getByLabel('Овог').fill('Бат');
   await page.getByLabel('Нэр', { exact: true }).fill('Эрдэнэ');
   await page.getByLabel('Утасны дугаар').fill('99112233');
   await page.getByLabel('Имэйл').fill(email);
-  await page.getByLabel('Нэвтрэх нэр (заавал биш)').fill(username);
   await page.getByLabel('Нууц үг', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Бүртгүүлэх' }).click();
 }
@@ -55,14 +54,13 @@ test('register -> verify -> pay -> review -> approved -> access', async ({ page,
   test.setTimeout(120_000);
   const stamp = Date.now();
   const email = `e2e-${stamp}@example.com`;
-  const username = `e2e${stamp}`;
   const consoleErrors: string[] = [];
   page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
   page.on('pageerror', (e) => consoleErrors.push(e.message));
   await page.clock.install();
 
   // ---- register and verify the email ----
-  await register(page, email, username);
+  await register(page, email);
   await expect(page.getByRole('heading', { name: 'Имэйлээ баталгаажуулна уу' })).toBeVisible();
   await page.getByLabel('Баталгаажуулах код').fill(await emailedCode(email));
   await page.getByRole('button', { name: 'Баталгаажуулах' }).click();
@@ -93,7 +91,8 @@ test('register -> verify -> pay -> review -> approved -> access', async ({ page,
   // A reload keeps the session through the cookie (silent refresh), without a login screen.
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Миний бүртгэл' })).toBeVisible();
-  await expect(page.getByText('@' + username)).toBeVisible();
+  // Nothing but the email is asked at sign-up (ADR-0092): the account shows the email.
+  await expect(page.getByText(email).first()).toBeVisible();
 
   // ---- plan -> QPay checkout (the mock one without Wire keys) ----
   await page.getByRole('link', { name: 'Эрх авах' }).first().click();
@@ -129,7 +128,7 @@ test('a canceled payment says so and the same request can be paid again', async 
   const stamp = Date.now();
   const email = `e2e-cancel-${stamp}@example.com`;
 
-  await register(page, email, `e2ec${stamp}`);
+  await register(page, email);
   await page.getByLabel('Баталгаажуулах код').fill(await emailedCode(email));
   await page.getByRole('button', { name: 'Баталгаажуулах' }).click();
   await page.getByLabel('Нууц үг').fill(PASSWORD);
@@ -153,7 +152,7 @@ test('the third device is refused with a list to remove one (SPEC B)', async ({ 
   const email = `e2e-devices-${stamp}@example.com`;
   const first = await browser.newContext({ baseURL: 'http://localhost:5173' });
   const page = await first.newPage();
-  await register(page, email, `e2ed${stamp}`);
+  await register(page, email);
   await page.getByLabel('Баталгаажуулах код').fill(await emailedCode(email));
   await page.getByRole('button', { name: 'Баталгаажуулах' }).click();
 
@@ -183,8 +182,8 @@ test('the third device is refused with a list to remove one (SPEC B)', async ({ 
 });
 
 /** Register, verify the email and sign in; ends on Миний бүртгэл. */
-async function signUp(page: Page, email: string, username: string) {
-  await register(page, email, username);
+async function signUp(page: Page, email: string) {
+  await register(page, email);
   await page.getByLabel('Баталгаажуулах код').fill(await emailedCode(email));
   await page.getByRole('button', { name: 'Баталгаажуулах' }).click();
   await page.getByLabel('Нууц үг').fill(PASSWORD);
@@ -200,7 +199,7 @@ test('gift: one member buys with the mock checkout, another redeems the code (SP
   const stamp = Date.now();
 
   // ---- the buyer pays for a gift and reads the code ----
-  await signUp(page, `e2e-giver-${stamp}@example.com`, `e2eg${stamp}`);
+  await signUp(page, `e2e-giver-${stamp}@example.com`);
   await page.getByRole('link', { name: 'Бусдад эрх бэлэглэх' }).click();
   await expect(page.getByRole('heading', { name: 'Эрх бэлэглэх', level: 1 })).toBeVisible();
   await page.getByRole('button', { name: 'Бэлэглэх' }).first().click();
@@ -220,7 +219,7 @@ test('gift: one member buys with the mock checkout, another redeems the code (SP
   // ---- another member redeems it ----
   const friendCtx = await browser.newContext({ baseURL: 'http://localhost:5173' });
   const friend = await friendCtx.newPage();
-  await signUp(friend, `e2e-friend-${stamp}@example.com`, `e2ef${stamp}`);
+  await signUp(friend, `e2e-friend-${stamp}@example.com`);
   await friend.goto('/redeem');
   await friend.getByLabel('Бэлгийн код').fill('ZZZZ-ZZZZ-ZZZZ');
   await friend.getByRole('button', { name: 'Ашиглах' }).click();

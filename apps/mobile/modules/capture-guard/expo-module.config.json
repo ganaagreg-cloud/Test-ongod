@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["CaptureGuardModule"]
+  },
+  "android": {
+    "modules": ["mn.zuvuutavuu.captureguard.CaptureGuardModule"]
+  }
+}

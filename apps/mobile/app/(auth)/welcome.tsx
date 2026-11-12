@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { layout, nativeTextStyle, spacing, themes, withAlpha } from '@ongod/tokens';
 import { CoverMarquee } from '../../src/components/CoverMarquee';
 import { env } from '../../src/config/env';
 import { mn } from '../../src/i18n/mn';
+import { openInApp } from '../../src/lib/openInApp';
 import { portalLink } from '../../src/lib/portalLink';
 import {
   AuroraBackground,
@@ -69,7 +70,7 @@ export default function Welcome() {
               <PressableScale
                 accessibilityRole="link"
                 accessibilityLabel={`${mn.legal.agreeBefore}${mn.legal.terms}${mn.legal.agreeAfter}`}
-                onPress={() => void Linking.openURL(termsUrl)}
+                onPress={() => void openInApp(termsUrl)}
                 haptics={false}
                 style={styles.terms}
               >

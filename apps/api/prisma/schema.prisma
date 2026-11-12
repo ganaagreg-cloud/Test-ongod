@@ -287,6 +287,12 @@ model Gift {
   subscriptionId      String?         @unique
   voidedById          String?
   voidReason          String?         @db.Text
+  /// A free code an admin made (ADR-0091): no payment behind it, amountMnt 0, buyerId = that admin.
+  adminIssued         Boolean         @default(false)
+  /// The admin's note on an issued code (who it is for).
+  note                String?         @db.VarChar(200)
+  /// One key per "create codes" request, so a retried request returns the same codes.
+  issueKey            String?
   createdAt           DateTime        @default(now())
 
   buyer        User          @relation("GiftBuyer", fields: [buyerId], references: [id])
@@ -298,6 +304,7 @@ model Gift {
   @@index([buyerId, status])
   @@index([status, createdAt])
   @@index([status, expiresAt])
+  @@index([issueKey])
 }
 
 enum CommentStatus {

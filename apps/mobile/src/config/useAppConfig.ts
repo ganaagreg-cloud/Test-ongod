@@ -32,5 +32,7 @@ export function useAppConfig() {
     socialLogin: query.data?.socialLogin ?? false,
     /** The published contact shown under the comments when set (SPEC L, ADR-0062). */
     supportEmail: query.data?.supportEmail ?? null,
+    /** The server switch of ADR-0076 / ADR-0090; false until the server says otherwise. */
+    inAppPayment: query.data?.inAppPayment ?? false,
   };
 }

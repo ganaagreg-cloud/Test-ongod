@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'mn.zuvuutavuu.captureguard'
+version = '1.0.0'
+
+android {
+  namespace "mn.zuvuutavuu.captureguard"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}

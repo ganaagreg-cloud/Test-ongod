@@ -211,6 +211,24 @@ export const dashboardResponseSchema = z.object({
     ),
   }),
   expiringSoon: z.array(dashboardMemberSchema.extend({ accessUntil: z.iso.datetime() })),
+  /**
+   * The 10 published episodes most members opened (ADR-0095). `count` = members who started it
+   * (one per member, however often they replay); `completed` = members who finished it.
+   */
+  topViewed: z
+    .array(
+      z.object({
+        id: idSchema,
+        title: z.string(),
+        count: z.number().int(),
+        completed: z.number().int(),
+      }),
+    )
+    .default([]),
+  /** The 10 episodes with the most visible comments (ADR-0095). */
+  topCommented: z
+    .array(z.object({ id: idSchema, title: z.string(), count: z.number().int() }))
+    .default([]),
 });
 export type DashboardDto = z.infer<typeof dashboardResponseSchema>;
 
@@ -248,10 +266,31 @@ export const adminGiftSchema = z.object({
   expiresAt: z.iso.datetime().nullable(),
   redeemedAt: z.iso.datetime().nullable(),
   voidReason: z.string().nullable(),
+  /** A free code an admin made (ADR-0091): `buyer` is that admin and `amountMnt` is 0. */
+  adminIssued: z.boolean(),
+  note: z.string().nullable(),
   createdAt: z.iso.datetime(),
 });
 export type AdminGiftDto = z.infer<typeof adminGiftSchema>;
 export const adminGiftResponseSchema = z.object({ gift: adminGiftSchema });
+
+/** Codes one "create codes" request may make (ADR-0091). */
+export const GIFT_ISSUE_MAX = 50;
+/** POST /v1/admin/gifts: free one-time codes made by an admin (ADR-0091). */
+export const issueGiftsRequestSchema = z.object({
+  planId: idSchema,
+  /** Overrides the plan's days (as in a manual grant). */
+  days: z.number().int().min(1).max(3660).optional(),
+  count: z.number().int().min(1).max(GIFT_ISSUE_MAX),
+  /** Who the codes are for; shown on the Бэлэг page and kept in the audit log. */
+  note: z.string().trim().min(1).max(200),
+  /** How long the codes can be redeemed. Default: the same 365 days as a bought gift. */
+  validDays: z.number().int().min(1).max(730).optional(),
+  /** One key per request: a retry with the same key returns the first batch, not a second one. */
+  requestId: z.uuid(),
+});
+export type IssueGiftsRequest = z.infer<typeof issueGiftsRequestSchema>;
+export const issueGiftsResponseSchema = z.object({ gifts: z.array(adminGiftSchema) });
 
 export const listGiftsQuerySchema = z.object({
   /** Default: PAID, the gifts waiting to be redeemed. */
