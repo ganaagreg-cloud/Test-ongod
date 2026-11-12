@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { deviceLimitDetailsSchema, type DeviceDto } from '@ongod/shared';
 import { Button, Input, Notice } from '@ongod/ui-web';
 import { ApiError } from '../api/client';
+import { resendCode } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { mn } from '../i18n/mn';
@@ -41,6 +42,15 @@ export default function Login() {
         const parsed = deviceLimitDetailsSchema.safeParse(err.details);
         setDevices(parsed.success ? parsed.data.devices : []);
         setError(undefined);
+      } else if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+        // ADR-0097: no session before the email is confirmed; on to the code step.
+        const email = (err.details as { email?: unknown } | undefined)?.email;
+        if (typeof email === 'string') {
+          await resendCode(email).catch(() => undefined);
+          navigate('/verify', { state: { email, afterVerify: 'login' } });
+        } else {
+          setError(err);
+        }
       } else {
         setDevices(undefined);
         setError(err);

@@ -49,7 +49,7 @@ describe('GET /v1/me', () => {
         id: s.userId,
         username: EMAIL,
         email: EMAIL,
-        emailVerified: false,
+        emailVerified: true,
         firstName: 'Эрдэнэ',
         lastName: 'Бат',
         phone: '99112233',
