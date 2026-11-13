@@ -101,10 +101,10 @@ Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme
 
 Light theme colors (contrast ratios against white unless noted):
 
-- bg #F6F4EF
+- bg #FFFFFF (white since [[ADR-0102-day-night-login-portrait-white-admin|ADR-0102]])
 - surface #FFFFFF
 - surfaceRaised #FFFFFF
-- surfaceSunken #EEEBE4 (table header, input bg)
+- surfaceSunken #F1F4F3 (table header, input bg)
 - hairline rgba(20,26,23,0.10)
 - textPrimary #141A17 (17.6:1)
 - textSecondary #4F5A54 (7.2:1)
@@ -119,6 +119,8 @@ Light theme colors (contrast ratios against white unless noted):
 - Focus ring: 2px #2B5FA8.
 
 Dark-theme values for the shared keys: primary = accent, onPrimary = onAccent, accentText = accent, warning #E0A43B, info #6EA8FE.
+
+**Day and night (mobile app only, [[ADR-0102-day-night-login-portrait-white-admin|ADR-0102]]).** Night is the dark forest look described above. Day is white with the forest green: every surface white (`surfaceRaised` #F5F8F7, `surfaceSunken` #EEF1F0), text in the forest green (textPrimary #053931, textSecondary #3F5F58), and the gold fills become green (`accent`, `primary` and `accentText` #053931, `onAccent` and `onPrimary` white), so buttons, the play button, progress and dots are green. `onBrandAccent` (gold) stays gold for details on a brand-green panel (access card, hero). A sun/moon button on Welcome and Профайл switches; the choice is kept on the phone and applies after the interface restarts. The admin has no switch: it is always white and green.
 
 # Do not
 

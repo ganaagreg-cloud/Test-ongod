@@ -31,6 +31,8 @@ const dark = {
   accentPressed: '#B8934F',
   accentSoft: 'rgba(212,175,106,0.1)',
   accentText: '#D4AF6A',
+  /** Gold for details ON a brand-green panel (access card, hero); stays gold in every theme. */
+  onBrandAccent: '#D4AF6A',
   onAccent: '#14110A',
   primary: '#D4AF6A',
   onPrimary: '#14110A',
@@ -52,11 +54,11 @@ export type ThemeName = 'dark' | 'light' | 'cream';
 
 /** Light theme: admin only. Contrast ratios are against white unless noted. */
 const light: ThemeColors = {
-  bg: '#F6F4EF',
+  bg: '#FFFFFF', // white (ADR-0102; was warm paper #F6F4EF)
   surface: '#FFFFFF',
   surfaceRaised: '#FFFFFF',
-  surfaceSunken: '#EEEBE4', // table header, input bg
-  skeleton: '#EEEBE4',
+  surfaceSunken: '#F1F4F3', // table header, input bg
+  skeleton: '#EEF1F0',
   skeletonShine: 'rgba(255,255,255,0.7)',
   brand: '#053931',
   heritage: '#1F3B2E',
@@ -70,6 +72,7 @@ const light: ThemeColors = {
   accentPressed: '#B8934F',
   accentSoft: 'rgba(138,106,43,0.1)',
   accentText: '#8A6A2B', // links/gold text, 5.0:1
+  onBrandAccent: '#D4AF6A',
   onAccent: '#14110A',
   primary: '#1F3B2E', // admin primary button bg = heritage
   onPrimary: '#FFFFFF', // 12.2:1
@@ -110,6 +113,7 @@ const cream: ThemeColors = {
   accentPressed: '#B8934F',
   accentSoft: 'rgba(5,57,49,0.08)',
   accentText: '#053931',
+  onBrandAccent: '#D4AF6A',
   onAccent: '#14110A',
   primary: '#053931',
   onPrimary: '#FFFFFF',
@@ -128,6 +132,63 @@ const cream: ThemeColors = {
 
 /** Same keys in every theme, so components work on any surface. Dark is the default. */
 export const themes: Record<ThemeName, ThemeColors> = { dark, light, cream };
+
+/**
+ * Day and night (ADR-0102). Night is the dark forest look the app shipped with; day is white with
+ * the forest green, and the gold fills (buttons, play, progress) become green. The app picks one
+ * at start (`applyTheme`, before any screen module builds its styles) and changes it by
+ * restarting the interface, because most styles are built once at load.
+ */
+export type ThemeMode = 'day' | 'night';
+
+const day: ThemeColors = {
+  bg: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceRaised: '#F5F8F7',
+  surfaceSunken: '#EEF1F0',
+  skeleton: '#E7EBEA',
+  skeletonShine: 'rgba(255,255,255,0.7)',
+  brand: '#053931',
+  heritage: '#053931',
+  onHeritage: '#FFFFFF',
+  hairline: 'rgba(5,57,49,0.12)',
+  hairlineStrong: 'rgba(5,57,49,0.22)',
+  textPrimary: '#053931',
+  textSecondary: '#3F5F58',
+  textTertiary: '#4D6B64',
+  accent: '#053931', // gold becomes the forest green
+  accentPressed: '#03251F',
+  accentSoft: 'rgba(5,57,49,0.08)',
+  accentText: '#053931',
+  onBrandAccent: '#D4AF6A',
+  onAccent: '#FFFFFF',
+  primary: '#053931',
+  onPrimary: '#FFFFFF',
+  glow: '#2FA88A',
+  success: '#2E7D43',
+  danger: '#C42B31',
+  warning: '#8F5B00',
+  info: '#2B5FA8',
+  successBg: badgeBg('#2E7D43'),
+  dangerBg: badgeBg('#C42B31'),
+  warningBg: badgeBg('#8F5B00'),
+  infoBg: badgeBg('#2B5FA8'),
+  focusRing: '#053931',
+  overlay: 'rgba(5,57,49,0.45)',
+};
+
+const night = { dark: { ...dark }, cream: { ...cream }, aurora: '#0A5446' };
+
+/**
+ * Makes `themes.dark`, `themes.cream` and `colors` hold the day or the night values, in place, so
+ * everything that already imported them sees the change. Call it once, first thing at start.
+ */
+export function applyTheme(mode: ThemeMode): void {
+  const mutable = themes as Record<string, ThemeColors>;
+  Object.assign(mutable.dark!, mode === 'day' ? day : night.dark);
+  Object.assign(mutable.cream!, mode === 'day' ? day : night.cream);
+  (aurora as { blob: string }).blob = mode === 'day' ? '#CDE7DF' : night.aurora;
+}
 
 /** The two app surfaces (admin's `light` is not one of them). */
 export type Surface = 'dark' | 'cream';

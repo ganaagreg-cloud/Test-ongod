@@ -152,9 +152,9 @@ test('category card and hero title match the client answers (2026-10-09)', () =>
 test('light theme matches DESIGN.md "Light theme colors"', () => {
   const block = design.slice(design.indexOf('Light theme colors'));
   const expected: Record<string, string> = {
-    bg: '#F6F4EF',
+    bg: '#FFFFFF',
     surface: '#FFFFFF',
-    surfaceSunken: '#EEEBE4',
+    surfaceSunken: '#F1F4F3',
     textPrimary: '#141A17',
     textSecondary: '#4F5A54',
     textTertiary: '#5F6862',

@@ -10,7 +10,7 @@ import { AuthHeader } from '../../src/components/AuthHeader';
 import { SocialButtons } from '../../src/components/SocialButtons';
 import { mn } from '../../src/i18n/mn';
 import { useSubmit } from '../../src/lib/useSubmit';
-import { Button, Input, Screen, TextLink, useToast } from '../../src/ui';
+import { Button, Input, PortraitBackground, Screen, TextLink, useToast } from '../../src/ui';
 
 /** The email of an account whose login was refused because it is not confirmed yet, else null. */
 function unverifiedEmailOf(error: unknown): string | null {
@@ -72,8 +72,8 @@ function LoginForm({ email, notice }: { email: string | undefined; notice: strin
   }
 
   return (
-    <Screen>
-      <AuthHeader title={mn.login.title} />
+    <Screen background={<PortraitBackground />}>
+      <AuthHeader title={mn.login.title} hero />
       <Input
         label={mn.login.identifier}
         value={identifier}

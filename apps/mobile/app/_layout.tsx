@@ -1,3 +1,5 @@
+// ADR-0102: first, so the day or night colours are set before any screen builds its styles.
+import { themeMode } from '../src/theme/boot';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -81,7 +83,7 @@ function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <StatusBar style="light" />
+          <StatusBar style={themeMode === 'day' ? 'dark' : 'light'} />
           <ToastProvider closeLabel={mn.close}>
             <Screens />
           </ToastProvider>

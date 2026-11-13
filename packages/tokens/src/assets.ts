@@ -24,6 +24,7 @@ export type IconName =
   | 'chevronDown'
   | 'mail'
   | 'moon'
+  | 'sun'
   | 'skipBack'
   | 'skipForward'
   | 'settings'
@@ -96,6 +97,19 @@ export const iconPaths: Record<IconName, { paths: readonly string[]; filled?: tr
   trash: { paths: ['M5 7h14', 'M10 7V4.5h4V7', 'M6.5 7l1 13h9l1-13'] },
   edit: { paths: ['M4 20h4L19 9l-4-4L4 16z', 'M13 7l4 4'] },
   // A wrapped box with a bow (gift codes, ADR-0090).
+  sun: {
+    paths: [
+      'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+      'M12 3v2',
+      'M12 19v2',
+      'M3 12h2',
+      'M19 12h2',
+      'M5.6 5.6L7 7',
+      'M17 17l1.4 1.4',
+      'M18.4 5.6L17 7',
+      'M7 17l-1.4 1.4',
+    ],
+  },
   gift: {
     paths: [
       'M4 8.5h16V12H4z',

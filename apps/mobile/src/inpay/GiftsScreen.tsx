@@ -196,7 +196,7 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: nativeFontFamily.ui[600],
     },
     code: {
-      color: c.accent,
+      color: c.accentText,
       textAlign: 'center',
       letterSpacing: layout.heroTracking,
       ...nativeTextStyle('h1'),

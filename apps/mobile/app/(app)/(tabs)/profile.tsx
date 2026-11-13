@@ -23,6 +23,7 @@ import {
   NumberTicker,
   Sheet,
   SurfaceProvider,
+  ThemeToggle,
 } from '../../../src/ui';
 
 /**
@@ -66,13 +67,17 @@ export default function Profile() {
             { paddingTop: insets.top + spacing.xl, paddingBottom: bottom },
           ]}
         >
-          <Enter index={0} style={styles.head}>
-            <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>
-              {fullName}
-            </Text>
-            <Text style={styles.username} numberOfLines={1}>
-              {handle}
-            </Text>
+          <Enter index={0} style={styles.headRow}>
+            <View style={styles.head}>
+              <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>
+                {fullName}
+              </Text>
+              <Text style={styles.username} numberOfLines={1}>
+                {handle}
+              </Text>
+            </View>
+            {/* Day / night (ADR-0102). */}
+            <ThemeToggle />
           </Enter>
 
           <Enter index={1}>
@@ -188,7 +193,8 @@ export default function Profile() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: layout.screenPadding, gap: spacing.xl },
-  head: { gap: spacing.xxs },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  head: { flex: 1, gap: spacing.xxs },
   name: { color: colors.textPrimary, ...nativeTextStyle('display') },
   username: { color: colors.textSecondary, ...nativeTextStyle('small') },
   stats: { flexDirection: 'row', gap: spacing.md },

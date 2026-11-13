@@ -126,3 +126,11 @@ Dates are when the entries were logged; the requests came from earlier planning 
 - **Price:** not quoted.
 - **Status:** **decided by Ganaa on 2026-11-12 and done in code**: (a)+(c) behind the server switch `inAppPayment`, off by default and for store review ([[ADR-0090-gift-codes-and-gift-buying-in-app-behind-switch|ADR-0090]]); (b) one-time codes in batches of up to 50 ([[ADR-0091-admin-issued-gift-codes|ADR-0091]]); (d) [[ADR-0092-register-in-steps-without-username|ADR-0092]]. SPEC and DESIGN edits are prepared in the ADRs and wait for Ganaa's approval.
 - **Notes:** the store risk of (a) and (c) is the owner's, as in [[ADR-0076-in-app-payment-with-bank-deeplinks|ADR-0076]]. The payment hand-off to a bank app is not tested on a phone.
+
+### 2026-11-13: Day/night mode, painted login background, tab bar gap, white admin
+
+- **Client asked** (Ganaa, 2026-11-13): the login background like their mockup using their painting; a day/night switch (sun/moon) in the app, day white with green buttons; fix the tab bar's bottom gap; admin white and green, no switch.
+- **In scope:** no for the switch and the painting (new, and DESIGN had one dark theme); yes for the tab bar gap (a fix) and the admin colours (the client's colour choice).
+- **Price:** not quoted.
+- **Status:** **done in code on 2026-11-13**: [[ADR-0102-day-night-login-portrait-white-admin|ADR-0102]]. Needs a new app build.
+- **Notes:** the client must confirm they may use the painting (artist's signature visible). Default mode is day; one constant changes it.
