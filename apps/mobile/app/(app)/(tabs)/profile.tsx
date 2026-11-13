@@ -11,6 +11,7 @@ import { inpayMn } from '../../../src/inpay/mn';
 import { useInAppPayment } from '../../../src/inpay/useInAppPayment';
 import { accessState, listenedHours } from '../../../src/lib/episode';
 import { openInApp } from '../../../src/lib/openInApp';
+import { themeMode } from '../../../src/theme/boot';
 import { portalLink } from '../../../src/lib/portalLink';
 import { useBottomSpace } from '../../../src/screens/layout';
 import { AccessCard } from '../../../src/screens/profile/AccessCard';
@@ -54,8 +55,8 @@ export default function Profile() {
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   // New accounts have no username of their own (ADR-0092): it equals the email, shown plainly.
   const handle = user.username === user.email ? user.email : `@${user.username}`;
-  const termsUrl = portalLink(env.portalUrl, '/app/terms');
-  const privacyUrl = portalLink(env.portalUrl, '/app/privacy');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms', themeMode);
+  const privacyUrl = portalLink(env.portalUrl, '/app/privacy', themeMode);
 
   return (
     <SurfaceProvider surface="dark">

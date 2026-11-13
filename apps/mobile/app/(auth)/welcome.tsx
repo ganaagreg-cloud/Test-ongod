@@ -5,6 +5,7 @@ import { layout, nativeTextStyle, spacing, themes } from '@ongod/tokens';
 import { env } from '../../src/config/env';
 import { mn } from '../../src/i18n/mn';
 import { openInApp } from '../../src/lib/openInApp';
+import { themeMode } from '../../src/theme/boot';
 import { portalLink } from '../../src/lib/portalLink';
 import {
   AuroraBackground,
@@ -28,7 +29,7 @@ export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // Hidden until the portal address is set (EXPO_PUBLIC_PORTAL_URL).
-  const termsUrl = portalLink(env.portalUrl, '/app/terms');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms', themeMode);
   return (
     <SurfaceProvider surface="dark">
       <View style={styles.root}>
