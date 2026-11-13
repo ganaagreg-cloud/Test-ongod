@@ -35,7 +35,7 @@ export function AccessCard({ access, until }: { access: AccessState; until: stri
             cx={size / 2}
             cy={size / 2}
             r={r}
-            stroke={withAlpha(colors.textPrimary, 0.12)}
+            stroke={withAlpha(colors.onHeritage, 0.14)}
             strokeWidth={stroke}
             fill="none"
           />
@@ -43,7 +43,7 @@ export function AccessCard({ access, until }: { access: AccessState; until: stri
             cx={size / 2}
             cy={size / 2}
             r={r}
-            stroke={colors.accent}
+            stroke={colors.onBrandAccent}
             strokeWidth={stroke}
             strokeLinecap="round"
             fill="none"
@@ -77,7 +77,7 @@ const makeStyles = (c: ThemeColors) =>
       padding: spacing.md,
       borderRadius: radius.cardLarge,
       borderWidth: layout.borderWidth,
-      borderColor: withAlpha(c.accent, 0.22),
+      borderColor: withAlpha(c.onBrandAccent, 0.22),
       backgroundColor: c.brand,
     },
     ring: {
@@ -89,17 +89,21 @@ const makeStyles = (c: ThemeColors) =>
     turn: { transform: [{ rotate: '-90deg' }] },
     days: {
       position: 'absolute',
-      color: c.textPrimary,
+      color: c.onHeritage,
       ...nativeTextStyle('h2'),
       fontFamily: nativeFontFamily.display[600],
     },
     body: { flex: 1, gap: spacing.xxs },
-    label: { color: c.accent, ...nativeTextStyle('caption'), fontFamily: nativeFontFamily.ui[600] },
+    label: {
+      color: c.onBrandAccent,
+      ...nativeTextStyle('caption'),
+      fontFamily: nativeFontFamily.ui[600],
+    },
     state: {
-      color: c.textPrimary,
+      color: c.onHeritage,
       ...nativeTextStyle('body'),
       fontFamily: nativeFontFamily.ui[600],
     },
-    inactive: { color: c.textSecondary },
-    left: { color: c.textSecondary, ...nativeTextStyle('small') },
+    inactive: { color: withAlpha(c.onHeritage, 0.7) },
+    left: { color: withAlpha(c.onHeritage, 0.7), ...nativeTextStyle('small') },
   });

@@ -76,5 +76,5 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: nativeFontFamily.ui[600],
     },
     text: { color: c.textSecondary, ...nativeTextStyle('small') },
-    email: { color: c.accent, ...nativeTextStyle('body') },
+    email: { color: c.accentText, ...nativeTextStyle('body') },
   });
