@@ -1,5 +1,5 @@
 ---
-id: ADR-0101
+id: ADR-0104
 title: 'No server-side gate for mobile payment: the switch only controls what the apps show'
 status: accepted
 date: '2026-11-12'
