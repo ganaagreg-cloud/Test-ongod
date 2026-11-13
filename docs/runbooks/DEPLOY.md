@@ -1,13 +1,13 @@
 ---
 type: runbook
-status: draft
-updated: 2026-11-02
+status: in-use
+updated: 2026-11-14
 tags: [runbook, area/hosting, area/devops]
 ---
 
 # Deploy (own VPS)
 
-Draft. Hosting is one VPS of our own ([[ADR-0075-hosting-own-vps|ADR-0075]], replaces [[ADR-0003-hosting-itools-node|ADR-0003]]). **None of the commands below has been run on a real server yet**; the first run is the test. Provider, plan and region are not chosen. Ubuntu 24.04 LTS is assumed.
+Hosting is one VPS of our own ([[ADR-0075-hosting-own-vps|ADR-0075]], replaces [[ADR-0003-hosting-itools-node|ADR-0003]]), Ubuntu 24.04, 1 vCPU, 2 GB RAM. The server is live at https://app.zuwuutawuu.mn. Sections 1 to 3 are the setup plan; **the real server differs from it**: login is as user `cloudmn` with a password (ssh alias `zuvuu`, details in the private vault, not in Git), and the app is one git checkout built in place, not a `releases/<hash>` folder per release. Section 4 is what is actually used.
 
 Rules for working on the server:
 
@@ -66,14 +66,26 @@ All keys are listed in `.env.example`; who generates each one, what a leak or a 
 
 ## 4. Deploy
 
-Put each release in its own folder so a bad one can be undone: `/srv/ongod/releases/<git short hash>/`, with `/srv/ongod/current` a symlink to the active one. As `deploy`:
+Code comes from GitHub `main`. On the server (`ssh zuvuu`):
 
-1. `git clone` (or `git fetch`) the tagged release into a new release folder.
-2. `pnpm install --frozen-lockfile` (also generates the Prisma client).
-3. `pnpm build`: tokens CSS, API bundle, portal and admin static builds. Set `VITE_PUBLIC_URL` (the real https address, no trailing slash) in the environment for this step, and leave `NODE_ENV` unset or `production`: the portal build refuses to run in development mode ([[ADR-0026-web-session-cookie-and-portal|ADR-0026]]). The portal build also writes `.br` and `.gz` copies that the API serves.
-4. **Back up the database first** (see section 6), then `pnpm --filter @ongod/api db:deploy` with the env loaded: applies migrations (never `migrate dev` or `reset` in production). Migration `20261023090000_drop_totp_columns` drops columns the OLD build still selects: restart the app immediately after `db:deploy`, because sign-in and refresh fail between the migration and the restart.
-5. Switch the `current` symlink to the new release and `sudo systemctl restart ongod`.
-6. Smoke test: `https://<domain>/health` returns `{"status":"ok"}`; sign in to the portal and the admin; open one episode.
+```
+cd /srv/ongod/current && git pull && ./scripts/deploy.sh
+```
+
+`/srv/ongod/current` links to `/srv/ongod/releases/src`, the single checkout. `scripts/deploy.sh` stops at the first error and does, in order:
+
+1. Reads `/etc/ongod/ongod.env` through `sudo` as plain `KEY=VALUE` lines (never printed; it is not sourced as shell, because values may contain spaces) and sets `VITE_PUBLIC_URL=https://app.zuwuutawuu.mn`.
+2. `git pull --ff-only`, `pnpm install --frozen-lockfile`.
+3. `pnpm build`: tokens CSS, API bundle, portal and admin. The portal build refuses `NODE_ENV=development` ([[ADR-0026-web-session-cookie-and-portal|ADR-0026]]).
+4. `pnpm --filter @ongod/api db:deploy` (Prisma `migrate deploy`; never `migrate dev` or `reset` in production). It prints "No pending migrations" when there is nothing to apply.
+5. `sudo systemctl restart ongod`.
+6. Checks `https://app.zuwuutawuu.mn/health`, retrying for about 30 s. The app needs about 8 s to start on one CPU, so a few 502 lines before `{"status":"ok"}` are normal. There is a short gap with no service on every deploy.
+
+After the script: sign in to the portal and the admin, open one episode, and look at `sudo journalctl -u ongod -n 50 --no-pager`.
+
+**Before a release with migrations, take a fresh database dump** (section 6): the script does not. A migration that drops columns the old build still selects (for example `20261023090000_drop_totp_columns`) makes sign-in fail between migration and restart; the script restarts straight after `db:deploy`.
+
+Build memory: the server has 2 GB of RAM; if `pnpm build` is slow or killed, check `free -h`.
 
 `/etc/systemd/system/ongod.service`:
 
@@ -113,8 +125,8 @@ The app must be able to write its upload folder and `LOG_FILE`; check the exact 
 
 ## 7. Rollback
 
-- Code only (the migration was backward compatible): point `current` back at the previous release and restart.
-- A migration that cannot be undone by the old build: restore the dump taken in step 4 of the deploy, then switch the release back. Migrations are forward-only; say so in the release notes of any change that is not backward compatible.
+- Code only (the migration was backward compatible): `git checkout <previous hash> && pnpm build && sudo systemctl restart ongod` in `/srv/ongod/releases/src`. Go back to `main` afterwards (`git checkout main`), or the next `git pull` will not work.
+- A migration that cannot be undone by the old build: restore the dump taken before the deploy, then roll the code back. Migrations are forward-only; say so in the release notes of any change that is not backward compatible.
 
 ## 8. Updates routine (monthly, and on any Node security release)
 
