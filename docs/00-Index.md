@@ -124,6 +124,7 @@ tags: [index]
 | ADR-0100 | [[ADR-0100-optional-phone-owner-alert-on-admin-codes-version-0-2-0]] | accepted                                                                    |
 | ADR-0101 | [[ADR-0101-browsing-screens-white]]                                  | accepted                                                                    |
 | ADR-0102 | [[ADR-0102-day-night-login-portrait-white-admin]]                    | accepted                                                                    |
+| ADR-0103 | [[ADR-0103-legal-pages-follow-day-mode]]                             | accepted                                                                    |
 
 ## Research
 
