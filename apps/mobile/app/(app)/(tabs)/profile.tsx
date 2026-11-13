@@ -11,6 +11,7 @@ import { inpayMn } from '../../../src/inpay/mn';
 import { useInAppPayment } from '../../../src/inpay/useInAppPayment';
 import { accessState, listenedHours } from '../../../src/lib/episode';
 import { openInApp } from '../../../src/lib/openInApp';
+import { themeMode } from '../../../src/theme/boot';
 import { portalLink } from '../../../src/lib/portalLink';
 import { useBottomSpace } from '../../../src/screens/layout';
 import { AccessCard } from '../../../src/screens/profile/AccessCard';
@@ -23,6 +24,7 @@ import {
   NumberTicker,
   Sheet,
   SurfaceProvider,
+  ThemeToggle,
 } from '../../../src/ui';
 
 /**
@@ -53,8 +55,8 @@ export default function Profile() {
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   // New accounts have no username of their own (ADR-0092): it equals the email, shown plainly.
   const handle = user.username === user.email ? user.email : `@${user.username}`;
-  const termsUrl = portalLink(env.portalUrl, '/app/terms');
-  const privacyUrl = portalLink(env.portalUrl, '/app/privacy');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms', themeMode);
+  const privacyUrl = portalLink(env.portalUrl, '/app/privacy', themeMode);
 
   return (
     <SurfaceProvider surface="dark">
@@ -66,13 +68,17 @@ export default function Profile() {
             { paddingTop: insets.top + spacing.xl, paddingBottom: bottom },
           ]}
         >
-          <Enter index={0} style={styles.head}>
-            <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>
-              {fullName}
-            </Text>
-            <Text style={styles.username} numberOfLines={1}>
-              {handle}
-            </Text>
+          <Enter index={0} style={styles.headRow}>
+            <View style={styles.head}>
+              <Text style={styles.name} accessibilityRole="header" numberOfLines={2}>
+                {fullName}
+              </Text>
+              <Text style={styles.username} numberOfLines={1}>
+                {handle}
+              </Text>
+            </View>
+            {/* Day / night (ADR-0102). */}
+            <ThemeToggle />
           </Enter>
 
           <Enter index={1}>
@@ -188,7 +194,8 @@ export default function Profile() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: layout.screenPadding, gap: spacing.xl },
-  head: { gap: spacing.xxs },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  head: { flex: 1, gap: spacing.xxs },
   name: { color: colors.textPrimary, ...nativeTextStyle('display') },
   username: { color: colors.textSecondary, ...nativeTextStyle('small') },
   stats: { flexDirection: 'row', gap: spacing.md },

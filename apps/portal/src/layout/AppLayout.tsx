@@ -1,4 +1,5 @@
-import { Outlet } from 'react-router';
+import { useEffect } from 'react';
+import { Outlet, useSearchParams } from 'react-router';
 import { MountainLine } from '@ongod/ui-web';
 import { mn } from '../i18n/mn';
 
@@ -8,6 +9,16 @@ import { mn } from '../i18n/mn';
  * (ADR-0053).
  */
 export function AppLayout() {
+  // The app passes ?theme=day when the member uses day mode: then the page is white (ADR-0103).
+  const [params] = useSearchParams();
+  const day = params.get('theme') === 'day';
+  useEffect(() => {
+    if (!day) return;
+    document.documentElement.dataset.theme = 'light';
+    return () => {
+      delete document.documentElement.dataset.theme;
+    };
+  }, [day]);
   return (
     <div className="portal-shell">
       <header className="portal-header">

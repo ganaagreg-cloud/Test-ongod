@@ -59,7 +59,7 @@ export function TabBar({
         opacity: glass.tabBar,
         pill: dark.heritage,
         pillBorder: withAlpha(dark.accent, 0.22),
-        active: dark.textPrimary,
+        active: dark.onHeritage,
         inactive: dark.textSecondary,
       };
   const [width, setWidth] = useState(0);

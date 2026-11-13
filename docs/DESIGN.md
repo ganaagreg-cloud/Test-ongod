@@ -17,7 +17,7 @@ Decisions: [[ADR-0013-fonts-lora-inter|ADR-0013]] · Facts: [[R-fonts-mongolian-
 
 Colors: bg #021512; surface #041F1A; surfaceRaised #062A24; surfaceSunken #021512; skeleton #062A24; skeletonShine rgba(243,239,230,0.07); brand #053931 (hero panels, access card, "this week" card); heritage #0B4A3F (selected chip pill, active tab pill); onHeritage #F3EFE6; hairline rgba(243,239,230,0.08); hairlineStrong rgba(243,239,230,0.22); textPrimary #F3EFE6; textSecondary #A9B8B2; textTertiary #7F918B (not allowed on brand or heritage); accent #D4AF6A; accentPressed #B8934F; accentSoft rgba(212,175,106,0.1); onAccent #14110A; glow #2FA88A (ambient aurora blobs only, never text or icons); success #46A758; danger #E5484D; overlay rgba(1,10,8,0.66).
 
-Cream colors (browsing screens, same keys as dark): bg #F1ECE1 (paper); surface #FBF8F2 (card); surfaceRaised #FBF8F2; surfaceSunken #E9E3D6; skeleton #E5DED0; skeletonShine rgba(255,255,255,0.7); brand #053931; heritage #053931; onHeritage #F1ECE1; hairline rgba(5,57,49,0.12); hairlineStrong rgba(5,57,49,0.22); textPrimary #053931 (ink, 10.9:1); textSecondary #3F5F58 (ink 2, 6.0:1); textTertiary #4D6B64; accent #D4AF6A (a FILL on cream, never text or thin icons); accentText #053931; primary #053931; onPrimary #F1ECE1; accentSoft rgba(5,57,49,0.08); glow #2FA88A; focusRing #053931; overlay rgba(5,57,49,0.45). Status colors on cream = the light-theme values.
+Cream colors (browsing screens, same keys as dark; **white since [[ADR-0101-browsing-screens-white|ADR-0101]]**, the name "cream" stays in code): bg #FFFFFF (white); surface #FFFFFF (card, set apart by the hairline); surfaceRaised #FFFFFF; surfaceSunken #EEF1F0; skeleton #E7EBEA; skeletonShine rgba(255,255,255,0.7); brand #053931; heritage #053931; onHeritage #FFFFFF; hairline rgba(5,57,49,0.12); hairlineStrong rgba(5,57,49,0.22); textPrimary #053931 (ink, 10.9:1); textSecondary #3F5F58 (ink 2, 6.0:1); textTertiary #4D6B64; accent #D4AF6A (a FILL on cream, never text or thin icons); accentText #053931; primary #053931; onPrimary #FFFFFF; accentSoft rgba(5,57,49,0.08); glow #2FA88A; focusRing #053931; overlay rgba(5,57,49,0.45). Status colors on cream = the light-theme values.
 
 Cover families (typographic placeholder covers and the podcaster's template): forest #0D5A4C → #053931 → #03231E, teal #155463 → #0A3540 → #041A20, bronze #4A3818 → #2A1F0D → #140E05, moss #3A5A2A → #1F3A17 → #0D1A09, plum #5A3A4A → #33202B → #170D13.
 
@@ -101,10 +101,10 @@ Admin uses the light theme (`themes.light` in packages/tokens; `<html data-theme
 
 Light theme colors (contrast ratios against white unless noted):
 
-- bg #F6F4EF
+- bg #FFFFFF (white since [[ADR-0102-day-night-login-portrait-white-admin|ADR-0102]])
 - surface #FFFFFF
 - surfaceRaised #FFFFFF
-- surfaceSunken #EEEBE4 (table header, input bg)
+- surfaceSunken #F1F4F3 (table header, input bg)
 - hairline rgba(20,26,23,0.10)
 - textPrimary #141A17 (17.6:1)
 - textSecondary #4F5A54 (7.2:1)
@@ -119,6 +119,8 @@ Light theme colors (contrast ratios against white unless noted):
 - Focus ring: 2px #2B5FA8.
 
 Dark-theme values for the shared keys: primary = accent, onPrimary = onAccent, accentText = accent, warning #E0A43B, info #6EA8FE.
+
+**Day and night (mobile app only, [[ADR-0102-day-night-login-portrait-white-admin|ADR-0102]]).** Night is the dark forest look described above. Day is white with the forest green: every surface white (`surfaceRaised` #F5F8F7, `surfaceSunken` #EEF1F0), text in the forest green (textPrimary #053931, textSecondary #3F5F58), and the gold fills become green (`accent`, `primary` and `accentText` #053931, `onAccent` and `onPrimary` white), so buttons, the play button, progress and dots are green. `onBrandAccent` (gold) stays gold for details on a brand-green panel (access card, hero). A sun/moon button on Welcome and Профайл switches; the choice is kept on the phone and applies after the interface restarts. The admin has no switch: it is always white and green.
 
 # Do not
 

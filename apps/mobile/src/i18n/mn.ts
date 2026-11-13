@@ -289,6 +289,12 @@ export const mn = {
     browse: 'Сан руу очих',
   },
 
+  /** Day and night (ADR-0102). The label names where a tap leads. */
+  theme: {
+    toNight: 'Шөнийн горим руу шилжих',
+    toDay: 'Өдрийн горим руу шилжих',
+  },
+
   /** The bell on Нүүр (ADR-0099). */
   notifications: {
     title: 'Мэдэгдэл',

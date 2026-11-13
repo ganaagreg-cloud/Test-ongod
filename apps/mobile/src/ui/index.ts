@@ -15,6 +15,8 @@ export { LockedBlur } from './LockedBlur';
 export { Glass, floatingShadow, goldGlowShadow } from './Glass';
 export { HeroCarousel, type HeroItem } from './HeroCarousel';
 export { Icon, MountainLine } from './Icon';
+export { PortraitBackground } from './PortraitBackground';
+export { ThemeToggle } from './ThemeToggle';
 export { Input, type InputProps } from './Input';
 export { ListItem, type ListItemProps } from './ListItem';
 export { MiniPlayer, type MiniPlayerProps } from './MiniPlayer';

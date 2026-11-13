@@ -1,46 +1,44 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { layout, nativeTextStyle, spacing, themes, withAlpha } from '@ongod/tokens';
-import { CoverMarquee } from '../../src/components/CoverMarquee';
+import { layout, nativeTextStyle, spacing, themes } from '@ongod/tokens';
 import { env } from '../../src/config/env';
 import { mn } from '../../src/i18n/mn';
 import { openInApp } from '../../src/lib/openInApp';
+import { themeMode } from '../../src/theme/boot';
 import { portalLink } from '../../src/lib/portalLink';
 import {
   AuroraBackground,
   Button,
   Enter,
   MountainLine,
+  PortraitBackground,
   PressableScale,
   SurfaceProvider,
+  ThemeToggle,
 } from '../../src/ui';
 
 const dark = themes.dark;
 
 /**
- * Main.dc.html: aurora light, three rows of cover tiles drifting behind, the mountain line that
- * draws itself, the title and text, then gold "Нэвтрэх" (with a sheen) and "Бүртгүүлэх". The
+ * Main.dc.html: aurora light, the client's painting at the top fading into the page (ADR-0102),
+ * the mountain line that draws itself, the title and text, then gold "Нэвтрэх" (with a sheen) and "Бүртгүүлэх". The
  * pieces enter one after the other.
  */
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // Hidden until the portal address is set (EXPO_PUBLIC_PORTAL_URL).
-  const termsUrl = portalLink(env.portalUrl, '/app/terms');
+  const termsUrl = portalLink(env.portalUrl, '/app/terms', themeMode);
   return (
     <SurfaceProvider surface="dark">
       <View style={styles.root}>
         <AuroraBackground variant="welcome" />
-        <CoverMarquee />
-        {/* The rows sink into the dark at the bottom (the top row is faint, see CoverMarquee). */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={[withAlpha(dark.bg, 0), withAlpha(dark.bg, 0.85), dark.bg]}
-          locations={[0, 0.32, 0.55]}
-          style={styles.bottomFade}
-        />
+        {/* The client's painting, fading into the page (ADR-0102). */}
+        <PortraitBackground />
+        <View style={[styles.toggle, { top: insets.top + spacing.sm }]}>
+          <ThemeToggle overImage />
+        </View>
         <View style={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
           <MountainLine draw color={dark.accent} />
           <Enter index={1}>
@@ -90,7 +88,7 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden', backgroundColor: dark.bg },
-  bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '62%' },
+  toggle: { position: 'absolute', right: layout.screenPadding },
   content: {
     position: 'absolute',
     bottom: 0,

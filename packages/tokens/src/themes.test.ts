@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { themes, type ThemeColors } from './index';
+import { applyTheme, aurora, colors, themes, type ThemeColors } from './index';
 
 test('every theme has the same keys', () => {
   const keys = (name: keyof typeof themes) => Object.keys(themes[name]).sort();
@@ -69,4 +69,42 @@ test('cream text passes WCAG AA; ink and ink 2 meet the ADR-0028 numbers', () =>
 test('gold is never text on cream', () => {
   assert.notEqual(themes.cream.accentText.toLowerCase(), themes.cream.accent.toLowerCase());
   assert.ok(contrast(themes.cream.accentText, themes.cream.bg) >= AA);
+});
+
+test('day and night: applyTheme changes the shared theme objects in place and night restores them', () => {
+  const night = { ...themes.dark };
+  const nightCream = { ...themes.cream };
+  const nightAurora = aurora.blob;
+  try {
+    applyTheme('day');
+    // Everything that imported `colors` or `themes.dark` sees white and green.
+    assert.equal(colors.bg, '#FFFFFF');
+    assert.equal(themes.dark.bg, '#FFFFFF');
+    assert.equal(themes.cream.bg, '#FFFFFF');
+    assert.equal(colors, themes.dark);
+    // The gold fills are green, and the text on them is white.
+    assert.equal(themes.dark.accent, '#053931');
+    assert.equal(themes.dark.primary, '#053931');
+    assert.equal(themes.dark.onPrimary, '#FFFFFF');
+    assert.equal(themes.dark.onAccent, '#FFFFFF');
+    // Gold stays available for details on a green panel.
+    assert.equal(themes.dark.onBrandAccent, '#D4AF6A');
+    assert.notEqual(aurora.blob, nightAurora);
+    pairs(themes.dark, 'day', [
+      ['textPrimary', 'bg'],
+      ['textSecondary', 'bg'],
+      ['textTertiary', 'bg'],
+      ['accentText', 'bg'],
+      ['onPrimary', 'primary'],
+      ['onAccent', 'accent'],
+      ['textPrimary', 'surfaceSunken'],
+    ]);
+    // The admin theme is not touched.
+    assert.equal(themes.light.bg, '#FFFFFF');
+  } finally {
+    applyTheme('night');
+  }
+  assert.deepEqual({ ...themes.dark }, night);
+  assert.deepEqual({ ...themes.cream }, nightCream);
+  assert.equal(aurora.blob, nightAurora);
 });
