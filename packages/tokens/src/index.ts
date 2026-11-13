@@ -87,20 +87,20 @@ const light: ThemeColors = {
 };
 
 /**
- * Cream theme: browsing screens in the app (ADR-0028). Same keys as dark. Gold stays a FILL
+ * Browsing theme (still named `cream`; white since ADR-0101): browsing screens in the app (ADR-0028). Same keys as dark. Gold stays a FILL
  * (accent), never text or a thin icon on this surface; ink (brand) is the text and link color.
  * Contrast (src/themes.test.ts): ink 10.9:1, ink 2 6.0:1, textTertiary >= 4.5:1 on paper/card/sunken.
  */
 const cream: ThemeColors = {
-  bg: '#F1ECE1', // paper
-  surface: '#FBF8F2', // card
-  surfaceRaised: '#FBF8F2',
-  surfaceSunken: '#E9E3D6', // segmented track
-  skeleton: '#E5DED0',
+  bg: '#FFFFFF', // white (ADR-0101; was cream paper #F1ECE1)
+  surface: '#FFFFFF', // card: white, set apart by the hairline
+  surfaceRaised: '#FFFFFF',
+  surfaceSunken: '#EEF1F0', // segmented track
+  skeleton: '#E7EBEA',
   skeletonShine: 'rgba(255,255,255,0.7)',
   brand: '#053931',
   heritage: '#053931', // selected chip pill
-  onHeritage: '#F1ECE1',
+  onHeritage: '#FFFFFF',
   hairline: 'rgba(5,57,49,0.12)',
   hairlineStrong: 'rgba(5,57,49,0.22)',
   textPrimary: '#053931', // ink
@@ -112,7 +112,7 @@ const cream: ThemeColors = {
   accentText: '#053931',
   onAccent: '#14110A',
   primary: '#053931',
-  onPrimary: '#F1ECE1',
+  onPrimary: '#FFFFFF',
   glow: '#2FA88A',
   success: '#2E7D43',
   danger: '#C42B31',

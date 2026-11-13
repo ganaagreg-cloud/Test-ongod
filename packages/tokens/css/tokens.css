@@ -196,15 +196,15 @@
 
 [data-theme="cream"] {
   color-scheme: light;
-  --color-bg: #F1ECE1;
-  --color-surface: #FBF8F2;
-  --color-surface-raised: #FBF8F2;
-  --color-surface-sunken: #E9E3D6;
-  --color-skeleton: #E5DED0;
+  --color-bg: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-sunken: #EEF1F0;
+  --color-skeleton: #E7EBEA;
   --color-skeleton-shine: rgba(255,255,255,0.7);
   --color-brand: #053931;
   --color-heritage: #053931;
-  --color-on-heritage: #F1ECE1;
+  --color-on-heritage: #FFFFFF;
   --color-hairline: rgba(5,57,49,0.12);
   --color-hairline-strong: rgba(5,57,49,0.22);
   --color-text-primary: #053931;
@@ -216,7 +216,7 @@
   --color-accent-text: #053931;
   --color-on-accent: #14110A;
   --color-primary: #053931;
-  --color-on-primary: #F1ECE1;
+  --color-on-primary: #FFFFFF;
   --color-glow: #2FA88A;
   --color-success: #2E7D43;
   --color-danger: #C42B31;

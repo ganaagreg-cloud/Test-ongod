@@ -1,6 +1,6 @@
 ---
 type: index
-updated: 2026-11-12
+updated: 2026-11-13
 tags: [index]
 ---
 
@@ -49,7 +49,7 @@ tags: [index]
 | ADR-0025 | [[ADR-0025-ui-component-set]]                                        | accepted                                                                    |
 | ADR-0026 | [[ADR-0026-web-session-cookie-and-portal]]                           | accepted                                                                    |
 | ADR-0027 | [[ADR-0027-design-v2-aurora-forest-motion]]                          | accepted                                                                    |
-| ADR-0028 | [[ADR-0028-cream-library-and-16x9-artwork]]                          | accepted                                                                    |
+| ADR-0028 | [[ADR-0028-cream-library-and-16x9-artwork]]                          | accepted (colours changed to white by ADR-0101)                             |
 | ADR-0029 | [[ADR-0029-admin-app-implementation]]                                | accepted                                                                    |
 | ADR-0030 | [[ADR-0030-mobile-app-foundation]]                                   | accepted                                                                    |
 | ADR-0031 | [[ADR-0031-mobile-ui-kit-v2-implementation]]                         | accepted                                                                    |
@@ -122,6 +122,7 @@ tags: [index]
 | ADR-0098 | [[ADR-0098-remove-unverified-signups-after-24-hours]]                | accepted                                                                    |
 | ADR-0099 | [[ADR-0099-notification-list-and-help-screen]]                       | accepted                                                                    |
 | ADR-0100 | [[ADR-0100-optional-phone-owner-alert-on-admin-codes-version-0-2-0]] | accepted                                                                    |
+| ADR-0101 | [[ADR-0101-browsing-screens-white]]                                  | accepted                                                                    |
 
 ## Research
 
@@ -174,6 +175,7 @@ tags: [index]
 
 ## Latest logs
 
+- [[2026-11-13]]
 - [[2026-11-12]]
 - [[2026-11-11]]
 - [[2026-11-03]]
