@@ -6,9 +6,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # env file is root:ongod 640, so read it through sudo (never printed)
-set -a
-. <(sudo cat /etc/ongod/ongod.env)
-set +a
+while IFS='=' read -r k v; do
+  [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue # skips comments and blank lines
+  v="${v%\"}"; v="${v#\"}"
+  export "$k=$v"
+done < <(sudo cat /etc/ongod/ongod.env)
 
 export VITE_PUBLIC_URL=https://app.zuwuutawuu.mn
 
