@@ -20,5 +20,4 @@ pnpm build
 pnpm --filter @ongod/api db:deploy
 sudo systemctl restart ongod
 
-sleep 3
-curl -fsS "$VITE_PUBLIC_URL/health" && echo
+curl -fsS --retry 15 --retry-delay 2 --retry-all-errors "$VITE_PUBLIC_URL/health" && echo
