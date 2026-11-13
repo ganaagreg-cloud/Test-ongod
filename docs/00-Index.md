@@ -126,6 +126,7 @@ tags: [index]
 | ADR-0102 | [[ADR-0102-day-night-login-portrait-white-admin]]                    | accepted                                                                    |
 | ADR-0103 | [[ADR-0103-legal-pages-follow-day-mode]]                             | accepted                                                                    |
 | ADR-0104 | [[ADR-0104-no-server-gate-for-mobile-payment]]                       | accepted                                                                    |
+| ADR-0105 | [[ADR-0105-admin-idle-logout-30-minutes]]                            | accepted                                                                    |
 
 ## Research
 

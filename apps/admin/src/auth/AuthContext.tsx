@@ -11,6 +11,8 @@ import {
 } from 'react';
 import { api, deviceId, refreshSession, session } from '../api/client';
 
+const IDLE_LOGOUT_MS = 30 * 60 * 1000;
+
 /**
  * Where the admin is on the way in (SPEC: roles ADMIN and OWNER, password login only, ADR-0040):
  * password login -> role check -> the app.
@@ -108,6 +110,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     signedOut();
   }, [signedOut]);
+
+  // ADR-0105: 30 minutes without a click, key press, scroll or touch signs the admin out.
+  // shortcut: per tab and client side only, a closed tab keeps its refresh cookie until it expires; add a server idle limit if that matters.
+  useEffect(() => {
+    if (gate.stage !== 'ready') return;
+    let timer = 0;
+    const reset = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void logout(), IDLE_LOGOUT_MS);
+    };
+    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
+    for (const e of events) window.addEventListener(e, reset, { passive: true });
+    reset();
+    return () => {
+      window.clearTimeout(timer);
+      for (const e of events) window.removeEventListener(e, reset);
+    };
+  }, [gate.stage, logout]);
 
   const value = useMemo<AuthApi>(() => ({ gate, login, logout }), [gate, login, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
