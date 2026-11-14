@@ -15,6 +15,8 @@ import { Icon, MountainLine, PressableScale, useSurface } from '../ui';
 
 /** Share of the screen height kept free for the painting on a screen with `hero`. */
 const HERO_GAP_SHARE = 0.3;
+/** Short phones keep less of the painting free so the form is not pushed off the screen. */
+const HERO_GAP_SHARE_SHORT = 0.16;
 
 /**
  * Top of an auth screen (Code.dc.html): a round back button when there is a screen to go back to,
@@ -62,7 +64,13 @@ export function AuthHeader({
           <Icon name="chevronLeft" color={hero ? themes.light.brand : colors.textPrimary} />
         </PressableScale>
       ) : null}
-      {hero ? <View style={{ height: Math.round(height * HERO_GAP_SHARE) }} /> : null}
+      {hero ? (
+        <View
+          style={{
+            height: Math.round(height * (height < 700 ? HERO_GAP_SHARE_SHORT : HERO_GAP_SHARE)),
+          }}
+        />
+      ) : null}
       {icon ? (
         <View
           style={[
