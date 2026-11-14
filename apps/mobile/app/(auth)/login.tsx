@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { colors, nativeTextStyle, spacing } from '@ongod/tokens';
 import { api, ApiError } from '../../src/api';
 import { useAuth } from '../../src/auth/AuthContext';
@@ -31,6 +31,7 @@ export default function Login() {
 
 function LoginForm({ email, notice }: { email: string | undefined; notice: string | undefined }) {
   const router = useRouter();
+  const { height } = useWindowDimensions();
   const toast = useToast();
   const { login } = useAuth();
   const { pending, run } = useSubmit();
@@ -72,7 +73,7 @@ function LoginForm({ email, notice }: { email: string | undefined; notice: strin
   }
 
   return (
-    <Screen background={<PortraitBackground />}>
+    <Screen background={<PortraitBackground cover={height < 700 ? height * 0.36 : undefined} />}>
       <AuthHeader title={mn.login.title} hero />
       <Input
         label={mn.login.identifier}

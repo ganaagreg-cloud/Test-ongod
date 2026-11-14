@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { layout, nativeTextStyle, spacing, themes } from '@ongod/tokens';
 import { env } from '../../src/config/env';
@@ -19,6 +20,8 @@ import {
 } from '../../src/ui';
 
 const dark = themes.dark;
+/** Below this screen height (iPhone SE and small Android phones) the mountain line is left out. */
+const COMPACT_HEIGHT = 700;
 
 /**
  * Main.dc.html: aurora light, the client's painting at the top fading into the page (ADR-0102),
@@ -28,6 +31,10 @@ const dark = themes.dark;
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  // The height of the text block, so the painting stops where the text starts (short phones).
+  const [contentHeight, setContentHeight] = useState(0);
+  const compact = height < COMPACT_HEIGHT;
   // Hidden until the portal address is set (EXPO_PUBLIC_PORTAL_URL).
   const termsUrl = portalLink(env.portalUrl, '/app/terms', themeMode);
   return (
@@ -35,12 +42,17 @@ export default function Welcome() {
       <View style={styles.root}>
         <AuroraBackground variant="welcome" />
         {/* The client's painting, fading into the page (ADR-0102). */}
-        <PortraitBackground />
+        <PortraitBackground
+          cover={contentHeight > 0 ? height - contentHeight + spacing.xl : undefined}
+        />
         <View style={[styles.toggle, { top: insets.top + spacing.sm }]}>
           <ThemeToggle overImage />
         </View>
-        <View style={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
-          <MountainLine draw color={dark.accent} />
+        <View
+          onLayout={(e) => setContentHeight(e.nativeEvent.layout.height)}
+          style={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
+        >
+          {compact ? null : <MountainLine draw color={dark.accent} />}
           <Enter index={1}>
             <Text style={styles.name} accessibilityRole="header">
               {mn.appName}
