@@ -52,7 +52,8 @@ export function TabBar({
         pill: themes.cream.bg,
         pillBorder: 'transparent',
         active: themes.cream.textPrimary,
-        inactive: dark.textSecondary,
+        // Light text on the green bar (by day dark.textSecondary is green and nearly vanishes).
+        inactive: withAlpha(themes.cream.onHeritage, 0.72),
       }
     : {
         base: dark.surfaceRaised,
