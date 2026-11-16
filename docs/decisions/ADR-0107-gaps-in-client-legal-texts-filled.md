@@ -14,7 +14,7 @@ tags: [adr, area/portal, area/store]
 
 Terms (portal `mn.ts`):
 
-1. **3.2** the placeholders are replaced by an age of **16** with a legal-representative rule. This is **our assumption, not a decision of the owner**: the project records no age limit, and it must equal the App Store and Google Play age answers. One number to change.
+1. **3.2** the placeholders are replaced by an age of **14** (the owner chose 14 on 2026-11-16; first draft said 16) with a legal-representative rule. This is **our assumption, not a decision of the owner**: the project records no age limit, and it must equal the App Store and Google Play age answers. One number to change.
 2. **3.4** the promise of one video at a time is removed: the product limits only the signed-in devices (2, [[ADR-0018-auth-implementation-details|ADR-0018]]), it does not limit simultaneous playback.
 3. **5.1 and 5.2** added from [[SPEC]] K: renewal is a manual payment, nothing is charged automatically, access ends when the period ends.
 
