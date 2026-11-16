@@ -75,6 +75,8 @@ export const mn = {
   },
 
   welcome: {
+    // The client's own spelling on the first screen, one line, no question marks (ADR-0108).
+    title: 'Зөвүү Тавуу',
     subtitle: 'Гишүүдэд зориулсан хаалттай аудио, видео сан. Сонсож, өсөж, өөрийгөө нээ.',
     login: 'Нэвтрэх',
     register: 'Бүртгүүлэх',

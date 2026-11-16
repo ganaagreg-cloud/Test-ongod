@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { layout, nativeTextStyle, spacing, themes } from '@ongod/tokens';
+import { layout, nativeTextStyle, spacing, themes, typeScale } from '@ongod/tokens';
 import { env } from '../../src/config/env';
 import { mn } from '../../src/i18n/mn';
 import { openInApp } from '../../src/lib/openInApp';
@@ -31,7 +31,18 @@ const COMPACT_HEIGHT = 700;
 export default function Welcome() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
+  // The title stays on one line on every phone: the size follows the width (ADR-0108), so a
+  // 320 pt screen gets a smaller title instead of a cut one, on the web preview too.
+  const hero = typeScale.hero;
+  const titleSize = Math.min(
+    hero.fontSize,
+    Math.floor((width - 2 * layout.screenPadding) / layout.heroTitleWidthPerPoint),
+  );
+  const titleStyle = {
+    fontSize: titleSize,
+    lineHeight: Math.round((titleSize * hero.lineHeight) / hero.fontSize),
+  };
   // The height of the text block, so the painting stops where the text starts (short phones).
   const [contentHeight, setContentHeight] = useState(0);
   const compact = height < COMPACT_HEIGHT;
@@ -40,7 +51,8 @@ export default function Welcome() {
   return (
     <SurfaceProvider surface="dark">
       <View style={styles.root}>
-        <AuroraBackground variant="welcome" />
+        {/* The glow only by night: by day its green edge showed under the painting's fade. */}
+        {themeMode === 'night' ? <AuroraBackground variant="welcome" /> : null}
         {/* The client's painting, fading into the page (ADR-0102). */}
         <PortraitBackground
           cover={contentHeight > 0 ? height - contentHeight + spacing.xl : undefined}
@@ -53,9 +65,15 @@ export default function Welcome() {
           style={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         >
           {compact ? null : <MountainLine draw color={dark.accent} />}
-          <Enter index={1}>
-            <Text style={styles.name} accessibilityRole="header">
-              {mn.appName}
+          <Enter index={1} style={styles.nameBox}>
+            <Text
+              style={[styles.name, titleStyle]}
+              accessibilityRole="header"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {mn.welcome.title}
             </Text>
           </Enter>
           <Enter index={2}>
@@ -110,6 +128,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: layout.screenPadding + spacing.xxs,
   },
+  nameBox: { alignSelf: 'stretch' },
   name: {
     color: dark.textPrimary,
     textAlign: 'center',
