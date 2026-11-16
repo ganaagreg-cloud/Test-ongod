@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Icon, Notice } from '@ongod/ui-web';
+import { Icon } from '@ongod/ui-web';
 import { mn } from '../i18n/mn';
 import { usePage } from '../lib/usePage';
 
@@ -27,8 +27,6 @@ function LegalPage({ doc, app = false }: { doc: Document; app?: boolean }) {
     <div className="portal-page portal-narrow portal-legal">
       {app ? null : <BackButton />}
       <h1>{doc.title}</h1>
-      {/* TODO(owner): remove this banner once the text below is approved. */}
-      <Notice tone="warning">{mn.legal.todoBanner}</Notice>
       <p className="portal-muted">{mn.legal.updated}</p>
       {doc.sections
         .filter((section) => !(app && section.payment))

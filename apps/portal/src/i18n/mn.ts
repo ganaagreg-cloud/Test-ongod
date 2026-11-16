@@ -36,7 +36,6 @@ export const mn = {
     support: 'Тусламж',
   },
 
-  // TODO(owner): approve the wording of the support page (App Store "Support URL").
   support: {
     metaTitle: 'Тусламж — Зөв үү? Тав уу?',
     metaDescription: 'Асуулт, санал, гомдол эсвэл бүртгэлтэй холбоотой тусламж авах.',
@@ -405,12 +404,10 @@ export const mn = {
     },
   },
 
-  // TODO(owner): replace every placeholder below with the approved text (ideally reviewed by a
-  // lawyer). The apps and the store listings link to these pages.
+  // The owner approved these texts on 2026-11-16 (ADR-0106, ADR-0107). The apps and the store
+  // listings link to these pages.
   legal: {
-    todoBanner:
-      'TODO (эзэмшигч): Энэ хуудасны текст түр жишээ юм. Хууль зүйн зөвлөхтэй баталгаажуулж солино уу.',
-    updated: 'Сүүлд шинэчилсэн: TODO',
+    updated: 'Сүүлд шинэчилсэн: 2026.11.16',
     privacy: {
       metaTitle: 'Нууцлалын бодлого — Зөв үү? Тав уу?',
       metaDescription:
