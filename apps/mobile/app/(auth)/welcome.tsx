@@ -53,9 +53,15 @@ export default function Welcome() {
           style={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         >
           {compact ? null : <MountainLine draw color={dark.accent} />}
-          <Enter index={1}>
-            <Text style={styles.name} accessibilityRole="header">
-              {mn.appName}
+          <Enter index={1} style={styles.nameBox}>
+            <Text
+              style={styles.name}
+              accessibilityRole="header"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
+              {mn.welcome.title}
             </Text>
           </Enter>
           <Enter index={2}>
@@ -110,6 +116,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: layout.screenPadding + spacing.xxs,
   },
+  nameBox: { alignSelf: 'stretch' },
   name: {
     color: dark.textPrimary,
     textAlign: 'center',

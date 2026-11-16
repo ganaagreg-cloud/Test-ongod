@@ -129,6 +129,7 @@ tags: [index]
 | ADR-0105 | [[ADR-0105-admin-idle-logout-30-minutes]]                            | accepted                                                                                 |
 | ADR-0106 | [[ADR-0106-client-app-icon-and-legal-texts]]                         | accepted                                                                                 |
 | ADR-0107 | [[ADR-0107-gaps-in-client-legal-texts-filled]]                       | accepted                                                                                 |
+| ADR-0108 | [[ADR-0108-welcome-title-one-line-client-spelling]]                  | accepted                                                                                 |
 
 ## Research
 
