@@ -64,6 +64,8 @@ const config: ExpoConfig = {
   // 'default' so a fullscreen video can turn to landscape on iOS (R-expo-video-sdk57); every
   // screen is locked to portrait at runtime (src/video/orientation.ts).
   orientation: 'default',
+  // ADR-0106: the client's logo. The store copy of the icon is the same file (1024 x 1024, no alpha).
+  icon: './assets/icon.png',
   userInterfaceStyle: 'dark',
   backgroundColor: '#021512', // themes.dark.bg (app.config cannot import the workspace package)
   ios: {
@@ -79,6 +81,11 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'mn.zuvuutavuu.app',
+    // The logo sits inside the central safe zone; the black matches the picture's own edge.
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      backgroundColor: '#000000',
+    },
     ...(googleServicesFile ? { googleServicesFile } : {}),
   },
   ...(easProjectId ? { extra: { eas: { projectId: easProjectId } } } : {}),
