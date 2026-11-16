@@ -7,7 +7,14 @@ interface Document {
   metaTitle: string;
   metaDescription: string;
   title: string;
-  sections: ReadonlyArray<{ title: string; text: string; payment?: boolean }>;
+  sections: ReadonlyArray<{
+    title: string;
+    /** One paragraph (the privacy policy draft). */
+    text?: string;
+    /** Several paragraphs; an array inside is a bulleted list (the terms). */
+    body?: ReadonlyArray<string | readonly string[]>;
+    payment?: boolean;
+  }>;
 }
 
 /**
@@ -28,7 +35,18 @@ function LegalPage({ doc, app = false }: { doc: Document; app?: boolean }) {
         .map((section) => (
           <section key={section.title}>
             <h2>{section.title}</h2>
-            <p>{section.text}</p>
+            {section.text ? <p>{section.text}</p> : null}
+            {section.body?.map((part) =>
+              typeof part === 'string' ? (
+                <p key={part}>{part}</p>
+              ) : (
+                <ul key={part.join('|')}>
+                  {part.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ),
+            )}
           </section>
         ))}
     </div>

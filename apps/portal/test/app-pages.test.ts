@@ -23,7 +23,10 @@ test('the /app routes sit outside the normal Layout and hold only the legal page
 
 test('the app copy leaves out every section flagged as payment, and the terms flag theirs', () => {
   assert.match(read('../src/pages/Legal.tsx'), /!\(app && section\.payment\)/);
-  assert.match(read('../src/i18n/mn.ts'), /payment: true,\s*\n\s*title: 'Эрх ба төлбөр'/);
+  assert.match(
+    read('../src/i18n/mn.ts'),
+    /payment: true,\s*\n\s*title: '4\. Үнэ, төлбөр, үзэх эрх'/,
+  );
 });
 
 test('the public support page has its own route outside /app and no payment wording', () => {
