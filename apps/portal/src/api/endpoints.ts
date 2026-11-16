@@ -1,4 +1,5 @@
 import {
+  appConfigResponseSchema,
   giftResponseSchema,
   giftsResponseSchema,
   redeemGiftResponseSchema,
@@ -16,6 +17,10 @@ import { z } from 'zod';
 import { api, deviceId } from './client';
 
 /** Every call the portal makes, typed with the shared zod schemas. */
+
+/** Public settings; the support page reads the contact e-mail from here (env SUPPORT_EMAIL). */
+export const getAppConfig = (signal?: AbortSignal) =>
+  api('/app-config', { schema: appConfigResponseSchema, auth: false, signal });
 
 export const getPlans = () => api('/plans', { schema: plansResponseSchema, auth: false });
 
