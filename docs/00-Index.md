@@ -164,8 +164,10 @@ tags: [index]
 | [[R-google-id-token-verification]] | TO-VERIFY  | 2026-12-07    |
 | [[R-github-actions-billing]]       | TO-VERIFY  | 2027-01-15    |
 | [[R-google-signin-v16]]            | VERIFIED   | 2026-12-08    |
-| [[R-google-play-closed-test]]      | VERIFIED   | 2027-01-06    |
-| [[R-google-play-payments]]         | TO-VERIFY  | —             |
+| [[R-google-play-closed-test]]      | TO-VERIFY  | 2027-02-14    |
+| [[R-google-play-payments]]         | TO-VERIFY  | 2027-02-14    |
+| [[R-google-play-target-api]]       | VERIFIED   | 2027-02-14    |
+| [[R-google-play-listing-assets]]   | TO-VERIFY  | 2027-02-14    |
 | [[R-mongolia-store-payment-rules]] | TO-VERIFY  | 2026-11-30    |
 | [[R-hosting-limits]]               | SUPERSEDED | —             |
 | [[R-node-cve-2026-111497]]         | TO-VERIFY  | 2026-11-16    |
