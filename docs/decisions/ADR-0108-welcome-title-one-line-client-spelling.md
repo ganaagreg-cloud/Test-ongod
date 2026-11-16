@@ -12,10 +12,10 @@ The client's own mock-up of the first screen writes the name as "Зөвүү Та
 
 ## Decision
 
-1. Only the **Welcome title** changes: `mn.welcome.title = 'Зөвүү Тавуу'`, one line (`numberOfLines={1}`, `adjustsFontSizeToFit`, down to 60 %), so it shrinks on narrow phones instead of wrapping.
+1. Only the **Welcome title** changes: `mn.welcome.title = 'Зөвүү Тавуу'`, one line (`numberOfLines={1}`, `adjustsFontSizeToFit`, down to 60 %), so it shrinks on narrow phones instead of wrapping. The size also follows the screen width (`layout.heroTitleWidthPerPoint`), so a 320 pt screen shows the whole name on the web preview too. By day the Welcome glow is not drawn: its green edge showed under the painting's fade.
 2. The name elsewhere (store title "Зөв үү Тав уу", [[ADR-0081-store-name-without-question-marks-domain|ADR-0081]]; the app label; legal pages) is not changed by this ADR.
 3. The client's mock-up also has "Тавтай морил" under the name; we kept our longer text for now.
 
 ## Consequences
 
-Needs a new app build. In the browser preview a 320 pt wide screen cuts the title (the browser ignores `adjustsFontSizeToFit`); on a phone it shrinks. Check on a small iPhone.
+Needs a new app build. Check on a small iPhone.

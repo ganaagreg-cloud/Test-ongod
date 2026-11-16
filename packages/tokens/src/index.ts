@@ -439,6 +439,8 @@ export const layout = {
   marqueeBleed: 60,
   /** Welcome: letter spacing of the hero title (0.02em), width of the intro text. */
   heroTracking: 1,
+  /** The Welcome title "Зөвүү Тавуу" is about this many times as wide as its font size; screens use it to shrink the title to the width (ADR-0108). */
+  heroTitleWidthPerPoint: 6.4,
   welcomeTextMax: 290,
   /** Icon tile on the email-code screen. */
   iconTile: 56,
