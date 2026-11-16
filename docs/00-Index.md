@@ -127,6 +127,8 @@ tags: [index]
 | ADR-0103 | [[ADR-0103-legal-pages-follow-day-mode]]                             | accepted                                                                                 |
 | ADR-0104 | [[ADR-0104-no-server-gate-for-mobile-payment]]                       | accepted                                                                                 |
 | ADR-0105 | [[ADR-0105-admin-idle-logout-30-minutes]]                            | accepted                                                                                 |
+| ADR-0106 | [[ADR-0106-client-app-icon-and-legal-texts]]                         | accepted                                                                                 |
+| ADR-0107 | [[ADR-0107-gaps-in-client-legal-texts-filled]]                       | accepted                                                                                 |
 
 ## Research
 
