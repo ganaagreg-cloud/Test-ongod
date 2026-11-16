@@ -66,6 +66,7 @@ export function Layout() {
           <nav aria-label={mn.footer.privacy}>
             <Link to="/privacy">{mn.footer.privacy}</Link>
             <Link to="/terms">{mn.footer.terms}</Link>
+            <Link to="/support">{mn.footer.support}</Link>
             <Link to="/delete-account">{mn.footer.deleteAccount}</Link>
           </nav>
         </div>

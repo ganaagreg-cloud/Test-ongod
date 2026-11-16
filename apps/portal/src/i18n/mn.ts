@@ -33,6 +33,27 @@ export const mn = {
     privacy: 'Нууцлалын бодлого',
     terms: 'Үйлчилгээний нөхцөл',
     deleteAccount: 'Бүртгэл устгах',
+    support: 'Тусламж',
+  },
+
+  // TODO(owner): approve the wording of the support page (App Store "Support URL").
+  support: {
+    metaTitle: 'Тусламж — Зөв үү? Тав уу?',
+    metaDescription: 'Асуулт, санал, гомдол эсвэл бүртгэлтэй холбоотой тусламж авах.',
+    title: 'Тусламж',
+    intro:
+      'Асуулт, санал, гомдол гаргах эсвэл нэвтрэх, бүртгэлтэй холбоотой асуудал гарвал бидэнд имэйлээр бичнэ үү.',
+    emailLabel: 'Имэйл хаяг',
+    noEmail: 'Холбоо барих имэйл хаяг удахгүй энд гарна.',
+    tipsTitle: 'Бичихдээ дараахыг дурдвал хурдан шийдэгдэнэ',
+    tips: [
+      'Бүртгэлтэй имэйл хаяг',
+      'Утасны загвар болон Android эсвэл iPhone гэдэг',
+      'Юу болсон, ямар хуудсан дээр болсныг товч тайлбарлах',
+    ],
+    deleteBefore: 'Бүртгэлээ устгахыг хүсвэл ',
+    deleteLink: 'Бүртгэл устгах',
+    deleteAfter: ' хуудсыг үзнэ үү.',
   },
 
   // TODO(owner): approve the landing page wording (portal design A, ADR-0058).

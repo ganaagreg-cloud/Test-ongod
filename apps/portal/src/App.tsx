@@ -23,6 +23,7 @@ const MockGiftCheckout = lazy(() => import('./pages/MockGiftCheckout'));
 const Status = lazy(() => import('./pages/Status'));
 const Account = lazy(() => import('./pages/Account'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
+const Support = lazy(() => import('./pages/Support'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
@@ -77,6 +78,7 @@ export function App() {
           </Route>
           <Route path="privacy" element={<Privacy />} />
           <Route path="terms" element={<Terms />} />
+          <Route path="support" element={<Support />} />
           <Route path="delete-account" element={<DeleteAccount />} />
           <Route path="*" element={<NotFound />} />
         </Route>
