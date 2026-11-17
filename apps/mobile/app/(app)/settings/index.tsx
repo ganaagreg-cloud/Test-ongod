@@ -125,40 +125,33 @@ export default function Settings() {
         onPress={() => setDeleteStep(1)}
       />
 
+      {/* One sheet for both questions: iOS cannot open a second Modal while the first is still
+          closing, so the "Үргэлжлүүлэх" tap on a phone did nothing (two sheets in a row). */}
       <Sheet
-        visible={deleteStep === 1}
+        visible={deleteStep > 0}
         onClose={() => setDeleteStep(0)}
-        title={mn.settings.deleteTitle}
+        title={deleteStep === 2 ? mn.settings.deleteConfirmTitle : mn.settings.deleteTitle}
         closeLabel={mn.close}
       >
-        <Text style={styles.text}>{mn.settings.deleteText}</Text>
-        <Button
-          label={mn.settings.deleteNext}
-          variant="destructive"
-          fullWidth
-          onPress={() => setDeleteStep(2)}
-        />
-        <Button
-          label={mn.common.cancel}
-          variant="ghost"
-          fullWidth
-          onPress={() => setDeleteStep(0)}
-        />
-      </Sheet>
-      <Sheet
-        visible={deleteStep === 2}
-        onClose={() => setDeleteStep(0)}
-        title={mn.settings.deleteConfirmTitle}
-        closeLabel={mn.close}
-      >
-        <Text style={styles.text}>{mn.settings.deleteConfirmText}</Text>
-        <Button
-          label={mn.settings.deleteConfirm}
-          variant="destructive"
-          fullWidth
-          loading={remove.pending}
-          onPress={() => void remove.run(deleteAccount)}
-        />
+        <Text style={styles.text}>
+          {deleteStep === 2 ? mn.settings.deleteConfirmText : mn.settings.deleteText}
+        </Text>
+        {deleteStep === 2 ? (
+          <Button
+            label={mn.settings.deleteConfirm}
+            variant="destructive"
+            fullWidth
+            loading={remove.pending}
+            onPress={() => void remove.run(deleteAccount)}
+          />
+        ) : (
+          <Button
+            label={mn.settings.deleteNext}
+            variant="destructive"
+            fullWidth
+            onPress={() => setDeleteStep(2)}
+          />
+        )}
         <Button
           label={mn.common.cancel}
           variant="ghost"
