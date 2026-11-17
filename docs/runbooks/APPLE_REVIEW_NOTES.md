@@ -3,7 +3,7 @@ type: runbook
 tags: [runbook, store/apple]
 ---
 
-# App Review notes (paste into App Store Connect > App Review Information > Notes)
+# App Review notes (honest version, decided 2026-11-17) (paste into App Store Connect > App Review Information > Notes)
 
 Answer to Apple's "Guideline 2.1 - Information Needed" (2026-11-17). No credentials here: the demo account goes in the Sign-in fields only ([[STORE]]).
 
@@ -17,14 +17,14 @@ A screen recording from a physical iPhone (latest iOS) is attached. It starts wi
 "Зөв үү? Тав уу?" is a members-only audio and video library by a Mongolian creator. Members listen to and watch episodes (talks and lessons on personal development) in Mongolian. It solves the problem of having the creator's content in one private place that works on a phone, with saved episodes, progress and comments. The audience is Mongolian-speaking adults and teenagers aged 14 and over (the terms set a minimum age of 14).
 
 3. HOW TO ACCESS THE MAIN FEATURES
-Sign in with the demo account in the Sign-in fields. It has active access. Tabs: Нүүр (home, new episodes), Сан (library, search and filters), Хадгалсан (saved), Профайл (access, settings, devices, blocked users, terms, privacy, log out). Open any episode to play it (audio or video). A member can save an episode, and comment under it. Delete account: Профайл > Тохиргоо > Бүртгэл устгах. A new account can be created in the app (name, e-mail and phone, password; then a 6-digit code sent by e-mail). Access to paid episodes is granted to an account by the owner. There is no in-app purchase: the app shows no prices and no purchase buttons. Purchases and renewals are on the website (QPay) and are not open to the public yet. A user without access sees a plain message to activate their package.
+Sign in with the demo account in the Sign-in fields. It has active access. Tabs: Нүүр (home, new episodes), Сан (library, search and filters), Хадгалсан (saved), Профайл (access, settings, devices, blocked users, terms, privacy, log out). Open any episode to play it (audio or video). A member can save an episode, and comment under it. Delete account: Профайл > Тохиргоо > Бүртгэл устгах. A new account can be created in the app (name, e-mail and phone, password; then a 6-digit code sent by e-mail). Access to paid episodes is granted to the account. Payments for access are handled on our website through QPay. The app can also offer a payment option through a server setting; in this review build that setting is off, so the app shows no prices and no purchase buttons. A user without access sees a plain message to activate their package.
 
 4. EXTERNAL SERVICES
 - Bunny.net: storage and delivery of the audio and video files.
 - A transactional e-mail provider: sign-up codes, password reset. [NAME IT]
 - Apple Push Notification service through Expo push: notifications about new episodes (optional, asked once).
 - Sign in with Apple and Google sign-in: optional. [REMOVE IF OFF]
-- QPay (through the Wire gateway): payments, on the website only, not in the app.
+- QPay (through the Wire gateway): payments for access. On the website now; the in-app payment option is off in this build.
 - Our own server (Node.js and MySQL) for accounts, access and comments.
 
 5. REGIONS
