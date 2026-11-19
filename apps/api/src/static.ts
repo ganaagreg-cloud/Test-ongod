@@ -12,6 +12,18 @@ export const defaultStaticDirs = { portal: appDist('portal'), admin: appDist('ad
 export const isApiPath = (url: string) =>
   url === '/v1' || url.startsWith('/v1/') || url.startsWith('/v1?') || url.startsWith('/health');
 
+/**
+ * A page request, not a missing file: the browser asks for text/html, but link checkers and
+ * crawlers (for example the Google Play Console URL check) send `*\/*` or no Accept at all and
+ * must see the page too, not a JSON 404. A path with a file extension (a missing asset) stays 404.
+ */
+const wantsPage = (url: string, accepts: string): boolean => {
+  if (accepts.includes('text/html')) return true;
+  const pathname = url.split('?')[0] ?? url;
+  const anything = accepts === '' || accepts.includes('*/*');
+  return anything && !/\.[A-Za-z0-9]+$/.test(pathname);
+};
+
 const isAdminPath = (url: string) => url === '/admin' || url.startsWith('/admin/');
 
 /** Vite puts content-hashed files in assets/: cache forever. Everything else revalidates. */
@@ -54,8 +66,8 @@ export async function registerStatic(
   });
 
   return function spaFallback(req: FastifyRequest, reply: FastifyReply): boolean {
-    const accepts = req.headers.accept ?? '';
-    if (req.method !== 'GET' || isApiPath(req.url) || !accepts.includes('text/html')) return false;
+    if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+    if (isApiPath(req.url) || !wantsPage(req.url, req.headers.accept ?? '')) return false;
     reply.header('cache-control', 'no-cache');
     void reply.sendFile('index.html', isAdminPath(req.url) ? dirs.admin : dirs.portal);
     return true;

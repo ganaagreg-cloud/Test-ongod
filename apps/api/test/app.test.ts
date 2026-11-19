@@ -219,6 +219,28 @@ describe('static hosting', () => {
     expect(res.json().error.code).toBe('NOT_FOUND');
   });
 
+  it('gives link checkers and crawlers the page too: no Accept or */* on a page path', async () => {
+    // The Google Play Console URL check got a 404 for /delete-account with a non-browser Accept.
+    const app = await staticApp();
+    for (const headers of [{}, { accept: '*/*' }]) {
+      const res = await app.inject({ url: '/delete-account', headers });
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toContain('portal');
+    }
+    expect((await app.inject({ method: 'HEAD', url: '/support' })).statusCode).toBe(200);
+    // Still 404 where it must be: a missing file, an API path, or a client that wants JSON.
+    expect(
+      (await app.inject({ url: '/assets/missing.js', headers: { accept: '*/*' } })).statusCode,
+    ).toBe(404);
+    expect((await app.inject({ url: '/v1/unknown', headers: { accept: '*/*' } })).statusCode).toBe(
+      404,
+    );
+    expect(
+      (await app.inject({ url: '/delete-account', headers: { accept: 'application/json' } }))
+        .statusCode,
+    ).toBe(404);
+  });
+
   it('returns 404 JSON for missing non-HTML files', async () => {
     const app = await staticApp();
     const res = await app.inject({ url: '/assets/missing.js' });
